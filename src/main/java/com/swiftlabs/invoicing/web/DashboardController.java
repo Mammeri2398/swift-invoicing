@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.web;
 
 import com.swiftlabs.invoicing.service.InvoiceService;
 import com.swiftlabs.invoicing.service.IssuerService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,7 @@ public class DashboardController {
     }
 
     @GetMapping("/")
+    @PreAuthorize("hasAuthority('VIEW_DASHBOARD')")
     public String dashboard(@RequestParam(name = "year", required = false) Integer year, Model model) {
         InvoiceService.DashboardStats stats = invoiceService.dashboard(year);
         model.addAttribute("stats", stats);

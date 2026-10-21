@@ -14,6 +14,7 @@ import com.swiftlabs.invoicing.service.InvoiceService;
 import com.swiftlabs.invoicing.service.IssuerService;
 import com.swiftlabs.invoicing.service.PdfService;
 import com.swiftlabs.invoicing.util.AmountUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,6 +47,7 @@ public class InvoiceController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('VIEW_INVOICES')")
     public String list(@RequestParam(name = "status", required = false) String status,
                        @RequestParam(name = "year", required = false) Integer year,
                        @RequestParam(name = "client", required = false) Long clientId,
@@ -63,6 +65,7 @@ public class InvoiceController {
     }
 
     @GetMapping("/new")
+    @PreAuthorize("hasAuthority('CREATE_INVOICE')")
     public String newForm(Model model) {
         InvoiceForm form = new InvoiceForm();
         form.addEmptyLine();
@@ -73,6 +76,7 @@ public class InvoiceController {
     }
 
     @GetMapping("/{id}/edit")
+    @PreAuthorize("hasAuthority('CREATE_INVOICE')")
     public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
             Invoice invoice = invoiceService.findById(id);
@@ -92,6 +96,7 @@ public class InvoiceController {
     }
 
     @PostMapping("/save")
+    @PreAuthorize("hasAuthority('CREATE_INVOICE')")
     public String save(@ModelAttribute InvoiceForm form, RedirectAttributes redirectAttributes) {
         try {
             Invoice invoice = toEntity(form);
@@ -107,6 +112,7 @@ public class InvoiceController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('VIEW_INVOICES')")
     public String view(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
             Invoice invoice = invoiceService.findById(id);
@@ -121,6 +127,7 @@ public class InvoiceController {
     }
 
     @PostMapping("/{id}/issue")
+    @PreAuthorize("hasAuthority('ISSUE_INVOICE')")
     public String issue(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             Invoice issued = invoiceService.issue(id);
@@ -133,6 +140,7 @@ public class InvoiceController {
     }
 
     @PostMapping("/{id}/pay")
+    @PreAuthorize("hasAuthority('ISSUE_INVOICE')")
     public String pay(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             invoiceService.pay(id);
@@ -144,6 +152,7 @@ public class InvoiceController {
     }
 
     @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAuthority('ISSUE_INVOICE')")
     public String cancel(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             invoiceService.cancel(id);
@@ -155,6 +164,7 @@ public class InvoiceController {
     }
 
     @PostMapping("/{id}/delete")
+    @PreAuthorize("hasAuthority('DELETE_INVOICE')")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             invoiceService.delete(id);
@@ -167,6 +177,7 @@ public class InvoiceController {
     }
 
     @GetMapping("/{id}/pdf")
+    @PreAuthorize("hasAuthority('VIEW_INVOICES')")
     public void pdf(@PathVariable Long id, jakarta.servlet.http.HttpServletResponse response) throws Exception {
         Invoice invoice = invoiceService.findById(id);
         byte[] bytes = pdfService.renderInvoicePdf(invoice);

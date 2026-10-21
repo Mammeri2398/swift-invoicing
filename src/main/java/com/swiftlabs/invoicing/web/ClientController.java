@@ -5,6 +5,7 @@ import com.swiftlabs.invoicing.domain.ClientType;
 import com.swiftlabs.invoicing.dto.ClientForm;
 import com.swiftlabs.invoicing.exception.BusinessException;
 import com.swiftlabs.invoicing.service.ClientService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,12 +26,14 @@ public class ClientController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('VIEW_CLIENTS')")
     public String list(Model model) {
         model.addAttribute("clients", clientService.findAll());
         return "clients/list";
     }
 
     @GetMapping("/new")
+    @PreAuthorize("hasAuthority('CREATE_CLIENT')")
     public String newForm(Model model) {
         model.addAttribute("client", new ClientForm());
         model.addAttribute("types", ClientType.values());
@@ -38,6 +41,7 @@ public class ClientController {
     }
 
     @GetMapping("/{id}/edit")
+    @PreAuthorize("hasAuthority('CREATE_CLIENT')")
     public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         try {
             Client client = clientService.findById(id);
@@ -52,6 +56,7 @@ public class ClientController {
     }
 
     @PostMapping("/save")
+    @PreAuthorize("hasAuthority('CREATE_CLIENT')")
     public String save(@ModelAttribute ClientForm form, RedirectAttributes redirectAttributes) {
         try {
             Client client = toEntity(form);
@@ -66,6 +71,7 @@ public class ClientController {
     }
 
     @PostMapping("/{id}/delete")
+    @PreAuthorize("hasAuthority('DELETE_CLIENT')")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             clientService.delete(id);

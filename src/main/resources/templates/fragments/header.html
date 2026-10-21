@@ -9,12 +9,15 @@
             <a href="/invoices/new">Nouvelle facture</a>
             <a href="/settings/issuer">Paramètres (Émetteur)</a>
             <a href="/invoices/lookup">Recherche n° facture</a>
+            <a th:href="@{/perform-logout}" style="color:#cfe8f5; margin-left:16px;">Déconnexion</a>
+            <span th:if="${#authentication != null and #authentication.isAuthenticated()}" style="color:#cfe8f5; margin-left:16px;">Bonjour, <span th:text="${#authentication.name}"></span></span>
         </nav>
     </div>
 </header>
 <div class="container">
     <div th:if="${success}" class="flash success" th:text="${success}"></div>
     <div th:if="${error}" class="flash error" th:text="${error}"></div>
+    <div th:if="${message}" class="flash success" th:text="${message}"></div>
 </div>
 </div>
 

@@ -4,6 +4,7 @@ import com.swiftlabs.invoicing.domain.Issuer;
 import com.swiftlabs.invoicing.dto.IssuerForm;
 import com.swiftlabs.invoicing.exception.BusinessException;
 import com.swiftlabs.invoicing.service.IssuerService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,7 @@ public class IssuerController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('VIEW_ISSUER')")
     public String editForm(Model model, RedirectAttributes redirectAttributes) {
         try {
             Issuer issuer = issuerService.getIssuer();
@@ -35,6 +37,7 @@ public class IssuerController {
     }
 
     @PostMapping("/save")
+    @PreAuthorize("hasAuthority('EDIT_ISSUER')")
     public String save(@ModelAttribute IssuerForm form, RedirectAttributes redirectAttributes) {
         try {
             Issuer issuer = toEntity(form);

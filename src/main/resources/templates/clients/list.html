@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Clients</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2>Clients</h2>
+    <p class="no-print"><a class="btn primary" href="/clients/new">+ Nouveau client</a></p>
+
+    <table>
+        <thead>
+        <tr><th>Nom</th><th>Type</th><th>NIF</th><th>Email / Téléphone</th><th>Créé le</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="c : ${clients}">
+            <td th:text="${c.name}">-</td>
+            <td th:text="${c.type}">-</td>
+            <td th:text="${c.nif} != null ? ${c.nif} : '-'" class="muted">-</td>
+            <td class="small">
+                <span th:text="${c.email}" th:if="${c.email != null}">-</span>
+                <span th:text="${c.phone}" th:if="${c.phone != null}">-</span>
+            </td>
+            <td th:text="${#temporals.format(c.createdAt, 'dd/MM/yyyy')}">-</td>
+            <td class="no-print">
+                <a class="btn small" th:href="@{/clients/{id}/edit(id=${c.id})}">Modifier</a>
+                <form th:action="@{/clients/{id}/delete(id=${c.id})}" method="post" style="display:inline;"
+                      onsubmit="return confirm('Supprimer ce client ? Cette action est impossible si des factures lui sont liées.');">
+                    <button class="btn small danger" type="submit">Supprimer</button>
+                </form>
+            </td>
+        </tr>
+        <tr th:if="${clients.isEmpty()}"><td colspan="6" class="text-center">Aucun client.</td></tr>
+        </tbody>
+    </table>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+</body>
+</html>

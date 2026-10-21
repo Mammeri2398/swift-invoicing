@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Erreur</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2>Erreur</h2>
+    <div class="flash error" th:text="${message}">Une erreur est survenue.</div>
+    <a class="btn" href="/">Retour au tableau de bord</a>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+</body>
+</html>

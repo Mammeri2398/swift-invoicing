@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${invoice.id != null ? 'Modifier la facture' : 'Nouvelle facture'}">Facture</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2 th:text="${invoice.id != null ? 'Modifier la facture' : 'Nouvelle facture (brouillon)'}">Facture</h2>
+
+    <form th:action="@{/invoices/save}" method="post" class="no-print">
+        <input type="hidden" name="id" th:value="${invoice.id}"/>
+
+        <label>Client <span style="color:#8f2d2d">*</span></label>
+        <select name="clientId" required>
+            <option value="">-- Sélectionner un client --</option>
+            <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}" th:selected="${invoice.clientId == c.id}"></option>
+        </select>
+
+        <label>Date d'émission <span style="color:#8f2d2d">*</span></label>
+        <input type="date" name="issueDate" required th:value="${#temporals.format(invoice.issueDate, 'yyyy-MM-dd')}"/>
+
+        <label>Date d'échéance</label>
+        <input type="date" name="dueDate" th:value="${#temporals.format(invoice.dueDate, 'yyyy-MM-dd')}"/>
+
+        <label>Mode de paiement</label>
+        <select name="paymentMethod">
+            <option value="">--</option>
+            <option th:each="pm : ${paymentMethods}" th:value="${pm.name()}" th:selected="${invoice.paymentMethod == pm.name()}">[[${pm.name()}]]</option>
+        </select>
+
+        <label>Notes / informations de paiement</label>
+        <textarea name="notes" th:text="${invoice.notes}"></textarea>
+
+        <h3>Lignes de facture</h3>
+        <table class="lines-table" id="linesTable">
+            <thead>
+            <tr>
+                <th style="width:4%">N°</th>
+                <th style="width:34%">Désignation</th>
+                <th style="width:12%">Unité</th>
+                <th style="width:14%">Quantité</th>
+                <th style="width:16%">Prix unitaire</th>
+                <th style="width:16%">Total ligne</th>
+                <th style="width:4%"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="line, stat : ${invoice.lines}">
+                <input type="hidden" name="lines[${stat.index}].id" th:value="${line.id}"/>
+                <td><span th:text="${stat.index + 1}">1</span></td>
+                <td><input type="text" name="lines[${stat.index}].description" th:value="${line.description}" required/></td>
+                <td><input type="text" name="lines[${stat.index}].unit" th:value="${line.unit}" placeholder="pièce"/></td>
+                <td><input type="number" name="lines[${stat.index}].quantity" step="0.001" th:value="${line.quantity}" min="0" required/></td>
+                <td><input type="number" name="lines[${stat.index}].unitPrice" step="0.01" th:value="${line.unitPrice}" min="0" required/></td>
+                <td class="money line-total" th:text="${#numbers.formatDecimal(line.lineTotal, 2, 'COMMA', 2, 'POINT')}">0,00</td>
+                <td><button type="button" class="btn small danger remove-line" onclick="removeLine(this)">Suppr</button></td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="add-line no-print">
+            <button type="button" class="btn primary" onclick="addLine()">+ Ajouter une ligne</button>
+        </div>
+
+        <div class="total-row" style="margin-top:12px; text-align:right; font-weight:bold; font-size:1.1rem;">
+            Total à payer : <span id="grandTotal">0,00</span> DA
+        </div>
+
+        <div class="row-actions" style="margin-top:18px;">
+            <button class="btn primary" type="submit">Enregistrer le brouillon</button>
+            <a class="btn" href="/invoices">Annuler</a>
+        </div>
+    </form>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+
+<script>
+    function computeLine(row) {
+        var qty = parseFloat(row.querySelector('input[name$=".quantity"]').value) || 0;
+        var price = parseFloat(row.querySelector('input[name$=".unitPrice"]').value) || 0;
+        var total = (qty * price).toFixed(2);
+        row.querySelector('.line-total').textContent = formatFr(total);
+    }
+
+    function formatFr(v) {
+        return v.toString().replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    }
+
+    function computeGrandTotal() {
+        var sum = 0;
+        document.querySelectorAll('#linesTable tbody tr').forEach(function (row) {
+            var t = parseFloat(row.querySelector('.line-total').textContent.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
+            sum += t;
+        });
+        document.getElementById('grandTotal').textContent = formatFr(sum);
+    }
+
+    function addLine() {
+        var tbody = document.querySelector('#linesTable tbody');
+        var index = tbody.querySelectorAll('tr').length;
+        var tr = document.createElement('tr');
+        tr.innerHTML = '' +
+            '<td>' + (index + 1) + '</td>' +
+            '<td><input type="text" name="lines[' + index + '].description" required/></td>' +
+            '<td><input type="text" name="lines[' + index + '].unit" placeholder="pièce"/></td>' +
+            '<td><input type="number" name="lines[' + index + '].quantity" step="0.001" min="0" required/></td>' +
+            '<td><input type="number" name="lines[' + index + '].unitPrice" step="0.01" min="0" required/></td>' +
+            '<td class="money line-total">0,00</td>' +
+            '<td><button type="button" class="btn small danger remove-line" onclick="removeLine(this)">Suppr</button></td>';
+        tbody.appendChild(tr);
+        renumber();
+    }
+
+    function removeLine(btn) {
+        btn.closest('tr').remove();
+        renumber();
+        computeGrandTotal();
+    }
+
+    function renumber() {
+        var rows = document.querySelectorAll('#linesTable tbody tr');
+        rows.forEach(function (row, i) {
+            row.querySelector('td:first-child').textContent = i + 1;
+            // update input name indexes
+            var inputs = row.querySelectorAll('input');
+            inputs.forEach(function (input) {
+                var name = input.getAttribute('name');
+                if (name) {
+                    input.setAttribute('name', name.replace(/lines\[\d+\]/, 'lines[' + i + ']'));
+                }
+            });
+        });
+        computeGrandTotal();
+    }
+
+    document.querySelectorAll('#linesTable tbody tr').forEach(function (row) {
+        row.querySelectorAll('input').forEach(function (input) {
+            input.addEventListener('input', function () {
+                computeLine(row);
+                computeGrandTotal();
+            });
+        });
+    });
+    computeGrandTotal();
+</script>
+</body>
+</html>

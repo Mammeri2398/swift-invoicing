@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${issuer.id != null ? 'Modifier le profil émetteur' : 'Profil émetteur'}">Émetteur</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2 th:text="${issuer.id != null ? 'Modifier le profil émetteur' : 'Profil émetteur'}">Émetteur</h2>
+
+    <form th:action="@{/settings/issuer/save}" method="post" class="no-print">
+        <input type="hidden" name="id" th:value="${issuer.id}"/>
+
+        <label>Nom complet <span style="color:#8f2d2d">*</span></label>
+        <input type="text" name="fullName" required th:value="${issuer.fullName}" />
+
+        <label>Nom commercial (optionnel)</label>
+        <input type="text" name="tradeName" th:value="${issuer.tradeName}" />
+
+        <label>Adresse</label>
+        <input type="text" name="address" th:value="${issuer.address}" />
+
+        <label>Ville</label>
+        <input type="text" name="city" th:value="${issuer.city}" />
+
+        <label>Téléphone</label>
+        <input type="tel" name="phone" th:value="${issuer.phone}" />
+
+        <label>Email</label>
+        <input type="email" name="email" th:value="${issuer.email}" />
+
+        <label>N° carte auto-entrepreneur <span style="color:#8f2d2d">*</span></label>
+        <input type="text" name="aeCardNumber" required th:value="${issuer.aeCardNumber}" />
+
+        <label>NIF <span style="color:#8f2d2d">*</span></label>
+        <input type="text" name="nif" required th:value="${issuer.nif}" />
+
+        <label>NIS (optionnel)</label>
+        <input type="text" name="nis" th:value="${issuer.nis}" />
+
+        <label>Description de l'activité (optionnel)</label>
+        <input type="text" name="activityDescription" th:value="${issuer.activityDescription}" />
+
+        <label>Compte bancaire / CCP (optionnel)</label>
+        <input type="text" name="bankOrCcpAccount" th:value="${issuer.bankOrCcpAccount}" />
+
+        <div class="row-actions">
+            <button class="btn primary" type="submit">Enregistrer</button>
+            <a class="btn" href="/">Annuler</a>
+        </div>
+    </form>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+</body>
+</html>

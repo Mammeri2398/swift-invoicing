@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Tableau de bord</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2>Tableau de bord</h2>
+
+    <div class="card">
+        <h3>Activité de l'année <span th:text="${stats.year}"></span></h3>
+        <p>Total factures émises et payées : <strong th:text="${totalFormatted}" class="money"></strong></p>
+        <p>Plafond annuel configuré : <strong th:text="${ceilingFormatted}" class="money"></strong></p>
+        <p>Progression du plafond : <strong th:text="${stats.percent}">0</strong> %</p>
+
+        <div th:if="${stats.alert100}" class="banner alert">Alerte : le plafond annuel de 5 000 000 DA est dépassé (100% et plus).</div>
+        <div th:if="${stats.warning80 and not stats.alert100}" class="banner warning">Attention : vous avez atteint 80% du plafond annuel.</div>
+    </div>
+
+    <h3>Dernières factures</h3>
+    <table>
+        <thead>
+        <tr><th>N°</th><th>Client</th><th>Date</th><th>Statut</th><th>Montant</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="inv : ${stats.recentInvoices}">
+            <td>
+                <span th:text="${inv.invoiceNumber}" />
+                <span th:if="${inv.status.name() == 'DRAFT'}" class="draft-badge">brouillon</span>
+            </td>
+            <td th:text="${inv.clientName != null ? inv.clientName : (inv.client != null ? inv.client.name : '-')}">-</td>
+            <td th:text="${inv.issueDate}">-</td>
+            <td>
+                <span class="status-badge" th:class="|status-${inv.status.name().toLowerCase()}|" th:text="${inv.status}">-</span>
+            </td>
+            <td class="text-right" th:text="${amountUtils.format(inv.totalAmount)}">0,00 DA</td>
+            <td>
+                <a class="btn small" th:href="@{/invoices/{id}(id=${inv.id})}">Voir</a>
+            </td>
+        </tr>
+        <tr th:if="${stats.recentInvoices.isEmpty()}"><td colspan="6" class="text-center">Aucune facture.</td></tr>
+        </tbody>
+    </table>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+</body>
+</html>

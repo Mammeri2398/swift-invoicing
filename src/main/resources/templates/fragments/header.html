@@ -1,0 +1,25 @@
+<div th:fragment="header">
+<header>
+    <div class="container">
+        <a href="/">Swift Invoicing</a>
+        <nav>
+            <a href="/">Tableau de bord</a>
+            <a href="/clients">Clients</a>
+            <a href="/invoices">Factures</a>
+            <a href="/invoices/new">Nouvelle facture</a>
+            <a href="/settings/issuer">Paramètres (Émetteur)</a>
+            <a href="/invoices/lookup">Recherche n° facture</a>
+        </nav>
+    </div>
+</header>
+<div class="container">
+    <div th:if="${success}" class="flash success" th:text="${success}"></div>
+    <div th:if="${error}" class="flash error" th:text="${error}"></div>
+</div>
+</div>
+
+<div th:fragment="footer">
+<div class="container">
+    <div class="footer">Swift Invoicing — Auto-entrepreneur (ANAE) · Algérie · Montants en DZD · TVA non applicable</div>
+</div>
+</div>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="'Facture ${invoice.invoiceNumber}'">Facture</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <div th:if="${invoice.status.name() == 'DRAFT'}" class="draft-badge" style="margin-bottom:12px;">BROUILLON — non encore émise</div>
+
+    <h2>Facture <span th:text="${invoice.invoiceNumber}">FA-0000-0000</span></h2>
+    <p class="small muted">
+        Année <span th:text="${invoice.invoiceYear}"></span> ·
+        Séquence <span th:text="${invoice.sequenceNumber}"></span> ·
+        Créée le <span th:text="${#temporals.format(invoice.createdAt, 'dd/MM/yyyy HH:mm')}"></span>
+        <span th:if="${invoice.issuedAt != null}" th:text="'| Émise le ' + ${#temporals.format(invoice.issuedAt, 'dd/MM/yyyy HH:mm')}"></span>
+    </p>
+
+    <div style="display:flex; gap:32px; margin-bottom:24px;">
+        <div>
+            <h3 style="margin-bottom:6px;">Client</h3>
+            <div th:text="${invoice.clientName != null ? invoice.clientName : (invoice.client != null ? invoice.client.name : '-')}">-</div>
+            <div th:text="${invoice.clientAddress != null ? invoice.clientAddress : (invoice.client != null ? invoice.client.address : '-')}" class="muted">-</div>
+            <div th:if="${invoice.clientNif != null}" th:text="'NIF : ' + ${invoice.clientNif}" class="muted small">-</div>
+        </div>
+        <div>
+            <h3 style="margin-bottom:6px;">Détails</h3>
+            <div th:text="'Date émission : ' + ${#temporals.format(invoice.issueDate, 'dd/MM/yyyy')}">-</div>
+            <div th:if="${invoice.dueDate != null}" th:text="'Échéance : ' + ${#temporals.format(invoice.dueDate, 'dd/MM/yyyy')}">-</div>
+            <div th:if="${invoice.paymentMethod != null}" th:text="'Mode de paiement : ' + ${invoice.paymentMethod}" class="muted">-</div>
+            <div th:if="${invoice.notes != null}" th:text="${invoice.notes}" class="muted small">-</div>
+        </div>
+    </div>
+
+    <h3>Lignes</h3>
+    <table>
+        <thead>
+        <tr><th style="width:4%">N°</th><th>Désignation</th><th style="width:12%">Unité</th><th class="text-right" style="width:14%">Qté</th><th class="text-right" style="width:18%">Prix unitaire</th><th class="text-right" style="width:18%">Total</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="line, stat : ${invoice.lines}">
+            <td th:text="${stat.index + 1}">1</td>
+            <td th:text="${line.description}">-</td>
+            <td th:text="${line.unit}" class="muted" th:if="${line.unit != null}" th:remove="tag">-</td>
+            <td class="text-right" th:text="${#numbers.formatDecimal(line.quantity, 3, 'COMMA', 3, 'POINT')}">-</td>
+            <td class="text-right money" th:text="${amountUtils.format(line.unitPrice)}">0,00 DA</td>
+            <td class="text-right money" th:text="${amountUtils.format(line.lineTotal)}">0,00 DA</td>
+        </tr>
+        <tr class="total-row">
+            <td colspan="4"></td>
+            <td class="text-right">Total à payer</td>
+            <td class="text-right money" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p><strong>Montant en lettres :</strong> <span th:text="${amountInWords.convert(invoice.totalAmount)}"></span></p>
+    <p class="small muted" th:text="${vatMention}">TVA non applicable</p>
+
+    <div class="btn-group no-print" style="margin:18px 0;">
+        <a class="btn" th:href="@{/invoices/{id}/pdf(id=${invoice.id})}">Télécharger le PDF</a>
+        <a class="btn primary" th:href="@{/invoices/{id}/edit(id=${invoice.id})}" th:if="${invoice.status.name() == 'DRAFT'}">Modifier</a>
+        <form th:action="@{/invoices/{id}/issue(id=${invoice.id})}" method="post" style="display:inline;"
+              th:if="${invoice.status.name() == 'DRAFT'}"
+              onsubmit="return confirm('Émettre cette facture ?');">
+            <button class="btn primary" type="submit">Émettre</button>
+        </form>
+        <form th:action="@{/invoices/{id}/pay(id=${invoice.id})}" method="post" style="display:inline;"
+              th:if="${invoice.status.name() == 'ISSUED'}">
+            <button class="btn" type="submit">Marquer payée</button>
+        </form>
+        <form th:action="@{/invoices/{id}/cancel(id=${invoice.id})}" method="post" style="display:inline;"
+              th:if="${invoice.status.name() != 'CANCELLED'}"
+              onsubmit="return confirm('Annuler cette facture ?');">
+            <button class="btn danger" type="submit">Annuler</button>
+        </form>
+        <form th:action="@{/invoices/{id}/delete(id=${invoice.id})}" method="post" style="display:inline;"
+              th:if="${invoice.status.name() == 'DRAFT'}"
+              onsubmit="return confirm('Supprimer ce brouillon ?');">
+            <button class="btn danger" type="submit">Supprimer</button>
+        </form>
+    </div>
+    <a class="btn no-print" href="/invoices">Retour à la liste</a>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+</body>
+</html>

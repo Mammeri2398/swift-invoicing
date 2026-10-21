@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Recherche de facture</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2>Rechercher une facture par numéro</h2>
+    <form method="get" class="no-print">
+        <input type="text" name="number" placeholder="Ex: FA-2026-0001" th:value="${number}" style="padding:6px 8px; width:260px;"/>
+        <button class="btn primary" type="submit">Rechercher</button>
+    </form>
+
+    <div th:if="${number != null}" style="margin-top:20px;">
+        <div th:if="${found}" class="flash success">
+            La facture <strong th:text="${number}"></strong> existe.
+        </div>
+        <div th:if="${not found}" class="flash error">
+            Aucune facture trouvée avec le numéro <strong th:text="${number}"></strong>.
+        </div>
+        <div th:if="${found and invoice != null}" class="card" style="margin-top:12px;">
+            <p><strong>N° :</strong> <span th:text="${invoice.invoiceNumber}"></span></p>
+            <p><strong>Client :</strong> <span th:text="${invoice.clientName != null ? invoice.clientName : (invoice.client != null ? invoice.client.name : '-')}"></span></p>
+            <p><strong>Statut :</strong> <span th:text="${invoice.status}"></span></p>
+            <p><strong>Total :</strong> <span th:text="${amountUtils.format(invoice.totalAmount)}"></span></p>
+            <a class="btn" th:href="@{/invoices/{id}(id=${invoice.id})}">Voir la facture</a>
+        </div>
+    </div>
+    <p class="no-print"><a class="btn" href="/">Retour</a></p>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+</body>
+</html>

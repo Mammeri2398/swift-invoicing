@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Factures</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2>Factures</h2>
+    <p class="no-print"><a class="btn primary" href="/invoices/new">+ Nouvelle facture</a></p>
+
+    <form class="inline-form no-print" method="get">
+        <label>Statut</label>
+        <select name="status">
+            <option value="">Tous</option>
+            <option th:each="s : ${statuses}" th:value="${s.name()}" th:selected="${selectedStatus == s.name()}">[[${s.name()}]]</option>
+        </select>
+        <label>Année</label>
+        <input type="number" name="year" min="2000" max="2100" th:value="${selectedYear}"/>
+        <label>Client</label>
+        <select name="client">
+            <option value="">Tous</option>
+            <option th:each="c : ${clients}" th:value="${c.id}" th:selected="${selectedClient == c.id}">[[${c.name}]]</option>
+        </select>
+        <label>Recherche (n° / client)</label>
+        <input type="text" name="search" th:value="${search}"/>
+        <button class="btn primary" type="submit">Filtrer</button>
+        <a class="btn" href="/invoices">Réinitialiser</a>
+    </form>
+
+    <table>
+        <thead>
+        <tr><th>N° facture</th><th>Client</th><th>Année</th><th>Date émission</th><th>Échéance</th><th>Statut</th><th>Total</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="inv : ${invoices}">
+            <td>
+                <a th:href="@{/invoices/{id}(id=${inv.id})}" th:text="${inv.invoiceNumber}">-</a>
+                <span th:if="${inv.status.name() == 'DRAFT'}" class="draft-badge">brouillon</span>
+            </td>
+            <td th:text="${inv.clientName != null ? inv.clientName : (inv.client != null ? inv.client.name : '-')}">-</td>
+            <td th:text="${inv.invoiceYear}">-</td>
+            <td th:text="${#temporals.format(inv.issueDate, 'dd/MM/yyyy')}">-</td>
+            <td th:text="${#temporals.format(inv.dueDate, 'dd/MM/yyyy')}" th:if="${inv.dueDate != null}" class="muted">-</td>
+            <td th:if="${inv.dueDate == null}" class="muted">-</td>
+            <td>
+                <span class="status-badge" th:class="|status-${inv.status.name().toLowerCase()}|" th:text="${inv.status}">-</span>
+            </td>
+            <td class="text-right money" th:text="${amountUtils.format(inv.totalAmount)}">0,00 DA</td>
+            <td class="no-print">
+                <a class="btn small" th:href="@{/invoices/{id}(id=${inv.id})}">Voir</a>
+                <a class="btn small" th:href="@{/invoices/{id}/pdf(id=${inv.id})}">PDF</a>
+                <a class="btn small" th:href="@{/invoices/{id}/edit(id=${inv.id})}" th:if="${inv.status.name() == 'DRAFT'}">Modifier</a>
+                <form th:action="@{/invoices/{id}/issue(id=${inv.id})}" method="post" style="display:inline;"
+                      th:if="${inv.status.name() == 'DRAFT'}"
+                      onsubmit="return confirm('Émettre cette facture ? Le numéro sera alors défini et la facture deviendra immuable.');">
+                    <button class="btn small primary" type="submit">Émettre</button>
+                </form>
+                <form th:action="@{/invoices/{id}/pay(id=${inv.id})}" method="post" style="display:inline;"
+                      th:if="${inv.status.name() == 'ISSUED'}">
+                    <button class="btn small" type="submit">Payer</button>
+                </form>
+                <form th:action="@{/invoices/{id}/cancel(id=${inv.id})}" method="post" style="display:inline;"
+                      th:if="${inv.status.name() != 'CANCELLED'}"
+                      onsubmit="return confirmationAnnulation();">
+                    <button class="btn small danger" type="submit">Annuler</button>
+                </form>
+                <form th:action="@{/invoices/{id}/delete(id=${inv.id})}" method="post" style="display:inline;"
+                      th:if="${inv.status.name() == 'DRAFT'}"
+                      onsubmit="return confirm('Supprimer ce brouillon ?');">
+                    <button class="btn small danger" type="supmit">Supprimer</button>
+                </form>
+            </td>
+        </tr>
+        <tr th:if="${invoices.isEmpty()}"><td colspan="8" class="text-center">Aucune facture.</td></tr>
+        </tbody>
+    </table>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+<script>
+    function confirmationAnnulation() {
+        return confirm("Annuler cette facture ? Le numéro est conservé et ne sera jamais réutilisé.");
+    }
+</script>
+</body>
+</html>

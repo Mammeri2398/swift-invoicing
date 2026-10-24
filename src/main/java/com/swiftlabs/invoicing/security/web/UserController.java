@@ -36,7 +36,10 @@ public class UserController {
 
     @GetMapping("/new")
     public String newForm(Model model) {
-        model.addAttribute("user", new User());
+        // Keep the submitted values when redirected back after a failed save
+        if (!model.containsAttribute("user")) {
+            model.addAttribute("user", new User());
+        }
         model.addAttribute("profiles", profileRepository.findAll());
         return "security/users/form";
     }
@@ -45,7 +48,9 @@ public class UserController {
     public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         User user = userService.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable."));
-        model.addAttribute("user", user);
+        if (!model.containsAttribute("user")) {
+            model.addAttribute("user", user);
+        }
         model.addAttribute("profiles", profileRepository.findAll());
         return "security/users/form";
     }
@@ -64,7 +69,7 @@ public class UserController {
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
             redirectAttributes.addFlashAttribute("user", user);
-            return "redirect:/users/new";
+            return user.getId() == null ? "redirect:/users/new" : "redirect:/users/" + user.getId() + "/edit";
         }
     }
 

@@ -36,14 +36,14 @@ public class DataInitializer implements CommandLineRunner {
             adminProfile = profileRepository.save(newProfile);
         }
 
-        User admin = userRepository.findByUsername("admin").orElse(null);
-        if (admin == null) {
-            admin = new User();
+        // Only seed the default admin once; never overwrite an existing password
+        if (userRepository.findByUsername("admin").isEmpty()) {
+            User admin = new User();
             admin.setUsername("admin");
             admin.setEmail("admin@swiftinvoicing.local");
             admin.setProfile(adminProfile);
+            admin.setPassword(passwordEncoder.encode("admin"));
+            userRepository.save(admin);
         }
-        admin.setPassword(passwordEncoder.encode("admin"));
-        userRepository.save(admin);
     }
 }

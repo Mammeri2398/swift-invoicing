@@ -30,6 +30,9 @@ public class IssuerService {
 
     @Transactional
     public Issuer save(Issuer issuer) {
+        requireText(issuer.getFullName(), "Le nom complet est obligatoire.");
+        requireText(issuer.getAeCardNumber(), "Le numéro de carte auto-entrepreneur est obligatoire.");
+        requireText(issuer.getNif(), "Le NIF est obligatoire.");
         if (issuer.getId() == null) {
             issuer.setId(1L);
         }
@@ -39,6 +42,12 @@ public class IssuerService {
             issuer.setId(1L);
         }
         return issuerRepository.save(issuer);
+    }
+
+    private void requireText(String value, String message) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new BusinessException(message);
+        }
     }
 
     public String getVatMention() {

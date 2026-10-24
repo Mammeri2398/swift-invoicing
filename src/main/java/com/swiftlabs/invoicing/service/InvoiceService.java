@@ -70,6 +70,19 @@ public class InvoiceService {
 
     @Transactional
     public Invoice saveDraft(Invoice invoice, List<InvoiceLineForm> lineForms) {
+        if (invoice.getId() != null) {
+            // Check the stored status, not the incoming object's, and only copy editable fields
+            Invoice existing = findById(invoice.getId());
+            if (!existing.isDraft()) {
+                throw new BusinessException("Seules les factures brouillon peuvent être modifiées.");
+            }
+            existing.setClient(invoice.getClient());
+            existing.setIssueDate(invoice.getIssueDate());
+            existing.setDueDate(invoice.getDueDate());
+            existing.setPaymentMethod(invoice.getPaymentMethod());
+            existing.setNotes(invoice.getNotes());
+            invoice = existing;
+        }
         if (!invoice.isDraft()) {
             throw new BusinessException("Seules les factures brouillon peuvent être modifiées.");
         }
@@ -220,8 +233,13 @@ public class InvoiceService {
         if (status != null && !status.isEmpty() && !inv.getStatus().name().equals(status)) {
             return false;
         }
-        if (year != null && !inv.getInvoiceYear().equals(year)) {
-            return false;
+        if (year != null) {
+            // Drafts have no invoice year yet: fall back to the issue date
+            Integer invYear = inv.getInvoiceYear() != null ? inv.getInvoiceYear()
+                : (inv.getIssueDate() != null ? Integer.valueOf(inv.getIssueDate().getYear()) : null);
+            if (!year.equals(invYear)) {
+                return false;
+            }
         }
         if (clientId != null && (inv.getClient() == null || !inv.getClient().getId().equals(clientId))) {
             return false;

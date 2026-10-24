@@ -9,6 +9,7 @@
 <div th:replace="~{fragments/header :: header}"></div>
 <div class="container">
     <h2 th:text="${profile.id != null ? 'Modifier le profil' : 'Nouveau profil'}">Profil</h2>
+    <div th:if="${error}" class="flash error" th:text="${error}"></div>
 
     <form th:action="@{/profiles/save}" method="post" style="max-width: 500px;">
         <input type="hidden" name="id" th:value="${profile.id}"/>
@@ -18,6 +19,20 @@
 
         <label>Description</label>
         <input type="text" name="description" th:value="${profile.description}" />
+
+        <fieldset style="margin-top:18px; border:1px solid #d5dbe0; border-radius:6px; padding:10px 14px;">
+            <legend>Privilèges</legend>
+            <label th:each="priv : ${allPrivileges}" style="display:flex; align-items:flex-start; gap:8px; margin:6px 0; font-weight:normal;">
+                <input type="checkbox" name="privilegeIds" th:value="${priv.id}" th:id="${'priv-' + priv.id}"
+                       th:checked="${selectedPrivilegeIds.contains(priv.id)}" style="width:auto; margin-top:3px;"/>
+                <span>
+                    <strong th:text="${priv.name}">Nom</strong>
+                    <span class="small muted" th:text="${priv.code}">CODE</span><br/>
+                    <span class="small" th:text="${priv.description}">Description</span>
+                </span>
+            </label>
+            <p th:if="${allPrivileges.isEmpty()}" class="muted">Aucun privilège défini.</p>
+        </fieldset>
 
         <div class="row-actions" style="margin-top:18px;">
             <button class="btn primary" type="submit">Enregistrer</button>

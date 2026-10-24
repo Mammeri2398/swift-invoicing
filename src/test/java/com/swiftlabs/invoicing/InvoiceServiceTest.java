@@ -84,6 +84,37 @@ class InvoiceServiceTest {
     }
 
     @Test
+    void savingADraftOverAnIssuedInvoiceFails() {
+        Client c = particular();
+        Invoice issued = invoiceService.issue(draft(c, LocalDate.of(2026, 3, 1), new BigDecimal("1.000"), new BigDecimal("10.00")).getId());
+
+        // Simulates POST /invoices/save with the id of an issued invoice (new object, status DRAFT)
+        Invoice forged = invoiceService.newDraft();
+        forged.setId(issued.getId());
+        forged.setClient(c);
+        InvoiceLineForm lf = new InvoiceLineForm();
+        lf.setDescription("Modifié");
+        lf.setQuantity(new BigDecimal("1.000"));
+        lf.setUnitPrice(new BigDecimal("999.00"));
+        assertThatThrownBy(() -> invoiceService.saveDraft(forged, List.of(lf)))
+            .isInstanceOf(BusinessException.class);
+
+        Invoice reloaded = invoiceService.findById(issued.getId());
+        assertThat(reloaded.getStatus()).isEqualTo(InvoiceStatus.ISSUED);
+        assertThat(reloaded.getInvoiceNumber()).isEqualTo(issued.getInvoiceNumber());
+    }
+
+    @Test
+    void listFilteredByYearIncludesDraftsByIssueDate() {
+        Client c = particular();
+        Invoice d = draft(c, LocalDate.of(2026, 5, 1), new BigDecimal("1.000"), new BigDecimal("10.00"));
+        Invoice issued = invoiceService.issue(draft(c, LocalDate.of(2025, 5, 1), new BigDecimal("1.000"), new BigDecimal("10.00")).getId());
+
+        assertThat(invoiceService.list(null, 2026, null, null)).extracting(Invoice::getId).containsExactly(d.getId());
+        assertThat(invoiceService.list(null, 2025, null, null)).extracting(Invoice::getId).containsExactly(issued.getId());
+    }
+
+    @Test
     void invoiceNumberUniquenessCheckWorks() {
         Client c = particular();
         // Pre-seed an issued invoice with a number directly in the database

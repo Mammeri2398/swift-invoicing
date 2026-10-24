@@ -14,4 +14,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.profile p LEFT JOIN FETCH p.privileges WHERE u.username = ?1")
     Optional<User> findByUsernameWithPrivileges(String username);
+
+    @Query("SELECT COUNT(u) > 0 FROM User u JOIN u.profile p JOIN p.privileges pr "
+        + "WHERE u.enabled = true AND pr.code = ?1 AND p.id <> ?2")
+    boolean existsEnabledUserWithPrivilegeOutsideProfile(String privilegeCode, Long profileId);
 }

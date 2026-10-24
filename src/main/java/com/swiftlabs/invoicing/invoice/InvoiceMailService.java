@@ -1,0 +1,141 @@
+package com.swiftlabs.invoicing.invoice;
+
+import com.swiftlabs.invoicing.common.AmountUtils;
+import com.swiftlabs.invoicing.common.BusinessException;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.mail.MailException;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
+
+/** Sends an issued invoice to the client by email, with its PDF attached, and records it in the history. */
+@Service
+@Transactional(readOnly = true)
+public class InvoiceMailService {
+
+    private static final Logger log = LoggerFactory.getLogger(InvoiceMailService.class);
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private final InvoiceService invoiceService;
+    private final InvoicePdfService pdfService;
+    private final InvoiceAudit audit;
+    private final JavaMailSender mailSender;
+    private final boolean mailEnabled;
+    private final String fromAddress;
+
+    public InvoiceMailService(InvoiceService invoiceService, InvoicePdfService pdfService, InvoiceAudit audit,
+                              @Autowired(required = false) JavaMailSender mailSender,
+                              @Value("${mail.enabled:false}") boolean mailEnabled,
+                              @Value("${mail.from:}") String mailFrom,
+                              @Value("${spring.mail.username:}") String mailUsername) {
+        this.invoiceService = invoiceService;
+        this.pdfService = pdfService;
+        this.audit = audit;
+        this.mailSender = mailSender;
+        this.mailEnabled = mailEnabled && mailSender != null;
+        // Most SMTP servers only accept their own account as sender
+        this.fromAddress = !mailFrom.isBlank() ? mailFrom.trim() : mailUsername.trim();
+    }
+
+    /** False when no mail server is configured (development): the page then explains how to set one up. */
+    public boolean isEnabled() {
+        return mailEnabled && !fromAddress.isEmpty();
+    }
+
+    public String getFromAddress() {
+        return fromAddress;
+    }
+
+    /** The email proposed for an invoice: the client's address and a ready-to-send message. */
+    public InvoiceEmailForm prepare(Long invoiceId) {
+        Invoice invoice = sendable(invoiceId);
+        InvoiceEmailForm form = new InvoiceEmailForm();
+        form.setTo(invoice.getClient().getEmail());
+        form.setSubject("Facture " + invoice.getInvoiceNumber() + " - " + senderName(invoice));
+        form.setMessage(defaultMessage(invoice));
+        return form;
+    }
+
+    @Transactional
+    public void send(Long invoiceId, InvoiceEmailForm form) {
+        Invoice invoice = sendable(invoiceId);
+        if (!isEnabled()) {
+            throw new BusinessException("L'envoi d'emails n'est pas configuré sur ce serveur (variables MAIL_ENABLED, MAIL_HOST, MAIL_FROM).");
+        }
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
+            helper.setFrom(new InternetAddress(fromAddress, senderName(invoice), StandardCharsets.UTF_8.name()));
+            // Replies go to the auto-entrepreneur, not to the sending account
+            if (invoice.getIssuerEmail() != null && !invoice.getIssuerEmail().isBlank()) {
+                helper.setReplyTo(invoice.getIssuerEmail());
+            }
+            helper.setTo(form.getTo());
+            if (form.hasCc()) {
+                helper.setCc(form.getCc());
+            }
+            helper.setSubject(form.getSubject());
+            helper.setText(form.getMessage());
+            helper.addAttachment(invoice.getInvoiceNumber() + ".pdf",
+                new ByteArrayResource(pdfService.render(invoiceService.findWithLines(invoiceId))), "application/pdf");
+            mailSender.send(message);
+        } catch (MessagingException | UnsupportedEncodingException ex) {
+            throw new BusinessException("to", "Adresse email invalide.");
+        } catch (MailException | IOException ex) {
+            log.error("Could not send invoice {} by email", invoice.getInvoiceNumber(), ex);
+            throw new BusinessException("L'email n'a pas pu être envoyé. Vérifiez la configuration du serveur mail, puis réessayez.");
+        }
+        audit.record(invoice, InvoiceEvent.Action.SENT, form.hasCc() ? form.getTo() + ", cc " + form.getCc() : form.getTo());
+    }
+
+    /** Only issued and paid invoices are sent: a draft has no number, a cancelled invoice is void. */
+    private Invoice sendable(Long invoiceId) {
+        Invoice invoice = invoiceService.findById(invoiceId);
+        if (invoice.getStatus() != InvoiceStatus.ISSUED && invoice.getStatus() != InvoiceStatus.PAID) {
+            throw new BusinessException("Seule une facture émise ou payée peut être envoyée par email.");
+        }
+        return invoice;
+    }
+
+    private static String senderName(Invoice invoice) {
+        return invoice.getIssuerTradeName() != null && !invoice.getIssuerTradeName().isBlank()
+            ? invoice.getIssuerTradeName() : invoice.getIssuerFullName();
+    }
+
+    private static String defaultMessage(Invoice invoice) {
+        StringBuilder text = new StringBuilder("Bonjour,\n\n")
+            .append("Veuillez trouver ci-joint la facture ").append(invoice.getInvoiceNumber())
+            .append(" du ").append(invoice.getIssueDate().format(DATE))
+            .append(", d'un montant de ").append(AmountUtils.format(invoice.getTotalAmount()));
+        if (invoice.getStatus() == InvoiceStatus.PAID) {
+            text.append(".\nCette facture est réglée : merci pour votre paiement.\n");
+        } else if (invoice.getDueDate() != null) {
+            text.append(", payable avant le ").append(invoice.getDueDate().format(DATE)).append(".\n");
+        } else {
+            text.append(".\n");
+        }
+        if (invoice.getStatus() != InvoiceStatus.PAID && invoice.getIssuerBankAccount() != null
+                && !invoice.getIssuerBankAccount().isBlank()) {
+            text.append("Règlement : ").append(invoice.getIssuerBankAccount()).append("\n");
+        }
+        text.append("\nCordialement,\n").append(invoice.getIssuerFullName());
+        if (invoice.getIssuerPhone() != null && !invoice.getIssuerPhone().isBlank()) {
+            text.append("\n").append(invoice.getIssuerPhone());
+        }
+        return text.toString();
+    }
+}

@@ -21,7 +21,7 @@ public class InvoiceEvent {
 
     /** What happened to the invoice. */
     public enum Action {
-        CREATED, ISSUED, PAID, CANCELLED
+        CREATED, ISSUED, PAID, CANCELLED, SENT
     }
 
     @Id
@@ -43,14 +43,19 @@ public class InvoiceEvent {
     @Column(name = "occurred_at", nullable = false)
     private LocalDateTime occurredAt;
 
+    /** Optional precision, e.g. the recipients of an email. */
+    @Column(name = "detail", length = 500)
+    private String detail;
+
     protected InvoiceEvent() {
     }
 
-    public InvoiceEvent(Invoice invoice, Action action, String username, LocalDateTime occurredAt) {
+    public InvoiceEvent(Invoice invoice, Action action, String username, LocalDateTime occurredAt, String detail) {
         this.invoice = invoice;
         this.action = action;
         this.username = username;
         this.occurredAt = occurredAt;
+        this.detail = detail;
     }
 
     public Long getId() {
@@ -67,5 +72,9 @@ public class InvoiceEvent {
 
     public LocalDateTime getOccurredAt() {
         return occurredAt;
+    }
+
+    public String getDetail() {
+        return detail;
     }
 }

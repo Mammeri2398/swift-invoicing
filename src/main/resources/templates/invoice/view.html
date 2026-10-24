@@ -32,6 +32,8 @@
                   data-confirm="Émettre cette facture ? Elle recevra son numéro et ne sera plus modifiable.">
                 <button type="submit" class="btn btn-primary"><span class="icon">send</span>Émettre</button>
             </form>
+            <a th:if="${(status == 'ISSUED' or status == 'PAID') and u != null and u.can('ISSUE_INVOICE')}"
+               th:href="@{/invoices/{id}/email(id=${invoice.id})}" class="btn btn-secondary"><span class="icon">mail</span>Envoyer par email</a>
             <form th:if="${status == 'ISSUED' and u != null and u.can('ISSUE_INVOICE')}" th:action="@{/invoices/{id}/pay(id=${invoice.id})}" method="post"
                   data-confirm="Marquer cette facture comme payée ?">
                 <button type="submit" class="btn btn-success"><span class="icon">price_check</span>Marquer payée</button>
@@ -121,6 +123,7 @@
                     <span th:case="'ISSUED'" class="icon icon-sm">send</span>
                     <span th:case="'PAID'" class="icon icon-sm">price_check</span>
                     <span th:case="'CANCELLED'" class="icon icon-sm">block</span>
+                    <span th:case="'SENT'" class="icon icon-sm">mail</span>
                 </span>
                 <div>
                     <p class="font-medium" th:switch="${event.action.name()}">
@@ -128,7 +131,9 @@
                         <th:block th:case="'ISSUED'">Facture émise</th:block>
                         <th:block th:case="'PAID'">Marquée payée</th:block>
                         <th:block th:case="'CANCELLED'">Annulée</th:block>
+                        <th:block th:case="'SENT'">Envoyée par email</th:block>
                     </p>
+                    <p th:if="${event.detail}" class="break-all text-body-sm" th:text="${'à ' + event.detail}">à client@example.dz</p>
                     <p class="text-body-sm text-on-surface-variant">
                         <span th:text="${#temporals.format(event.occurredAt, 'dd/MM/yyyy à HH:mm')}">01/01/2026 à 10:00</span>
                         · <span th:if="${event.username}" th:text="${event.username}">admin</span>

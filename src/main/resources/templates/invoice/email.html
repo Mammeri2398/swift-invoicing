@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(${'Envoyer la facture ' + invoice.invoiceNumber}, ~{::main}, ~{})}">
+<body>
+<main class="page">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane">
+        <a th:href="@{/invoices}">Factures</a><span class="icon icon-xs">chevron_right</span>
+        <a th:href="@{/invoices/{id}(id=${invoice.id})}" th:text="${invoice.invoiceNumber}">FA-2026-0001</a><span class="icon icon-xs">chevron_right</span>
+        <span class="text-primary">Envoi par email</span>
+    </nav>
+
+    <form th:action="@{/invoices/{id}/email/send(id=${invoice.id})}" method="post" th:object="${mail}">
+        <div class="page-header">
+            <div>
+                <p class="page-eyebrow" th:text="${'Facture ' + invoice.invoiceNumber}">Facture FA-2026-0001</p>
+                <h1 class="page-title">Envoyer par email</h1>
+                <p class="page-subtitle">La facture est jointe en PDF. Les réponses du client arriveront à l'adresse email de votre profil émetteur.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a th:href="@{/invoices/{id}(id=${invoice.id})}" class="btn btn-secondary">Annuler</a>
+                <button type="submit" class="btn btn-primary" th:disabled="${!mailEnabled}"><span class="icon">send</span>Envoyer</button>
+            </div>
+        </div>
+
+        <div th:unless="${mailEnabled}" class="alert alert-warning mb-6">
+            <span class="icon">mail_lock</span>
+            <div>
+                <p class="font-semibold">L'envoi d'emails n'est pas configuré</p>
+                <p>Renseignez le serveur mail de l'application (variables <code>MAIL_ENABLED</code>, <code>MAIL_HOST</code>, <code>MAIL_PORT</code>,
+                    <code>MAIL_USERNAME</code>, <code>MAIL_PASSWORD</code> et <code>MAIL_FROM</code>), puis redémarrez-la.
+                    En attendant, vous pouvez télécharger le PDF et l'envoyer depuis votre messagerie.</p>
+            </div>
+        </div>
+
+        <div class="mb-6 empty:hidden"><div th:replace="~{layout/fragments :: formErrors}"></div></div>
+
+        <div class="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-3">
+            <section class="card lg:col-span-2">
+                <div class="card-header"><h2 class="card-title"><span class="icon">mail</span>Message</h2></div>
+                <div class="card-body form-grid">
+                    <div class="field">
+                        <label class="label" for="to">Destinataire <span class="required">*</span></label>
+                        <input class="input" th:errorclass="input-invalid" th:field="*{to}" type="email" required maxlength="254"
+                               placeholder="client@example.dz" autocomplete="off"/>
+                        <p th:replace="~{layout/fragments :: fieldError('to')}"></p>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="cc">Copie à <span class="optional">Optionnel</span></label>
+                        <input class="input" th:errorclass="input-invalid" th:field="*{cc}" type="email" maxlength="254" autocomplete="off"/>
+                        <p th:replace="~{layout/fragments :: fieldError('cc')}"></p>
+                    </div>
+                    <div class="field md:col-span-2">
+                        <label class="label" for="subject">Objet <span class="required">*</span></label>
+                        <input class="input" th:errorclass="input-invalid" th:field="*{subject}" type="text" required maxlength="200"/>
+                        <p th:replace="~{layout/fragments :: fieldError('subject')}"></p>
+                    </div>
+                    <div class="field md:col-span-2">
+                        <label class="label" for="message">Message <span class="required">*</span></label>
+                        <textarea class="input" th:errorclass="input-invalid" th:field="*{message}" rows="12" required maxlength="5000"></textarea>
+                        <p th:replace="~{layout/fragments :: fieldError('message')}"></p>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="card">
+                <div class="card-header"><h2 class="card-title"><span class="icon">info</span>Envoi</h2></div>
+                <dl class="card-body divide-y divide-surface-container text-body-sm">
+                    <div class="flex justify-between gap-3 py-2">
+                        <dt class="text-on-surface-variant">Client</dt>
+                        <dd class="text-right font-medium" th:text="${invoice.clientName}">Client</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 py-2">
+                        <dt class="text-on-surface-variant">Montant</dt>
+                        <dd class="font-medium tabular-nums" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 py-2">
+                        <dt class="text-on-surface-variant">Pièce jointe</dt>
+                        <dd class="inline-flex items-center gap-1 font-medium"><span class="icon icon-sm text-error">picture_as_pdf</span>
+                            <span th:text="${invoice.invoiceNumber + '.pdf'}">FA-2026-0001.pdf</span></dd>
+                    </div>
+                    <div class="flex justify-between gap-3 py-2">
+                        <dt class="text-on-surface-variant">Expéditeur</dt>
+                        <dd class="break-all text-right" th:text="${#strings.isEmpty(fromAddress) ? 'non configuré' : fromAddress}">factures@example.dz</dd>
+                    </div>
+                    <div class="flex justify-between gap-3 py-2">
+                        <dt class="text-on-surface-variant">Réponses à</dt>
+                        <dd class="break-all text-right" th:text="${#strings.isEmpty(invoice.issuerEmail) ? 'expéditeur' : invoice.issuerEmail}">vous@example.dz</dd>
+                    </div>
+                </dl>
+            </aside>
+        </div>
+    </form>
+</main>
+</body>
+</html>

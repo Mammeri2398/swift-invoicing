@@ -32,9 +32,16 @@ public class InvoiceAudit {
     /** Records that the current user performed {@code action} on the invoice. */
     @Transactional(propagation = Propagation.MANDATORY)
     public void record(Invoice invoice, InvoiceEvent.Action action) {
+        record(invoice, action, null);
+    }
+
+    /** Same, with a precision shown in the history (e.g. the recipients of an email). */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void record(Invoice invoice, InvoiceEvent.Action action, String detail) {
         String username = currentUsername();
-        eventRepository.save(new InvoiceEvent(invoice, action, username, LocalDateTime.now(clock)));
-        log.info("Invoice {} ({}): {} by {}", invoice.getId(), invoice.getInvoiceNumber(), action, username);
+        eventRepository.save(new InvoiceEvent(invoice, action, username, LocalDateTime.now(clock), detail));
+        log.info("Invoice {} ({}): {} by {}{}", invoice.getId(), invoice.getInvoiceNumber(), action, username,
+            detail != null ? " (" + detail + ")" : "");
     }
 
     /** Forgets the history of a draft that is being deleted (a draft has no legal existence). */

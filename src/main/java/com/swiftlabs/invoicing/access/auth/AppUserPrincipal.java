@@ -30,17 +30,20 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
     private final boolean enabled;
     private final boolean locked;
     private final boolean mustChangePassword;
+    private final boolean twoFactorEnabled;
     private final String profileName;
     private final Set<GrantedAuthority> authorities;
 
     private AppUserPrincipal(Long id, String username, String passwordHash, boolean enabled, boolean locked,
-                             boolean mustChangePassword, String profileName, Set<GrantedAuthority> authorities) {
+                             boolean mustChangePassword, boolean twoFactorEnabled, String profileName,
+                             Set<GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
         this.passwordHash = passwordHash;
         this.enabled = enabled;
         this.locked = locked;
         this.mustChangePassword = mustChangePassword;
+        this.twoFactorEnabled = twoFactorEnabled;
         this.profileName = profileName;
         this.authorities = Set.copyOf(authorities);
     }
@@ -52,12 +55,17 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
             .map(SimpleGrantedAuthority::new)
             .collect(Collectors.toSet());
         return new AppUserPrincipal(user.getId(), user.getUsername(), user.getPassword(), user.isEnabled(),
-            user.isLocked(now), user.isMustChangePassword(), user.getProfile().getName(), authorities);
+            user.isLocked(now), user.isMustChangePassword(), user.isTotpEnabled(), user.getProfile().getName(), authorities);
     }
 
     /** Same user once the forced password change is done. */
     public AppUserPrincipal withPasswordChanged() {
-        return new AppUserPrincipal(id, username, null, enabled, locked, false, profileName, authorities);
+        return new AppUserPrincipal(id, username, null, enabled, locked, false, twoFactorEnabled, profileName, authorities);
+    }
+
+    /** Same user once two-factor login has been turned on or off. */
+    public AppUserPrincipal withTwoFactorEnabled(boolean enabled) {
+        return new AppUserPrincipal(id, username, null, this.enabled, locked, mustChangePassword, enabled, profileName, authorities);
     }
 
     public Long getId() {
@@ -70,6 +78,10 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
 
     public boolean isMustChangePassword() {
         return mustChangePassword;
+    }
+
+    public boolean isTwoFactorEnabled() {
+        return twoFactorEnabled;
     }
 
     @Override

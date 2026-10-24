@@ -20,7 +20,7 @@ public class ForcePasswordChangeFilter extends OncePerRequestFilter {
     public static final String CHANGE_PASSWORD_URL = "/account/password";
 
     private static final List<String> ALLOWED_PREFIXES =
-        List.of(CHANGE_PASSWORD_URL, "/perform-logout", "/css/", "/js/", "/fonts/", "/images/", "/error");
+        List.of(CHANGE_PASSWORD_URL, "/login/verify", "/perform-logout", "/css/", "/js/", "/fonts/", "/images/", "/error");
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)

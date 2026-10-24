@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.access.user;
 import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
 import com.swiftlabs.invoicing.access.auth.SessionService;
 import com.swiftlabs.invoicing.access.profile.ProfileService;
+import com.swiftlabs.invoicing.access.twofactor.TwoFactorService;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
@@ -31,13 +32,15 @@ public class UserController {
     private final UserService userService;
     private final ProfileService profileService;
     private final SessionService sessionService;
+    private final TwoFactorService twoFactorService;
     private final Clock clock;
 
     public UserController(UserService userService, ProfileService profileService, SessionService sessionService,
-                          Clock clock) {
+                          TwoFactorService twoFactorService, Clock clock) {
         this.userService = userService;
         this.profileService = profileService;
         this.sessionService = sessionService;
+        this.twoFactorService = twoFactorService;
         this.clock = clock;
     }
 
@@ -101,6 +104,17 @@ public class UserController {
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
+        return "redirect:/users";
+    }
+
+    /** Lost phone and recovery codes: the user logs in with the password alone and sets it up again. */
+    @PostMapping("/{id}/reset-two-factor")
+    public String resetTwoFactor(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        User user = userService.findById(id).orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+        twoFactorService.reset(id);
+        sessionService.expireSessions(user.getUsername(), null);
+        redirectAttributes.addFlashAttribute("success", "Double authentification réinitialisée pour " + user.getUsername()
+            + " : à sa prochaine connexion, le mot de passe suffira et la configuration lui sera redemandée si son profil l'exige.");
         return "redirect:/users";
     }
 

@@ -47,6 +47,8 @@
                             <span th:if="${user.isLocked(now)}" class="badge badge-danger"
                                   th:title="${'Jusqu''à ' + #temporals.format(user.lockedUntil, 'HH:mm')}">Verrouillé</span>
                             <span th:if="${user.mustChangePassword}" class="badge badge-info">Mot de passe à changer</span>
+                            <span th:if="${user.totpEnabled}" class="badge badge-success" title="Double authentification activée">
+                                <span class="icon icon-sm">verified_user</span>2FA</span>
                         </div>
                     </td>
                     <td class="text-on-surface-variant"
@@ -57,6 +59,11 @@
                             <form th:action="@{/users/{id}/reset-password(id=${user.id})}" method="post"
                                   th:attr="data-confirm=${'Générer un nouveau mot de passe temporaire pour ' + user.username + ' ? Ses sessions seront fermées.'}">
                                 <button type="submit" class="btn-icon" title="Réinitialiser le mot de passe" aria-label="Réinitialiser le mot de passe"><span class="icon">lock_reset</span></button>
+                            </form>
+                            <form th:if="${user.totpEnabled}" th:action="@{/users/{id}/reset-two-factor(id=${user.id})}" method="post"
+                                  th:attr="data-confirm=${'Réinitialiser la double authentification de ' + user.username + ' (téléphone perdu) ? Ses sessions seront fermées.'}">
+                                <button type="submit" class="btn-icon" title="Réinitialiser la double authentification"
+                                        aria-label="Réinitialiser la double authentification"><span class="icon">phonelink_erase</span></button>
                             </form>
                             <form th:action="@{/users/{id}/delete(id=${user.id})}" method="post"
                                   th:attr="data-confirm=${'Supprimer l''utilisateur ' + user.username + ' ?'}">

@@ -56,7 +56,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static String rule(HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         String method = request.getMethod();
-        if ("POST".equals(method) && path.equals("/perform-login")) {
+        if ("POST".equals(method) && (path.equals("/perform-login") || path.equals("/login/verify"))) {
             return "login";
         }
         if ("POST".equals(method) && (path.equals("/forgot-password/send") || path.equals("/reset-password/save"))) {

@@ -35,6 +35,12 @@ public class LoginAttemptListener {
     @Transactional
     public void onSuccess(AuthenticationSuccessEvent event) {
         String username = event.getAuthentication().getName();
+        // The code is still to come: failures are not reset yet (see TwoFactorService#verifyLogin),
+        // otherwise logging in again with the password would give unlimited tries at the code
+        if (event.getAuthentication().getPrincipal() instanceof AppUserPrincipal principal && principal.isTwoFactorEnabled()) {
+            log.info("Password accepted for '{}', two-factor code required", username);
+            return;
+        }
         userRepository.findByUsername(username).ifPresent(user -> user.recordSuccessfulLogin(LocalDateTime.now(clock)));
         log.info("Login succeeded for '{}'", username);
     }

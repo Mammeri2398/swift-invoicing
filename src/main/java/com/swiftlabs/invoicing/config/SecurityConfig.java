@@ -3,6 +3,8 @@ package com.swiftlabs.invoicing.config;
 import com.swiftlabs.invoicing.access.auth.ForcePasswordChangeFilter;
 import com.swiftlabs.invoicing.access.auth.RateLimitFilter;
 import com.swiftlabs.invoicing.access.auth.RateLimiter;
+import com.swiftlabs.invoicing.access.twofactor.TwoFactorFilter;
+import com.swiftlabs.invoicing.access.twofactor.TwoFactorLoginSuccessHandler;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +22,6 @@ import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
-import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
@@ -64,7 +65,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, SessionRegistry sessionRegistry, RateLimiter rateLimiter,
-                                           SecurityProperties properties) throws Exception {
+                                           SecurityProperties properties,
+                                           TwoFactorLoginSuccessHandler loginSuccessHandler) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_URLS).permitAll()
@@ -72,7 +74,7 @@ public class SecurityConfig {
             .formLogin(form -> form
                 .loginPage("/login")
                 .loginProcessingUrl("/perform-login")
-                .successHandler(loginSuccessHandler())
+                .successHandler(loginSuccessHandler)
                 // Same message for every failure (unknown user, wrong password, locked, disabled)
                 .failureUrl("/login?error")
                 .permitAll())
@@ -98,7 +100,9 @@ public class SecurityConfig {
                     "camera=(), microphone=(), geolocation=(), payment=(), usb=()")))
             // Per-IP limits on login, password reset and the public lookup (HTTP 429 beyond)
             .addFilterBefore(new RateLimitFilter(rateLimiter, properties), UsernamePasswordAuthenticationFilter.class)
-            .addFilterAfter(new ForcePasswordChangeFilter(), AuthorizationFilter.class);
+            // Code still to type, or two-factor login to set up, before the forced password change check
+            .addFilterAfter(new TwoFactorFilter(properties.twoFactor().requiredFor()), AuthorizationFilter.class)
+            .addFilterAfter(new ForcePasswordChangeFilter(), TwoFactorFilter.class);
         return http.build();
     }
 
@@ -117,11 +121,10 @@ public class SecurityConfig {
         return encoder;
     }
 
-    /** Back to the page that required the login, otherwise "/" (the user's first allowed section). */
-    private SavedRequestAwareAuthenticationSuccessHandler loginSuccessHandler() {
-        SavedRequestAwareAuthenticationSuccessHandler handler = new SavedRequestAwareAuthenticationSuccessHandler();
-        handler.setDefaultTargetUrl("/");
-        return handler;
+    /** Asks for the two-factor code when needed, then back to the page that required the login, otherwise "/". */
+    @Bean
+    public TwoFactorLoginSuccessHandler loginSuccessHandler() {
+        return new TwoFactorLoginSuccessHandler();
     }
 
     @Bean

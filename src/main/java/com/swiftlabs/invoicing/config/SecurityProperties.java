@@ -4,6 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
 import java.time.Duration;
+import java.util.List;
 
 /** Security settings, bound from the {@code app.security.*} keys of application.properties. */
 @ConfigurationProperties(prefix = "app.security")
@@ -12,6 +13,7 @@ public record SecurityProperties(
     @DefaultValue Lockout lockout,
     @DefaultValue("60m") Duration resetTokenValidity,
     @DefaultValue RateLimit rateLimit,
+    @DefaultValue TwoFactor twoFactor,
     /* Password of the admin account created on first start; generated when empty. */
     String initialAdminPassword
 ) {
@@ -35,6 +37,18 @@ public record SecurityProperties(
             login = login != null ? login : new Limit(10, Duration.ofMinutes(5));
             passwordReset = passwordReset != null ? passwordReset : new Limit(5, Duration.ofMinutes(15));
             lookup = lookup != null ? lookup : new Limit(30, Duration.ofMinutes(1));
+        }
+    }
+
+    /**
+     * Two-factor login. Users holding any of the {@code requiredFor} privileges must set it up
+     * before using the application (empty: optional for everyone).
+     */
+    public record TwoFactor(List<String> requiredFor, @DefaultValue("Swift Invoicing") String issuer) {
+
+        public TwoFactor {
+            requiredFor = requiredFor == null ? List.of()
+                : requiredFor.stream().map(String::trim).filter(code -> !code.isEmpty()).toList();
         }
     }
 

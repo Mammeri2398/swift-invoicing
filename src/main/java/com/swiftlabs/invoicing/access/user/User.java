@@ -58,6 +58,17 @@ public class User {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    /** Base32 secret shared with the authenticator app; null until two-factor login is set up. */
+    @Column(name = "totp_secret", length = 64)
+    private String totpSecret;
+
+    @Column(name = "totp_enabled", nullable = false)
+    private boolean totpEnabled;
+
+    /** Last 30-second step accepted, so a code cannot be used twice. */
+    @Column(name = "totp_last_step")
+    private Long totpLastStep;
+
     public User() {
         this.createdAt = LocalDateTime.now();
     }
@@ -170,6 +181,35 @@ public class User {
     public void assignTemporaryPassword(String passwordHash, LocalDateTime now) {
         changePassword(passwordHash, now);
         this.mustChangePassword = true;
+    }
+
+    public String getTotpSecret() {
+        return totpSecret;
+    }
+
+    public boolean isTotpEnabled() {
+        return totpEnabled;
+    }
+
+    public Long getTotpLastStep() {
+        return totpLastStep;
+    }
+
+    /** Turns two-factor login on with a secret the user has just proved they set up (code of {@code step}). */
+    public void enableTotp(String secret, long step) {
+        this.totpSecret = secret;
+        this.totpEnabled = true;
+        this.totpLastStep = step;
+    }
+
+    public void disableTotp() {
+        this.totpSecret = null;
+        this.totpEnabled = false;
+        this.totpLastStep = null;
+    }
+
+    public void acceptTotpStep(long step) {
+        this.totpLastStep = step;
     }
 
     @Override

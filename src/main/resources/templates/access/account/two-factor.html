@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page('Double authentification', ~{::main}, ~{})}">
+<body>
+<main class="page-narrow">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Mon compte</p>
+            <h1 class="page-title">Double authentification</h1>
+            <p class="page-subtitle">En plus du mot de passe, un code à 6 chiffres généré par une application sur votre téléphone
+                (Google Authenticator, Microsoft Authenticator, FreeOTP…) est demandé à chaque connexion.</p>
+        </div>
+        <span th:if="${enabled}" class="badge badge-success"><span class="icon icon-sm">verified_user</span>Activée</span>
+        <span th:unless="${enabled}" class="badge badge-neutral"><span class="icon icon-sm">shield</span>Désactivée</span>
+    </div>
+
+    <!-- Shown once: only their hashes are stored -->
+    <section th:if="${recoveryCodes}" class="card mb-6 ring-2 ring-primary">
+        <div class="card-header"><h2 class="card-title"><span class="icon">key</span>Vos codes de secours</h2></div>
+        <div class="card-body flex flex-col gap-4">
+            <p>Chaque code remplace une fois le code de l'application, si vous perdez votre téléphone.
+                <strong>Recopiez-les ou imprimez-les maintenant</strong> et gardez-les en lieu sûr : ils ne seront plus affichés.</p>
+            <ul class="grid grid-cols-2 gap-2 rounded-lg bg-surface p-4 font-mono text-title-sm ring-1 ring-surface-variant sm:grid-cols-5">
+                <li th:each="c : ${recoveryCodes}" th:text="${c}">abcd-efgh</li>
+            </ul>
+        </div>
+    </section>
+
+    <div th:if="${required and !enabled}" class="alert alert-warning mb-6">
+        <span class="icon">admin_panel_settings</span>
+        <span>Votre profil donne des droits d'administration : la double authentification est obligatoire.
+            Configurez-la pour continuer.</span>
+    </div>
+
+    <!-- Setup: scan, then prove it works with a code -->
+    <section th:if="${setup}" class="card mb-6">
+        <div class="card-header">
+            <h2 class="card-title"><span class="icon">qr_code_2</span>
+                <th:block th:text="${enabled} ? 'Configurer un nouveau téléphone' : 'Configurer votre application'">Configurer</th:block></h2>
+        </div>
+        <div class="card-body flex flex-col gap-6 sm:flex-row">
+            <img th:src="${setup.qrCodeDataUri}" alt="QR code à scanner avec votre application d'authentification"
+                 class="h-48 w-48 shrink-0 self-center rounded-lg ring-1 ring-surface-variant"/>
+            <div class="flex min-w-0 flex-col gap-4">
+                <ol class="list-decimal space-y-1 pl-5 text-body-md">
+                    <li>Ouvrez votre application d'authentification et ajoutez un compte.</li>
+                    <li>Scannez ce QR code. Sans appareil photo, saisissez la clé ci-dessous.</li>
+                    <li>Tapez le code à 6 chiffres que l'application affiche.</li>
+                </ol>
+                <div>
+                    <p class="label">Clé de configuration</p>
+                    <p class="break-all font-mono text-body-sm" th:text="${setup.groupedSecret()}">ABCD EFGH</p>
+                </div>
+                <form th:action="@{/account/two-factor/confirm}" method="post" class="flex flex-wrap items-end gap-2">
+                    <div class="field">
+                        <label class="label" for="setup-code">Code de l'application</label>
+                        <input class="input input-mono w-40 tracking-[0.2em]" id="setup-code" name="code" type="text" inputmode="numeric"
+                               autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required placeholder="123456"/>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><span class="icon">check</span>
+                        <th:block th:text="${enabled} ? 'Remplacer' : 'Activer'">Activer</th:block></button>
+                    <a th:if="${enabled}" th:href="@{/account/two-factor}" class="btn btn-secondary">Annuler</a>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Managing an active setup: each action needs a current code -->
+    <th:block th:if="${enabled and setup == null}">
+        <section class="card mb-6">
+            <div class="card-header"><h2 class="card-title"><span class="icon">smartphone</span>Téléphone</h2></div>
+            <div class="card-body flex flex-wrap items-center justify-between gap-3">
+                <p>Nouveau téléphone ? Configurez-le : l'ancien ne générera plus de codes valides.</p>
+                <a th:href="@{/account/two-factor(change=true)}" class="btn btn-secondary"><span class="icon">phonelink_setup</span>Changer de téléphone</a>
+            </div>
+        </section>
+
+        <section class="card mb-6">
+            <div class="card-header"><h2 class="card-title"><span class="icon">key</span>Codes de secours</h2></div>
+            <form th:action="@{/account/two-factor/recovery-codes}" method="post" class="card-body flex flex-col gap-3">
+                <p><strong th:text="${remainingCodes}">10</strong> code(s) de secours inutilisé(s).
+                    En générer de nouveaux rend les anciens inutilisables.</p>
+                <div class="flex flex-wrap items-end gap-2">
+                    <div class="field">
+                        <label class="label" for="codes-code">Code de l'application</label>
+                        <input class="input input-mono w-40" id="codes-code" name="code" type="text" inputmode="numeric"
+                               autocomplete="one-time-code" maxlength="7" required/>
+                    </div>
+                    <button type="submit" class="btn btn-secondary"><span class="icon">autorenew</span>Générer de nouveaux codes</button>
+                </div>
+            </form>
+        </section>
+
+        <section th:unless="${required}" class="card">
+            <div class="card-header"><h2 class="card-title"><span class="icon">gpp_bad</span>Désactiver</h2></div>
+            <form th:action="@{/account/two-factor/disable}" method="post" class="card-body flex flex-wrap items-end gap-2"
+                  data-confirm="Désactiver la double authentification ? Votre mot de passe suffira de nouveau pour vous connecter.">
+                <div class="field">
+                    <label class="label" for="disable-code">Code de l'application</label>
+                    <input class="input input-mono w-40" id="disable-code" name="code" type="text" inputmode="numeric"
+                           autocomplete="one-time-code" maxlength="7" required/>
+                </div>
+                <button type="submit" class="btn btn-danger"><span class="icon">gpp_bad</span>Désactiver</button>
+            </form>
+        </section>
+    </th:block>
+</main>
+</body>
+</html>

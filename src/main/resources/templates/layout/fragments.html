@@ -43,6 +43,8 @@
                 <span class="text-label-md text-on-surface" th:text="${u.username}">admin</span>
                 <span class="text-label-sm text-on-surface-variant" th:text="${u.profileName}">Administrateur</span>
             </a>
+            <a th:href="@{/account/two-factor}" class="btn-icon hidden md:inline-flex" title="Double authentification"
+               aria-label="Double authentification"><span class="icon">shield_lock</span></a>
             <form th:action="@{/perform-logout}" method="post">
                 <button type="submit" class="btn-icon danger" title="Se déconnecter" aria-label="Se déconnecter">
                     <span class="icon">logout</span>
@@ -55,6 +57,7 @@
                     <th:block th:replace="~{layout/fragments :: navLinks}"></th:block>
                     <a th:if="${u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="nav-link sm:hidden">Nouvelle facture</a>
                     <a th:href="@{/account/password}" class="nav-link">Mon mot de passe</a>
+                    <a th:href="@{/account/two-factor}" class="nav-link">Double authentification</a>
                 </nav>
             </details>
         </div>

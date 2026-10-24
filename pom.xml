@@ -91,6 +91,13 @@
 			<version>78.3</version>
 		</dependency>
 
+		<!-- QR code of the two-factor login setup -->
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+			<version>3.5.4</version>
+		</dependency>
+
 		<!-- Excel export of the invoices -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>

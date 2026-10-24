@@ -153,7 +153,13 @@
                             <div class="flex justify-between py-2"><dt>Plafond</dt><dd class="font-semibold tabular-nums" th:text="${amountUtils.format(stats.ceiling)}">5 000 000,00 DA</dd></div>
                             <div class="flex justify-between py-2"><dt>Alerte à 80 %</dt><dd class="tabular-nums" th:text="${amountUtils.format(stats.warningThreshold)}">4 000 000,00 DA</dd></div>
                         </dl>
-                        <p class="hint">Plafond configurable via <code>invoice.annual-ceiling</code>.</p>
+                        <div class="field">
+                            <label class="label" for="annualCeiling">Plafond annuel (DA) <span class="required">*</span></label>
+                            <input class="input input-mono" th:errorclass="input-invalid" th:field="*{annualCeiling}" type="number"
+                                   required min="0.01" step="0.01" inputmode="decimal"/>
+                            <p th:replace="~{layout/fragments :: fieldError('annualCeiling')}"></p>
+                            <p class="hint">Plafond de chiffre d'affaires de votre statut. Vérifiez le montant en vigueur auprès de l'ANAE ou de votre comptable.</p>
+                        </div>
                     </div>
                 </section>
 

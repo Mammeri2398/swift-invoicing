@@ -67,6 +67,8 @@
        th:classappend="${p == '/' or p == '/dashboard'} ? 'active'">Tableau de bord</a>
     <a th:if="${u.can('VIEW_INVOICES')}" th:href="@{/invoices}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/invoices') and p != '/invoices/lookup'} ? 'active'">Factures</a>
+    <a th:if="${u.can('VIEW_DASHBOARD')}" th:href="@{/turnover}" class="nav-link"
+       th:classappend="${p == '/turnover'} ? 'active'">Chiffre d'affaires</a>
     <a th:if="${u.can('VIEW_CLIENTS')}" th:href="@{/clients}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/clients')} ? 'active'">Clients</a>
     <a th:if="${u.can('VIEW_ISSUER')}" th:href="@{/settings/issuer}" class="nav-link"

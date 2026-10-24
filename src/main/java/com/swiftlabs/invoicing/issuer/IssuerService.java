@@ -42,6 +42,9 @@ public class IssuerService {
         requireText("fullName", form.getFullName(), "Le nom complet est obligatoire.");
         requireText("aeCardNumber", form.getAeCardNumber(), "Le numéro de carte auto-entrepreneur est obligatoire.");
         requireText("nif", form.getNif(), "Le NIF est obligatoire.");
+        if (form.getAnnualCeiling() == null || form.getAnnualCeiling().signum() <= 0) {
+            throw new BusinessException("annualCeiling", "Le plafond annuel doit être supérieur à 0.");
+        }
 
         // The logo is not on this form: it is kept
         Issuer issuer = getIssuer();
@@ -56,6 +59,7 @@ public class IssuerService {
         issuer.setNis(form.getNis());
         issuer.setActivityDescription(form.getActivityDescription());
         issuer.setBankOrCcpAccount(form.getBankOrCcpAccount());
+        issuer.setAnnualCeiling(form.getAnnualCeiling());
         return issuerRepository.save(issuer);
     }
 

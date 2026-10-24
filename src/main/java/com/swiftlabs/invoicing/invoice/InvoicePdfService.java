@@ -1,12 +1,16 @@
 package com.swiftlabs.invoicing.invoice;
 
-import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.swiftlabs.invoicing.common.AmountInWords;
 import com.swiftlabs.invoicing.common.AmountUtils;
 import com.swiftlabs.invoicing.config.InvoiceProperties;
 import com.swiftlabs.invoicing.issuer.Issuer;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
+import com.openhtmltopdf.bidi.support.ICUBidiReorderer;
+import com.openhtmltopdf.bidi.support.ICUBidiSplitter;
+import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle;
+import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.TextDirection;
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -18,6 +22,14 @@ import java.util.Base64;
 /** Renders the invoice/pdf Thymeleaf template to a PDF document. */
 @Service
 public class InvoicePdfService {
+
+    /**
+     * Embedded font (subset): covers Latin with accents and Arabic, so client names and notes in
+     * Arabic print correctly. The built-in PDF fonts only know Western European characters.
+     */
+    static final String FONT_FAMILY = "DejaVu Sans";
+    private static final String FONT_REGULAR = "/pdf/fonts/DejaVuSans.ttf";
+    private static final String FONT_BOLD = "/pdf/fonts/DejaVuSans-Bold.ttf";
 
     private final SpringTemplateEngine templateEngine;
     private final IssuerService issuerService;
@@ -49,6 +61,15 @@ public class InvoicePdfService {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PdfRendererBuilder builder = new PdfRendererBuilder();
         builder.useFastMode();
+        builder.useFont(() -> InvoicePdfService.class.getResourceAsStream(FONT_REGULAR), FONT_FAMILY, 400, FontStyle.NORMAL, true);
+        // The template also asks for 800 (titles): without a face for it the renderer fakes a heavier bold
+        for (int weight : new int[] {700, 800}) {
+            builder.useFont(() -> InvoicePdfService.class.getResourceAsStream(FONT_BOLD), FONT_FAMILY, weight, FontStyle.NORMAL, true);
+        }
+        // Arabic: split the text into left-to-right and right-to-left runs, reorder and join the letters
+        builder.useUnicodeBidiSplitter(new ICUBidiSplitter.ICUBidiSplitterFactory());
+        builder.useUnicodeBidiReorderer(new ICUBidiReorderer());
+        builder.defaultTextDirection(TextDirection.LTR);
         builder.withHtmlContent(html, "file:///");
         builder.toStream(out);
         builder.run();

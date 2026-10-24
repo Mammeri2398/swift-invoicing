@@ -110,7 +110,8 @@ class PageRenderingTest {
         assertPage("/invoices/" + draft.getId() + "/edit", "value=\"Audit\"");
         assertPage("/invoices/" + issued.getId(), "Facture " + issued.getInvoiceNumber());
         assertPage("/invoices/lookup?number=" + issued.getInvoiceNumber(), "Facture authentique");
-        assertPage("/settings/issuer", "Identifiants légaux et fiscaux");
+        assertPage("/turnover", "Modifier le plafond");
+        assertPage("/settings/issuer", "Plafond annuel (DA)");
     }
 
     @Test

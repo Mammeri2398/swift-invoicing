@@ -1,9 +1,14 @@
 package com.swiftlabs.invoicing.issuer;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
+import java.math.BigDecimal;
 
 public class IssuerForm {
 
@@ -49,6 +54,11 @@ public class IssuerForm {
     @Size(max = 100)
     private String bankOrCcpAccount;
 
+    @NotNull
+    @DecimalMin(value = "0.01")
+    @Digits(integer = 12, fraction = 2)
+    private BigDecimal annualCeiling;
+
     public IssuerForm() {
     }
 
@@ -76,6 +86,8 @@ public class IssuerForm {
     public void setActivityDescription(String activityDescription) { this.activityDescription = activityDescription; }
     public String getBankOrCcpAccount() { return bankOrCcpAccount; }
     public void setBankOrCcpAccount(String bankOrCcpAccount) { this.bankOrCcpAccount = bankOrCcpAccount; }
+    public BigDecimal getAnnualCeiling() { return annualCeiling; }
+    public void setAnnualCeiling(BigDecimal annualCeiling) { this.annualCeiling = annualCeiling; }
 
     public static IssuerForm from(Issuer issuer) {
         IssuerForm form = new IssuerForm();
@@ -91,6 +103,7 @@ public class IssuerForm {
         form.setNis(issuer.getNis());
         form.setActivityDescription(issuer.getActivityDescription());
         form.setBankOrCcpAccount(issuer.getBankOrCcpAccount());
+        form.setAnnualCeiling(issuer.getAnnualCeiling());
         return form;
     }
 }

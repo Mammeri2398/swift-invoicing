@@ -10,9 +10,16 @@
             <h1 class="page-title">Factures</h1>
             <p class="page-subtitle">Numérotation continue par année, sans trou. Les factures émises ne sont plus modifiables.</p>
         </div>
-        <a th:if="${u != null and u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="btn btn-primary">
-            <span class="icon">add_circle</span>Nouvelle facture
-        </a>
+        <div class="flex flex-wrap gap-2">
+            <!-- Exports follow the filters currently applied -->
+            <a th:href="@{/invoices/export/csv(search=${filter.search},status=${filter.status},year=${filter.year},client=${filter.client})}"
+               class="btn btn-secondary" title="Exporter les factures filtrées en CSV"><span class="icon">download</span>CSV</a>
+            <a th:href="@{/invoices/export/xlsx(search=${filter.search},status=${filter.status},year=${filter.year},client=${filter.client})}"
+               class="btn btn-secondary" title="Exporter les factures filtrées vers Excel"><span class="icon">table_view</span>Excel</a>
+            <a th:if="${u != null and u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="btn btn-primary">
+                <span class="icon">add_circle</span>Nouvelle facture
+            </a>
+        </div>
     </div>
 
     <!-- Filters -->

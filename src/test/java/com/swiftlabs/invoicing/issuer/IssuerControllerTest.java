@@ -65,7 +65,8 @@ class IssuerControllerTest {
                 .param("fullName", "Karim Benali")
                 .param("aeCardNumber", "16-2024-00001")
                 .param("nif", "000016001234567")
-                .param("city", "Oran"))
+                .param("city", "Oran")
+                .param("annualCeiling", "6500000"))
             .andExpect(status().is3xxRedirection())
             .andExpect(redirectedUrl("/settings/issuer"))
             .andExpect(flash().attributeExists("success"));
@@ -73,7 +74,24 @@ class IssuerControllerTest {
         Issuer after = issuerRepository.findById(1L).orElseThrow();
         assertThat(after.getFullName()).isEqualTo("Karim Benali");
         assertThat(after.getCity()).isEqualTo("Oran");
+        assertThat(after.getAnnualCeiling()).isEqualByComparingTo("6500000");
         assertThat(after.getLogoData()).containsExactly(1, 2, 3);
+    }
+
+    @Test
+    @WithMockUser(authorities = {"VIEW_ISSUER", "EDIT_ISSUER"})
+    void saveRejectsAZeroCeiling() throws Exception {
+        mockMvc.perform(post("/settings/issuer/save").with(csrf())
+                .param("id", "1")
+                .param("fullName", "Karim Benali")
+                .param("aeCardNumber", "16-2024-00001")
+                .param("nif", "000016001234567")
+                .param("annualCeiling", "0"))
+            .andExpect(status().isOk())
+            .andExpect(model().attributeHasFieldErrorCode("issuer", "annualCeiling", "DecimalMin"))
+            .andExpect(content().string(containsString("Le plafond doit être supérieur à 0.")));
+
+        assertThat(issuerRepository.findById(1L).orElseThrow().getAnnualCeiling()).isEqualByComparingTo("5000000");
     }
 
     @Test
@@ -83,7 +101,8 @@ class IssuerControllerTest {
                 .param("id", "1")
                 .param("fullName", "Karim Benali")
                 .param("aeCardNumber", "16-2024-00001")
-                .param("nif", "  "))
+                .param("nif", "  ")
+                .param("annualCeiling", "5000000"))
             .andExpect(status().isOk())
             .andExpect(model().attributeHasFieldErrorCode("issuer", "nif", "NotBlank"))
             .andExpect(content().string(containsString("value=\"Karim Benali\"")));

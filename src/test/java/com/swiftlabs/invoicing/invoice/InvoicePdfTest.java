@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import javax.imageio.ImageIO;
 
@@ -133,6 +134,28 @@ class InvoicePdfTest {
         assertThat(text).contains("Virement bancaire").contains("CCP 0021458992 clé 45");
         // Client without NIF (empty string): only the issuer's NIF is printed
         assertThat(occurrences(text, "NIF :")).isEqualTo(1);
+    }
+
+    @Test
+    void arabicNamesAreShapedWithTheEmbeddedFont() throws IOException {
+        client.setName("مؤسسة الأطلس للخدمات");
+        client.setAddress("شارع ديدوش مراد، الجزائر");
+        Invoice issued = invoiceService.issue(draft().getId());
+        try (PDDocument document = pdf(issued)) {
+            assertThat(fontNames(document)).isNotEmpty().allMatch(name -> name.contains("DejaVuSans"));
+            // Read back in reading order: the words come out whole, so every letter has a glyph
+            String text = new PDFTextStripper().getText(document);
+            assertThat(text).contains("مؤسسة").contains("للخدمات").contains("الجزائر").contains("Développement");
+        }
+    }
+
+    private static List<String> fontNames(PDDocument document) throws IOException {
+        PDResources resources = document.getPage(0).getResources();
+        List<String> names = new ArrayList<>();
+        for (COSName name : resources.getFontNames()) {
+            names.add(resources.getFont(name).getName());
+        }
+        return names;
     }
 
     @Test

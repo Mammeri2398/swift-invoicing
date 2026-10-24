@@ -52,3 +52,13 @@
         });
     });
 })();
+
+// <select data-autosubmit> submits its form as soon as the choice changes
+(function () {
+    'use strict';
+    document.addEventListener('change', function (event) {
+        if (event.target.matches('select[data-autosubmit]')) {
+            event.target.form.submit();
+        }
+    });
+})();

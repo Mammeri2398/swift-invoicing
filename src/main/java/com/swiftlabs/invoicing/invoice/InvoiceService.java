@@ -11,6 +11,7 @@ import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,6 +74,11 @@ public class InvoiceService {
     /** One page of the invoices matching the filter, filtered and sorted by the database. */
     public Page<Invoice> search(InvoiceFilter filter, Pageable pageable) {
         return invoiceRepository.findAll(InvoiceSpecifications.matching(filter), pageable);
+    }
+
+    /** Every invoice matching the filter, not paginated (exports). */
+    public List<Invoice> searchAll(InvoiceFilter filter, Sort sort) {
+        return invoiceRepository.findAll(InvoiceSpecifications.matching(filter), sort);
     }
 
     /** Sum of the totals of every invoice matching the filter, across all pages. */
@@ -189,6 +195,14 @@ public class InvoiceService {
     public BigDecimal totalBilled(int year) {
         BigDecimal total = invoiceRepository.sumIssuedPaidByYear(year);
         return total != null ? total : BigDecimal.ZERO;
+    }
+
+    public List<MonthlyTotal> monthlyTotals(int year) {
+        return invoiceRepository.monthlyTotals(year);
+    }
+
+    public List<Integer> invoiceYears() {
+        return invoiceRepository.findInvoiceYears();
     }
 
     public long countByStatus(InvoiceStatus status) {

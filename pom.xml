@@ -79,6 +79,25 @@
 			<version>${openhtmltopdf.version}</version>
 		</dependency>
 
+		<!-- Arabic in the PDF: letter shaping and right-to-left ordering (ICU4J, newer than the module's 59.1) -->
+		<dependency>
+			<groupId>com.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-rtl-support</artifactId>
+			<version>${openhtmltopdf.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.ibm.icu</groupId>
+			<artifactId>icu4j</artifactId>
+			<version>78.3</version>
+		</dependency>
+
+		<!-- Excel export of the invoices -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.5.1</version>
+		</dependency>
+
 		<!-- Argon2 password hashing: Spring Security's Argon2PasswordEncoder uses Bouncy Castle -->
 		<dependency>
 			<groupId>org.bouncycastle</groupId>

@@ -5,6 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "issuer")
 public class Issuer {
@@ -44,6 +46,10 @@ public class Issuer {
 
     @Column(name = "bank_or_ccp_account")
     private String bankOrCcpAccount;
+
+    /** Yearly turnover ceiling of the auto-entrepreneur status, chosen by the user. */
+    @Column(name = "annual_ceiling", nullable = false)
+    private BigDecimal annualCeiling;
 
     /** PNG or JPEG image, printed on the invoices. */
     @Column(name = "logo_data")
@@ -149,6 +155,14 @@ public class Issuer {
 
     public void setBankOrCcpAccount(String bankOrCcpAccount) {
         this.bankOrCcpAccount = bankOrCcpAccount;
+    }
+
+    public BigDecimal getAnnualCeiling() {
+        return annualCeiling;
+    }
+
+    public void setAnnualCeiling(BigDecimal annualCeiling) {
+        this.annualCeiling = annualCeiling;
     }
 
     public byte[] getLogoData() {

@@ -3,14 +3,10 @@ package com.swiftlabs.invoicing.dashboard;
 import com.swiftlabs.invoicing.invoice.Invoice;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 
 /** Turnover of a year against the auto-entrepreneur annual ceiling. */
 public final class DashboardStats {
-
-    private static final BigDecimal HUNDRED = new BigDecimal(100);
-    private static final BigDecimal WARNING_PERCENT = new BigDecimal(80);
 
     private final int year;
     private final BigDecimal totalAmount;
@@ -20,6 +16,7 @@ public final class DashboardStats {
     private final BigDecimal unpaidAmount;
     private final long draftCount;
     private final long clientCount;
+    private final CeilingUsage usage;
 
     public DashboardStats(int year, BigDecimal totalAmount, BigDecimal ceiling, List<Invoice> recentInvoices,
                           long unpaidCount, BigDecimal unpaidAmount, long draftCount, long clientCount) {
@@ -31,6 +28,7 @@ public final class DashboardStats {
         this.unpaidAmount = unpaidAmount;
         this.draftCount = draftCount;
         this.clientCount = clientCount;
+        this.usage = new CeilingUsage(totalAmount, ceiling);
     }
 
     public int getYear() {
@@ -66,32 +64,27 @@ public final class DashboardStats {
         return clientCount;
     }
 
-    /** Share of the ceiling already billed, in percent (2 decimals). */
     public BigDecimal getPercent() {
-        return ceiling.signum() == 0 ? BigDecimal.ZERO
-            : totalAmount.multiply(HUNDRED).divide(ceiling, 2, RoundingMode.HALF_UP);
+        return usage.getPercent();
     }
 
-    /** Percent capped at 100, for progress bars. */
     public BigDecimal getBarPercent() {
-        return getPercent().min(HUNDRED);
+        return usage.getBarPercent();
     }
 
     public BigDecimal getRemaining() {
-        return ceiling.subtract(totalAmount).max(BigDecimal.ZERO);
+        return usage.getRemaining();
     }
 
     public BigDecimal getWarningThreshold() {
-        return ceiling.multiply(WARNING_PERCENT).divide(HUNDRED, 2, RoundingMode.HALF_UP);
+        return usage.getWarningThreshold();
     }
 
-    /** Between 80 % and 100 % of the ceiling. */
     public boolean isWarning80() {
-        return getPercent().compareTo(WARNING_PERCENT) >= 0 && !isAlert100();
+        return usage.isWarning80();
     }
 
-    /** Ceiling reached or exceeded. */
     public boolean isAlert100() {
-        return getPercent().compareTo(HUNDRED) >= 0;
+        return usage.isAlert100();
     }
 }

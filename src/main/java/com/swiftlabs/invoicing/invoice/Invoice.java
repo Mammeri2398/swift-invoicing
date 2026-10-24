@@ -83,6 +83,15 @@ public class Invoice {
     @Column(name = "issuer_bank_account")
     private String issuerBankAccount;
 
+    @Column(name = "issuer_city")
+    private String issuerCity;
+
+    @Column(name = "issuer_phone")
+    private String issuerPhone;
+
+    @Column(name = "issuer_email")
+    private String issuerEmail;
+
     // Client snapshot (copied at issue time)
     @Column(name = "client_name")
     private String clientName;
@@ -256,6 +265,30 @@ public class Invoice {
 
     public void setIssuerBankAccount(String issuerBankAccount) {
         this.issuerBankAccount = issuerBankAccount;
+    }
+
+    public String getIssuerCity() {
+        return issuerCity;
+    }
+
+    public void setIssuerCity(String issuerCity) {
+        this.issuerCity = issuerCity;
+    }
+
+    public String getIssuerPhone() {
+        return issuerPhone;
+    }
+
+    public void setIssuerPhone(String issuerPhone) {
+        this.issuerPhone = issuerPhone;
+    }
+
+    public String getIssuerEmail() {
+        return issuerEmail;
+    }
+
+    public void setIssuerEmail(String issuerEmail) {
+        this.issuerEmail = issuerEmail;
     }
 
     public String getClientName() {

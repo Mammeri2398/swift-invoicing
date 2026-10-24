@@ -56,7 +56,7 @@ class IssuerControllerTest {
     @WithMockUser(authorities = {"VIEW_ISSUER", "EDIT_ISSUER"})
     void saveUpdatesIssuerAndKeepsLogo() throws Exception {
         Issuer before = issuerRepository.findById(1L).orElseThrow();
-        before.setLogo("logo.png");
+        before.replaceLogo(new byte[] {1, 2, 3}, "image/png");
         issuerRepository.saveAndFlush(before);
 
         mockMvc.perform(post("/settings/issuer/save").with(csrf())
@@ -72,7 +72,7 @@ class IssuerControllerTest {
         Issuer after = issuerRepository.findById(1L).orElseThrow();
         assertThat(after.getFullName()).isEqualTo("Karim Benali");
         assertThat(after.getCity()).isEqualTo("Oran");
-        assertThat(after.getLogo()).isEqualTo("logo.png");
+        assertThat(after.getLogoData()).containsExactly(1, 2, 3);
     }
 
     @Test

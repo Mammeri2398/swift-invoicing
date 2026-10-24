@@ -45,8 +45,12 @@ public class Issuer {
     @Column(name = "bank_or_ccp_account")
     private String bankOrCcpAccount;
 
-    @Column(name = "logo")
-    private String logo;
+    /** PNG or JPEG image, printed on the invoices. */
+    @Column(name = "logo_data")
+    private byte[] logoData;
+
+    @Column(name = "logo_content_type", length = 50)
+    private String logoContentType;
 
     public Issuer() {
     }
@@ -147,11 +151,25 @@ public class Issuer {
         this.bankOrCcpAccount = bankOrCcpAccount;
     }
 
-    public String getLogo() {
-        return logo;
+    public byte[] getLogoData() {
+        return logoData;
     }
 
-    public void setLogo(String logo) {
-        this.logo = logo;
+    public String getLogoContentType() {
+        return logoContentType;
+    }
+
+    public boolean hasLogo() {
+        return logoData != null && logoData.length > 0;
+    }
+
+    public void replaceLogo(byte[] data, String contentType) {
+        this.logoData = data;
+        this.logoContentType = contentType;
+    }
+
+    public void removeLogo() {
+        this.logoData = null;
+        this.logoContentType = null;
     }
 }

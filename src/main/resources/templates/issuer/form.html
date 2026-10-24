@@ -98,6 +98,25 @@
             </div>
 
             <aside class="flex flex-col gap-6">
+                <!-- Logo: its controls belong to the separate forms declared after the main form -->
+                <section class="card">
+                    <div class="card-header"><h2 class="card-title"><span class="icon">image</span>Logo</h2></div>
+                    <div class="card-body flex flex-col gap-3">
+                        <div class="flex h-28 items-center justify-center rounded-lg bg-surface p-3 ring-1 ring-surface-variant">
+                            <img th:if="${hasLogo}" th:src="@{/settings/issuer/logo}" alt="Logo de l'émetteur" class="max-h-full max-w-full object-contain"/>
+                            <span th:unless="${hasLogo}" class="hint">Aucun logo</span>
+                        </div>
+                        <input type="file" name="logo" form="logo-upload-form" accept="image/png,image/jpeg" required
+                               class="block w-full text-body-sm text-on-surface-variant file:mr-3 file:rounded-lg file:border-0 file:bg-surface-container-high file:px-3 file:py-1.5 file:text-label-md file:text-on-surface hover:file:bg-surface-container-highest"
+                               aria-label="Choisir un logo"/>
+                        <p class="hint">PNG ou JPEG, 500 Ko et 2000 × 2000 pixels au maximum. Imprimé en haut des factures.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="submit" form="logo-upload-form" class="btn btn-secondary btn-sm"><span class="icon">upload</span>Envoyer</button>
+                            <button th:if="${hasLogo}" type="submit" form="logo-delete-form" class="btn btn-danger btn-sm"><span class="icon">delete</span>Supprimer</button>
+                        </div>
+                    </div>
+                </section>
+
                 <section class="card">
                     <div class="card-header">
                         <h2 class="card-title"><span class="icon">trending_up</span>Plafond annuel</h2>
@@ -129,6 +148,7 @@
                     <div class="card-header"><h2 class="card-title"><span class="icon">picture_as_pdf</span>Aperçu de l'en-tête</h2></div>
                     <div class="card-body">
                         <div class="flex flex-col gap-2 rounded-lg bg-surface p-4 font-mono text-[11px] leading-tight ring-1 ring-surface-variant">
+                            <img th:if="${hasLogo}" th:src="@{/settings/issuer/logo}" alt="" class="mb-1 max-h-10 max-w-[40%] object-contain"/>
                             <div>
                                 <div class="text-[12px] font-bold" data-preview="fullName" th:text="*{fullName}">Nom</div>
                                 <div class="text-on-surface-variant" data-preview="tradeName" th:text="*{tradeName}"></div>
@@ -145,6 +165,11 @@
             </aside>
         </fieldset>
     </form>
+
+    <!-- Logo forms (HTML forms cannot be nested): their controls sit in the side panel above -->
+    <form id="logo-upload-form" th:action="@{/settings/issuer/logo}" method="post" enctype="multipart/form-data"></form>
+    <form id="logo-delete-form" th:action="@{/settings/issuer/logo/delete}" method="post"
+          data-confirm="Supprimer le logo ? Il ne sera plus imprimé sur les factures."></form>
 </main>
 <script th:src="@{/js/issuer-form.js}" defer></script>
 </body>

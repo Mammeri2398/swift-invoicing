@@ -275,6 +275,9 @@ public class InvoiceService {
         invoice.setIssuerNif(issuer.getNif());
         invoice.setIssuerNis(issuer.getNis());
         invoice.setIssuerBankAccount(issuer.getBankOrCcpAccount());
+        invoice.setIssuerCity(issuer.getCity());
+        invoice.setIssuerPhone(issuer.getPhone());
+        invoice.setIssuerEmail(issuer.getEmail());
     }
 
     private void snapshotClient(Invoice invoice, Client client) {

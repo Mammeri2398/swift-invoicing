@@ -7,6 +7,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.ModelAndView;
 
 @ControllerAdvice
@@ -24,6 +25,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ModelAndView business(BusinessException ex) {
         return errorPage(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    /** Upload above spring.servlet.multipart.max-file-size (raised before any controller runs). */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ModelAndView uploadTooLarge(MaxUploadSizeExceededException ex) {
+        return errorPage(HttpStatus.PAYLOAD_TOO_LARGE, "Le fichier envoyé est trop volumineux.");
     }
 
     @ExceptionHandler(Exception.class)

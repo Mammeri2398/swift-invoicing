@@ -1,13 +1,32 @@
 package com.swiftlabs.invoicing.invoice;
 
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.math.BigDecimal;
 
 public class InvoiceLineForm {
 
     private Long id;
+
+    @NotBlank
+    @Size(max = 255)
     private String description;
+
+    @Size(max = 50)
     private String unit;
+
+    @NotNull
+    @DecimalMin(value = "0", inclusive = false)
+    @Digits(integer = 9, fraction = 3)
     private BigDecimal quantity;
+
+    @NotNull
+    @DecimalMin("0")
+    @Digits(integer = 12, fraction = 2)
     private BigDecimal unitPrice;
     private BigDecimal lineTotal;
 

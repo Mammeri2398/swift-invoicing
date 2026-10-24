@@ -1,10 +1,13 @@
 package com.swiftlabs.invoicing.client;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.FormErrors;
 
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,42 +35,32 @@ public class ClientController {
     @GetMapping("/new")
     @PreAuthorize("hasAuthority('CREATE_CLIENT')")
     public String newForm(Model model) {
-        // After a failed save the submitted form comes back as a flash attribute
-        if (!model.containsAttribute("client")) {
-            model.addAttribute("client", new ClientForm());
-        }
-        model.addAttribute("types", ClientType.values());
-        return "client/form";
+        model.addAttribute("client", new ClientForm());
+        return formView(model);
     }
 
     @GetMapping("/{id}/edit")
     @PreAuthorize("hasAuthority('CREATE_CLIENT')")
-    public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
-        try {
-            Client client = clientService.findById(id);
-            if (!model.containsAttribute("client")) {
-                model.addAttribute("client", ClientForm.from(client));
-            }
-            model.addAttribute("types", ClientType.values());
-            return "client/form";
-        } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-            return "redirect:/clients";
-        }
+    public String editForm(@PathVariable Long id, Model model) {
+        model.addAttribute("client", ClientForm.from(clientService.findById(id)));
+        return formView(model);
     }
 
+    /** Invalid input is shown again with the errors next to each field. */
     @PostMapping("/save")
     @PreAuthorize("hasAuthority('CREATE_CLIENT')")
-    public String save(@ModelAttribute ClientForm form, RedirectAttributes redirectAttributes) {
-        try {
-            clientService.save(form);
-            redirectAttributes.addFlashAttribute("success", "Client enregistré.");
-            return "redirect:/clients";
-        } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-            redirectAttributes.addFlashAttribute("client", form);
-            return form.getId() == null ? "redirect:/clients/new" : "redirect:/clients/" + form.getId() + "/edit";
+    public String save(@Valid @ModelAttribute("client") ClientForm form, BindingResult result, Model model,
+                       RedirectAttributes redirectAttributes) {
+        if (!result.hasErrors()) {
+            try {
+                clientService.save(form);
+                redirectAttributes.addFlashAttribute("success", "Client enregistré.");
+                return "redirect:/clients";
+            } catch (BusinessException ex) {
+                FormErrors.reject(result, ex);
+            }
         }
+        return formView(model);
     }
 
     @PostMapping("/{id}/delete")
@@ -80,5 +73,10 @@ public class ClientController {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return "redirect:/clients";
+    }
+
+    private String formView(Model model) {
+        model.addAttribute("types", ClientType.values());
+        return "client/form";
     }
 }

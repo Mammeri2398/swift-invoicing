@@ -14,27 +14,32 @@
     <form th:action="@{/users/save}" method="post" th:object="${user}" class="card">
         <input type="hidden" th:field="*{id}"/>
         <div class="card-body flex flex-col gap-4">
+            <div th:replace="~{layout/fragments :: formErrors}"></div>
             <div class="field">
                 <label class="label" for="username">Nom d'utilisateur <span class="required">*</span></label>
-                <input class="input" th:field="*{username}" type="text" required maxlength="100" autocomplete="off"
+                <input class="input" th:errorclass="input-invalid" th:field="*{username}" type="text" required maxlength="100" autocomplete="off"
                        th:readonly="*{id != null}"/>
+                <p th:replace="~{layout/fragments :: fieldError('username')}"></p>
                 <p th:if="*{id != null}" class="hint">Le nom d'utilisateur ne peut pas être modifié.</p>
             </div>
             <div class="field">
                 <label class="label" for="email">Email <span class="required">*</span></label>
-                <input class="input" th:field="*{email}" type="email" required maxlength="255"/>
+                <input class="input" th:errorclass="input-invalid" th:field="*{email}" type="email" required maxlength="255"/>
+                <p th:replace="~{layout/fragments :: fieldError('email')}"></p>
             </div>
             <div class="field">
                 <label class="label" for="profileId">Profil <span class="required">*</span></label>
-                <select class="input" th:field="*{profileId}" required>
+                <select class="input" th:errorclass="input-invalid" th:field="*{profileId}" required>
                     <option value="">Sélectionner un profil…</option>
                     <option th:each="p : ${profiles}" th:value="${p.id}" th:text="${p.name}">Administrateur</option>
                 </select>
+                <p th:replace="~{layout/fragments :: fieldError('profileId')}"></p>
             </div>
             <label th:if="*{id != null}" class="flex items-start gap-2">
                 <input type="checkbox" class="checkbox" th:field="*{enabled}"/>
                 <span>Compte actif <span class="hint block">Un compte désactivé ne peut plus se connecter.</span></span>
             </label>
+            <p th:replace="~{layout/fragments :: fieldError('enabled')}"></p>
             <div th:if="*{id == null}" class="alert alert-info">
                 <span class="icon">key</span>
                 <span>Un mot de passe temporaire aléatoire est généré et affiché une seule fois après l'enregistrement.

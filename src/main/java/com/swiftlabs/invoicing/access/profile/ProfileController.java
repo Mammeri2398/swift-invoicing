@@ -1,8 +1,14 @@
 package com.swiftlabs.invoicing.access.profile;
 
+import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.ResourceNotFoundException;
+
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,36 +35,32 @@ public class ProfileController {
 
     @GetMapping("/new")
     public String newForm(Model model) {
-        // After a failed save the submitted form comes back as a flash attribute
-        if (!model.containsAttribute("profile")) {
-            model.addAttribute("profile", new ProfileForm());
-        }
-        model.addAttribute("allPrivileges", profileService.findAllPrivileges());
-        return "access/profile/form";
+        model.addAttribute("profile", new ProfileForm());
+        return formView(model);
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
         Profile profile = profileService.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Profil introuvable."));
-        if (!model.containsAttribute("profile")) {
-            model.addAttribute("profile", ProfileForm.from(profile));
-        }
-        model.addAttribute("allPrivileges", profileService.findAllPrivileges());
-        return "access/profile/form";
+            .orElseThrow(() -> new ResourceNotFoundException("Profil introuvable."));
+        model.addAttribute("profile", ProfileForm.from(profile));
+        return formView(model);
     }
 
+    /** Invalid input is shown again with the errors next to each field. */
     @PostMapping("/save")
-    public String save(@ModelAttribute ProfileForm form, RedirectAttributes redirectAttributes) {
-        try {
-            profileService.save(form);
-            redirectAttributes.addFlashAttribute("success", "Profil enregistré.");
-            return "redirect:/profiles";
-        } catch (IllegalArgumentException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-            redirectAttributes.addFlashAttribute("profile", form);
-            return form.getId() == null ? "redirect:/profiles/new" : "redirect:/profiles/" + form.getId() + "/edit";
+    public String save(@Valid @ModelAttribute("profile") ProfileForm form, BindingResult result, Model model,
+                       RedirectAttributes redirectAttributes) {
+        if (!result.hasErrors()) {
+            try {
+                profileService.save(form);
+                redirectAttributes.addFlashAttribute("success", "Profil enregistré.");
+                return "redirect:/profiles";
+            } catch (BusinessException ex) {
+                FormErrors.reject(result, ex);
+            }
         }
+        return formView(model);
     }
 
     @PostMapping("/{id}/delete")
@@ -70,5 +72,10 @@ public class ProfileController {
             redirectAttributes.addFlashAttribute("error", "Impossible de supprimer ce profil.");
         }
         return "redirect:/profiles";
+    }
+
+    private String formView(Model model) {
+        model.addAttribute("allPrivileges", profileService.findAllPrivileges());
+        return "access/profile/form";
     }
 }

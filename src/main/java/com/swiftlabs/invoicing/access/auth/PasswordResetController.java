@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.access.auth;
 
+import com.swiftlabs.invoicing.common.BusinessException;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -56,7 +58,7 @@ public class PasswordResetController {
         } catch (InvalidResetTokenException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
             return "redirect:/login";
-        } catch (IllegalArgumentException ex) {
+        } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
             return "redirect:/reset-password?token=" + token;
         }

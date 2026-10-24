@@ -1,11 +1,24 @@
 package com.swiftlabs.invoicing.access.privilege;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 /** Privileges form: the entity is never bound from the request. */
 public class PrivilegeForm {
 
     private Long id;
+
+    @NotBlank
+    @Size(max = 100)
+    @Pattern(regexp = "[A-Za-z_]*")
     private String code;
+
+    @NotBlank
+    @Size(max = 255)
     private String name;
+
+    @Size(max = 500)
     private String description;
 
     public static PrivilegeForm from(Privilege privilege) {

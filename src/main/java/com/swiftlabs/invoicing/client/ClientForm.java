@@ -1,14 +1,40 @@
 package com.swiftlabs.invoicing.client;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
+/** Clients form. Optional fields may be null (blank input is bound as null). */
+@NifRequiredForProfessional
 public class ClientForm {
 
     private Long id;
-    private String type;
+
+    @NotNull
+    private ClientType type;
+
+    @NotBlank
+    @Size(max = 255)
     private String name;
+
+    @Size(max = 255)
     private String address;
+
+    @Size(max = 255)
     private String city;
+
+    @Size(max = 50)
+    @Pattern(regexp = "[0-9+ ().-]*")
     private String phone;
+
+    @Email
+    @Size(max = 255)
     private String email;
+
+    @Size(max = 50)
+    @Pattern(regexp = "[0-9]*")
     private String nif;
 
     public ClientForm() {
@@ -16,8 +42,8 @@ public class ClientForm {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+    public ClientType getType() { return type; }
+    public void setType(ClientType type) { this.type = type; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getAddress() { return address; }
@@ -34,7 +60,7 @@ public class ClientForm {
     public static ClientForm from(Client client) {
         ClientForm form = new ClientForm();
         form.setId(client.getId());
-        form.setType(client.getType() != null ? client.getType().name() : null);
+        form.setType(client.getType());
         form.setName(client.getName());
         form.setAddress(client.getAddress());
         form.setCity(client.getCity());

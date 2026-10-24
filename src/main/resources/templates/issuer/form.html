@@ -16,6 +16,8 @@
             <span th:unless="${canEdit}" class="badge badge-neutral"><span class="icon icon-sm">lock</span>Lecture seule</span>
         </div>
 
+        <div class="mb-6 empty:hidden"><div th:replace="~{layout/fragments :: formErrors}"></div></div>
+
         <!-- The fieldset disables every input for users without EDIT_ISSUER -->
         <fieldset th:disabled="${!canEdit}" class="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-3">
             <div class="flex flex-col gap-6 lg:col-span-2">
@@ -24,11 +26,13 @@
                     <div class="card-body form-grid">
                         <div class="field">
                             <label class="label" for="fullName">Nom complet du titulaire <span class="required">*</span></label>
-                            <input class="input" th:field="*{fullName}" type="text" required maxlength="255"/>
+                            <input class="input" th:errorclass="input-invalid" th:field="*{fullName}" type="text" required maxlength="255"/>
+                            <p th:replace="~{layout/fragments :: fieldError('fullName')}"></p>
                         </div>
                         <div class="field">
                             <label class="label" for="tradeName">Nom commercial <span class="optional">Optionnel</span></label>
-                            <input class="input" th:field="*{tradeName}" type="text" maxlength="255"/>
+                            <input class="input" th:errorclass="input-invalid" th:field="*{tradeName}" type="text" maxlength="255"/>
+                            <p th:replace="~{layout/fragments :: fieldError('tradeName')}"></p>
                         </div>
                         <div class="field md:col-span-2">
                             <label class="label" for="legal-quality">Qualité légale</label>
@@ -37,7 +41,8 @@
                         </div>
                         <div class="field md:col-span-2">
                             <label class="label" for="activityDescription">Activité déclarée <span class="optional">Optionnel</span></label>
-                            <textarea class="input" th:field="*{activityDescription}" rows="2" maxlength="500"></textarea>
+                            <textarea class="input" th:errorclass="input-invalid" th:field="*{activityDescription}" rows="2" maxlength="500"></textarea>
+                            <p th:replace="~{layout/fragments :: fieldError('activityDescription')}"></p>
                         </div>
                     </div>
                 </section>
@@ -47,15 +52,18 @@
                     <div class="card-body form-grid">
                         <div class="field">
                             <label class="label" for="aeCardNumber">N° carte auto-entrepreneur <span class="required">*</span></label>
-                            <input class="input input-mono" th:field="*{aeCardNumber}" type="text" required maxlength="50"/>
+                            <input class="input input-mono" th:errorclass="input-invalid" th:field="*{aeCardNumber}" type="text" required maxlength="50"/>
+                            <p th:replace="~{layout/fragments :: fieldError('aeCardNumber')}"></p>
                         </div>
                         <div class="field">
                             <label class="label" for="nif">NIF <span class="required">*</span></label>
-                            <input class="input input-mono" th:field="*{nif}" type="text" required maxlength="50"/>
+                            <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" required maxlength="50"/>
+                            <p th:replace="~{layout/fragments :: fieldError('nif')}"></p>
                         </div>
                         <div class="field">
                             <label class="label" for="nis">NIS <span class="optional">Optionnel</span></label>
-                            <input class="input input-mono" th:field="*{nis}" type="text" maxlength="50"/>
+                            <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="50"/>
+                            <p th:replace="~{layout/fragments :: fieldError('nis')}"></p>
                         </div>
                         <div class="alert alert-info md:col-span-2">
                             <span class="icon">receipt_long</span>
@@ -69,19 +77,23 @@
                     <div class="card-body form-grid">
                         <div class="field md:col-span-2">
                             <label class="label" for="address">Adresse</label>
-                            <input class="input" th:field="*{address}" type="text" maxlength="255"/>
+                            <input class="input" th:errorclass="input-invalid" th:field="*{address}" type="text" maxlength="255"/>
+                            <p th:replace="~{layout/fragments :: fieldError('address')}"></p>
                         </div>
                         <div class="field">
                             <label class="label" for="city">Ville</label>
-                            <input class="input" th:field="*{city}" type="text" maxlength="255"/>
+                            <input class="input" th:errorclass="input-invalid" th:field="*{city}" type="text" maxlength="255"/>
+                            <p th:replace="~{layout/fragments :: fieldError('city')}"></p>
                         </div>
                         <div class="field">
                             <label class="label" for="phone">Téléphone</label>
-                            <input class="input" th:field="*{phone}" type="tel" maxlength="50"/>
+                            <input class="input" th:errorclass="input-invalid" th:field="*{phone}" type="tel" maxlength="50"/>
+                            <p th:replace="~{layout/fragments :: fieldError('phone')}"></p>
                         </div>
                         <div class="field md:col-span-2">
                             <label class="label" for="email">Email</label>
-                            <input class="input" th:field="*{email}" type="email" maxlength="255"/>
+                            <input class="input" th:errorclass="input-invalid" th:field="*{email}" type="email" maxlength="255"/>
+                            <p th:replace="~{layout/fragments :: fieldError('email')}"></p>
                         </div>
                     </div>
                 </section>
@@ -90,8 +102,9 @@
                     <div class="card-header"><h2 class="card-title"><span class="icon">account_balance_wallet</span>Règlement</h2></div>
                     <div class="card-body field">
                         <label class="label" for="bankOrCcpAccount">Compte bancaire (RIB) ou CCP <span class="optional">Optionnel</span></label>
-                        <input class="input input-mono" th:field="*{bankOrCcpAccount}" type="text" maxlength="100"
+                        <input class="input input-mono" th:errorclass="input-invalid" th:field="*{bankOrCcpAccount}" type="text" maxlength="100"
                                placeholder="BNA 001 00624 0300012345 78 ou CCP 0021458992 clé 45"/>
+                        <p th:replace="~{layout/fragments :: fieldError('bankOrCcpAccount')}"></p>
                         <p class="hint">Affiché dans la zone « Règlement » des factures.</p>
                     </div>
                 </section>

@@ -20,13 +20,13 @@
         <div class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_10rem_8rem_14rem_auto] lg:items-end">
             <div class="field">
                 <label class="label" for="search">Recherche</label>
-                <input class="input" id="search" name="search" type="search" th:value="${search}" placeholder="N° de facture ou client"/>
+                <input class="input" id="search" name="search" type="search" th:value="${filter.search}" placeholder="N° de facture ou client"/>
             </div>
             <div class="field">
                 <label class="label" for="status">Statut</label>
                 <select class="input" id="status" name="status">
                     <option value="">Tous</option>
-                    <option th:each="s : ${statuses}" th:value="${s.name()}" th:selected="${selectedStatus == s.name()}"
+                    <option th:each="s : ${statuses}" th:value="${s.name()}" th:selected="${filter.status == s}"
                             th:text="${s.name() == 'DRAFT'} ? 'Brouillon' : (${s.name() == 'ISSUED'} ? 'Émise' : (${s.name() == 'PAID'} ? 'Payée' : 'Annulée'))">Statut</option>
                 </select>
             </div>
@@ -35,14 +35,14 @@
                 <select class="input" id="year" name="year">
                     <option value="">Toutes</option>
                     <option th:each="y : ${#numbers.sequence(currentYear, currentYear - 4, -1)}" th:value="${y}"
-                            th:text="${y}" th:selected="${selectedYear == y}">2026</option>
+                            th:text="${y}" th:selected="${filter.year == y}">2026</option>
                 </select>
             </div>
             <div class="field">
                 <label class="label" for="client">Client</label>
                 <select class="input" id="client" name="client">
                     <option value="">Tous</option>
-                    <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}" th:selected="${selectedClient == c.id}">Client</option>
+                    <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}" th:selected="${filter.client == c.id}">Client</option>
                 </select>
             </div>
             <div class="flex gap-2">
@@ -67,7 +67,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="inv : ${invoices}">
+                <tr th:each="inv : ${page.content}">
                     <td class="whitespace-nowrap font-semibold">
                         <a th:href="@{/invoices/{id}(id=${inv.id})}" class="hover:text-primary" th:text="${inv.invoiceNumber ?: 'Brouillon'}">FA-2026-0001</a>
                     </td>
@@ -98,14 +98,15 @@
                         </div>
                     </td>
                 </tr>
-                <tr th:if="${invoices.isEmpty()}">
+                <tr th:if="${page.isEmpty()}">
                     <td colspan="7" class="table-empty">Aucune facture ne correspond à ces critères.</td>
                 </tr>
                 </tbody>
             </table>
         </div>
         <div class="card-footer">
-            <span th:text="${invoices.size() + ' facture(s)'}">0 facture</span>
+            <span th:text="${page.totalElements + ' facture(s)'}">0 facture</span>
+            <nav th:replace="~{layout/fragments :: pagination(${page}, ${pageLinks})}"></nav>
             <span>Total : <strong class="text-on-surface" th:text="${amountUtils.format(total)}">0,00 DA</strong></span>
         </div>
     </section>

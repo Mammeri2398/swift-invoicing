@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.client;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 import com.swiftlabs.invoicing.invoice.InvoiceRepository;
 
 import org.springframework.stereotype.Service;
@@ -30,17 +31,17 @@ public class ClientService {
 
     public Client findById(Long id) {
         return clientRepository.findById(id).orElseThrow(() ->
-            new BusinessException("Client introuvable (id=" + id + ")."));
+            new ResourceNotFoundException("Client introuvable (id=" + id + ")."));
     }
 
     @Transactional
     public Client save(ClientForm form) {
         // Update the stored client so fields not on the form (createdAt) are kept
         Client client = form.getId() != null ? findById(form.getId()) : new Client();
-        if (form.getType() == null || form.getType().isEmpty()) {
-            throw new BusinessException("Le type de client est obligatoire.");
+        if (form.getType() == null) {
+            throw new BusinessException("type", "Le type de client est obligatoire.");
         }
-        client.setType(ClientType.valueOf(form.getType()));
+        client.setType(form.getType());
         client.setName(form.getName());
         client.setAddress(form.getAddress());
         client.setCity(form.getCity());
@@ -64,7 +65,7 @@ public class ClientService {
 
     private void validate(Client client) {
         if (client.getType() == ClientType.PROFESSIONNEL && (client.getNif() == null || client.getNif().trim().isEmpty())) {
-            throw new BusinessException("Le NIF est obligatoire pour un client professionnel.");
+            throw new BusinessException("nif", "Le NIF est obligatoire pour un client professionnel.");
         }
     }
 }

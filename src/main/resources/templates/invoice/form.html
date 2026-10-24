@@ -16,6 +16,7 @@
 
     <form th:action="@{/invoices/save}" method="post" th:object="${invoice}" id="invoice-form" class="flex flex-col gap-6">
         <input type="hidden" th:field="*{id}"/>
+        <div th:replace="~{layout/fragments :: formErrors}"></div>
 
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <section class="card lg:col-span-2">
@@ -23,28 +24,32 @@
                 <div class="card-body form-grid">
                     <div class="field md:col-span-2">
                         <label class="label" for="clientId">Client <span class="required">*</span></label>
-                        <select class="input" th:field="*{clientId}" required>
+                        <select class="input" th:errorclass="input-invalid" th:field="*{clientId}" required>
                             <option value="">Sélectionner un client…</option>
                             <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}">Client</option>
                         </select>
+                        <p th:replace="~{layout/fragments :: fieldError('clientId')}"></p>
                         <p class="hint">Client absent ? <a th:href="@{/clients/new}" class="text-primary hover:underline">Créer un client</a></p>
                     </div>
                     <div class="field">
                         <label class="label" for="issueDate">Date d'émission <span class="required">*</span></label>
-                        <input class="input" type="date" th:field="*{issueDate}" required/>
+                        <input class="input" type="date" th:errorclass="input-invalid" th:field="*{issueDate}" required/>
+                        <p th:replace="~{layout/fragments :: fieldError('issueDate')}"></p>
                     </div>
                     <div class="field">
                         <label class="label" for="dueDate">Date d'échéance <span class="optional">Optionnel</span></label>
-                        <input class="input" type="date" th:field="*{dueDate}"/>
+                        <input class="input" type="date" th:errorclass="input-invalid" th:field="*{dueDate}"/>
+                        <p th:replace="~{layout/fragments :: fieldError('dueDate')}"></p>
                     </div>
                     <div class="field md:col-span-2">
                         <label class="label" for="paymentMethod">Mode de paiement <span class="optional">Optionnel</span></label>
-                        <select class="input" th:field="*{paymentMethod}">
+                        <select class="input" th:errorclass="input-invalid" th:field="*{paymentMethod}">
                             <option value="">—</option>
                             <option th:each="pm : ${paymentMethods}" th:value="${pm.name()}">
                                 <th:block th:replace="~{layout/fragments :: paymentMethod(${pm.name()})}"></th:block>
                             </option>
                         </select>
+                        <p th:replace="~{layout/fragments :: fieldError('paymentMethod')}"></p>
                     </div>
                 </div>
             </section>
@@ -78,12 +83,24 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="line, stat : *{lines}" data-line>
+                    <tr th:each="line, stat : *{lines}" data-line class="align-top">
                         <td class="text-on-surface-variant tabular-nums" data-line-number th:text="${stat.count}">1</td>
-                        <td><input class="input input-sm" type="text" th:field="*{lines[__${stat.index}__].description}" required maxlength="255" placeholder="Prestation, produit…"/></td>
-                        <td><input class="input input-sm" type="text" th:field="*{lines[__${stat.index}__].unit}" maxlength="50" list="units" placeholder="jour"/></td>
-                        <td><input class="input input-sm text-right" type="number" th:field="*{lines[__${stat.index}__].quantity}" required min="0" step="0.001" data-quantity/></td>
-                        <td><input class="input input-sm text-right" type="number" th:field="*{lines[__${stat.index}__].unitPrice}" required min="0" step="0.01" data-unit-price/></td>
+                        <td>
+                            <input class="input input-sm" type="text" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].description}" required maxlength="255" placeholder="Prestation, produit…"/>
+                            <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].description'})}"></p>
+                        </td>
+                        <td>
+                            <input class="input input-sm" type="text" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].unit}" maxlength="50" list="units" placeholder="jour"/>
+                            <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].unit'})}"></p>
+                        </td>
+                        <td>
+                            <input class="input input-sm text-right" type="number" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].quantity}" required min="0" step="0.001" data-quantity/>
+                            <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].quantity'})}"></p>
+                        </td>
+                        <td>
+                            <input class="input input-sm text-right" type="number" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].unitPrice}" required min="0" step="0.01" data-unit-price/>
+                            <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].unitPrice'})}"></p>
+                        </td>
                         <td class="num font-semibold" data-line-total>0,00 DA</td>
                         <td><button type="button" class="btn-icon danger" data-remove-line title="Supprimer la ligne" aria-label="Supprimer la ligne"><span class="icon">delete</span></button></td>
                     </tr>
@@ -92,6 +109,7 @@
             </div>
             <div class="card-footer">
                 <span>Au moins une ligne est nécessaire.</span>
+                <p th:replace="~{layout/fragments :: fieldError('lines')}"></p>
                 <span>Total : <strong class="text-on-surface" data-grand-total>0,00 DA</strong></span>
             </div>
         </section>
@@ -99,7 +117,8 @@
         <section class="card">
             <div class="card-body field">
                 <label class="label" for="notes">Notes / informations de paiement <span class="optional">Optionnel</span></label>
-                <textarea class="input" th:field="*{notes}" rows="3" maxlength="1000"></textarea>
+                <textarea class="input" th:errorclass="input-invalid" th:field="*{notes}" rows="3" maxlength="1000"></textarea>
+                <p th:replace="~{layout/fragments :: fieldError('notes')}"></p>
             </div>
         </section>
 

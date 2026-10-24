@@ -2,6 +2,9 @@ package com.swiftlabs.invoicing.access.profile;
 
 import com.swiftlabs.invoicing.access.privilege.Privilege;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,7 +12,12 @@ import java.util.List;
 public class ProfileForm {
 
     private Long id;
+
+    @NotBlank
+    @Size(max = 100)
     private String name;
+
+    @Size(max = 500)
     private String description;
     private List<Long> privilegeIds = new ArrayList<>();
 

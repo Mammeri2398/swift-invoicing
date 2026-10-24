@@ -2,6 +2,8 @@ package com.swiftlabs.invoicing.access.user;
 
 import com.swiftlabs.invoicing.access.profile.Profile;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
+import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -49,10 +51,10 @@ public class UserService {
     public NewAccount create(UserForm form) {
         Profile profile = requireProfile(form.getProfileId());
         if (userRepository.existsByUsername(form.getUsername())) {
-            throw new IllegalArgumentException("Ce nom d'utilisateur existe déjà.");
+            throw new BusinessException("username", "Ce nom d'utilisateur existe déjà.");
         }
         if (userRepository.existsByEmail(form.getEmail())) {
-            throw new IllegalArgumentException("Cet email est déjà utilisé.");
+            throw new BusinessException("email", "Cet email est déjà utilisé.");
         }
         String temporaryPassword = passwordPolicy.generateTemporary();
         User user = new User();
@@ -70,10 +72,10 @@ public class UserService {
         User existing = require(form.getId());
         Profile profile = requireProfile(form.getProfileId());
         if (!form.getEmail().equals(existing.getEmail()) && userRepository.existsByEmail(form.getEmail())) {
-            throw new IllegalArgumentException("Cet email est déjà utilisé.");
+            throw new BusinessException("email", "Cet email est déjà utilisé.");
         }
         if (!form.isEnabled() && Objects.equals(existing.getId(), actingUserId)) {
-            throw new IllegalArgumentException("Vous ne pouvez pas désactiver votre propre compte.");
+            throw new BusinessException("enabled", "Vous ne pouvez pas désactiver votre propre compte.");
         }
         existing.setEmail(form.getEmail());
         existing.setEnabled(form.isEnabled());
@@ -86,10 +88,10 @@ public class UserService {
     public void changeOwnPassword(Long userId, String currentPassword, String newPassword) {
         User user = require(userId);
         if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword())) {
-            throw new IllegalArgumentException("Le mot de passe actuel est incorrect.");
+            throw new BusinessException("currentPassword", "Le mot de passe actuel est incorrect.");
         }
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
-            throw new IllegalArgumentException("Le nouveau mot de passe doit être différent de l'actuel.");
+            throw new BusinessException("newPassword", "Le nouveau mot de passe doit être différent de l'actuel.");
         }
         setPassword(user, newPassword);
     }
@@ -112,7 +114,7 @@ public class UserService {
     @Transactional
     public void delete(Long id, Long actingUserId) {
         if (Objects.equals(id, actingUserId)) {
-            throw new IllegalArgumentException("Vous ne pouvez pas supprimer votre propre compte.");
+            throw new BusinessException("Vous ne pouvez pas supprimer votre propre compte.");
         }
         userRepository.delete(require(id));
     }
@@ -124,15 +126,15 @@ public class UserService {
 
     private User require(Long id) {
         return userRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable."));
+            .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
     }
 
     private Profile requireProfile(Long profileId) {
         if (profileId == null) {
-            throw new IllegalArgumentException("Un profil doit être attribué à l'utilisateur.");
+            throw new BusinessException("profileId", "Un profil doit être attribué à l'utilisateur.");
         }
         return profileRepository.findById(profileId)
-            .orElseThrow(() -> new IllegalArgumentException("Profil introuvable."));
+            .orElseThrow(() -> new BusinessException("profileId", "Profil introuvable."));
     }
 
     private LocalDateTime now() {

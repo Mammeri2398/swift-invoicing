@@ -1,7 +1,9 @@
 package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.client.Client;
+import com.swiftlabs.invoicing.common.AmountUtils;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -11,13 +13,15 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Entity
@@ -114,8 +118,10 @@ public class Invoice {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
-    @Transient
-    private List<InvoiceLine> lines = new ArrayList<InvoiceLine>();
+    /** Lines in print order. Removing a line from the list deletes it (orphan removal). */
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position ASC")
+    private List<InvoiceLine> lines = new ArrayList<>();
 
     public Invoice() {
         this.status = InvoiceStatus.DRAFT;
@@ -356,10 +362,28 @@ public class Invoice {
     }
 
     public List<InvoiceLine> getLines() {
-        return lines;
+        return Collections.unmodifiableList(lines);
     }
 
-    public void setLines(List<InvoiceLine> lines) {
-        this.lines = lines;
+    /** Replaces every line (draft editing): positions 1..n in the given order, total recomputed. */
+    public void replaceLines(List<InvoiceLine> newLines) {
+        lines.clear();
+        int position = 1;
+        for (InvoiceLine line : newLines) {
+            line.setInvoice(this);
+            line.setPosition(position++);
+            lines.add(line);
+        }
+        recalculateTotal();
+    }
+
+    /** Total = sum of the line totals, rounded to the cent. */
+    public BigDecimal recalculateTotal() {
+        BigDecimal sum = BigDecimal.ZERO;
+        for (InvoiceLine line : lines) {
+            sum = sum.add(line.getLineTotal());
+        }
+        totalAmount = AmountUtils.round2(sum);
+        return totalAmount;
     }
 }

@@ -12,7 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,8 +25,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -132,8 +133,10 @@ class ProfileControllerTest {
             .filter(code -> !code.equals("MANAGE_PROFILES")).toArray(String[]::new);
 
         mockMvc.perform(save(1L, "Administrateur", withoutManageProfiles))
-            .andExpect(redirectedUrl("/profiles/1/edit"))
-            .andExpect(flash().attribute("error", containsString("MANAGE_PROFILES")));
+            .andExpect(status().isOk())
+            .andExpect(view().name("access/profile/form"))
+            .andExpect(model().attributeHasFieldErrors("profile", "privilegeIds"))
+            .andExpect(content().string(containsString("MANAGE_PROFILES : impossible de le retirer")));
 
         assertThat(privilegeCodes("Administrateur")).contains("MANAGE_PROFILES").hasSize(allCodes().length);
     }
@@ -174,14 +177,11 @@ class ProfileControllerTest {
 
     @Test
     void failedSaveRedisplaysSubmittedValuesWithError() throws Exception {
-        MvcResult result = mockMvc.perform(save(null, "Administrateur", "VIEW_CLIENTS"))
-            .andExpect(redirectedUrl("/profiles/new"))
-            .andExpect(flash().attribute("error", "Ce nom de profil existe déjà."))
-            .andReturn();
-
+        // Shown again directly (no redirect), the error next to the name, the checked boxes kept
         String clients = privilegeId("VIEW_CLIENTS").toString();
-        String html = mockMvc.perform(get("/profiles/new").flashAttrs(result.getFlashMap()))
+        String html = mockMvc.perform(save(null, "Administrateur", "VIEW_CLIENTS"))
             .andExpect(status().isOk())
+            .andExpect(model().attributeHasFieldErrors("profile", "name"))
             .andExpect(content().string(containsString("Ce nom de profil existe déjà.")))
             .andReturn().getResponse().getContentAsString();
         assertThat(html).containsPattern("value=\"" + clients + "\"[^>]*checked");

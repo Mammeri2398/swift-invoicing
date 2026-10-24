@@ -10,10 +10,11 @@ import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -109,14 +110,20 @@ class InvoiceServiceTest {
         assertThat(reloaded.getInvoiceNumber()).isEqualTo(issued.getInvoiceNumber());
     }
 
+    private List<Invoice> searchYear(int year) {
+        InvoiceFilter filter = new InvoiceFilter();
+        filter.setYear(year);
+        return invoiceService.search(filter, PageRequest.of(0, 20)).getContent();
+    }
+
     @Test
     void listFilteredByYearIncludesDraftsByIssueDate() {
         Client c = particular();
         Invoice d = draft(c, LocalDate.of(2026, 5, 1), new BigDecimal("1.000"), new BigDecimal("10.00"));
         Invoice issued = invoiceService.issue(draft(c, LocalDate.of(2025, 5, 1), new BigDecimal("1.000"), new BigDecimal("10.00")).getId());
 
-        assertThat(invoiceService.list(null, 2026, null, null)).extracting(Invoice::getId).containsExactly(d.getId());
-        assertThat(invoiceService.list(null, 2025, null, null)).extracting(Invoice::getId).containsExactly(issued.getId());
+        assertThat(searchYear(2026)).extracting(Invoice::getId).containsExactly(d.getId());
+        assertThat(searchYear(2025)).extracting(Invoice::getId).containsExactly(issued.getId());
     }
 
     @Test

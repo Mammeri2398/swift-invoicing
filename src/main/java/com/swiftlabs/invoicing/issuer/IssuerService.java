@@ -5,13 +5,13 @@ import com.swiftlabs.invoicing.common.BusinessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 
 @Service
 @Transactional(readOnly = true)
@@ -39,9 +39,9 @@ public class IssuerService {
     @Transactional
     public Issuer save(IssuerForm form) {
         // Validate before touching the managed row, so a rejected form never gets flushed
-        requireText(form.getFullName(), "Le nom complet est obligatoire.");
-        requireText(form.getAeCardNumber(), "Le numéro de carte auto-entrepreneur est obligatoire.");
-        requireText(form.getNif(), "Le NIF est obligatoire.");
+        requireText("fullName", form.getFullName(), "Le nom complet est obligatoire.");
+        requireText("aeCardNumber", form.getAeCardNumber(), "Le numéro de carte auto-entrepreneur est obligatoire.");
+        requireText("nif", form.getNif(), "Le NIF est obligatoire.");
 
         // The logo is not on this form: it is kept
         Issuer issuer = getIssuer();
@@ -124,9 +124,9 @@ public class IssuerService {
         return data.length >= prefix.length && Arrays.equals(Arrays.copyOf(data, prefix.length), prefix);
     }
 
-    private void requireText(String value, String message) {
+    private void requireText(String field, String value, String message) {
         if (value == null || value.trim().isEmpty()) {
-            throw new BusinessException(message);
+            throw new BusinessException(field, message);
         }
     }
 }

@@ -1,18 +1,52 @@
 package com.swiftlabs.invoicing.issuer;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 public class IssuerForm {
 
     private Long id;
+
+    @NotBlank
+    @Size(max = 255)
     private String fullName;
+
+    @Size(max = 255)
     private String tradeName;
+
+    @Size(max = 255)
     private String address;
+
+    @Size(max = 255)
     private String city;
+
+    @Size(max = 50)
+    @Pattern(regexp = "[0-9+ ().-]*")
     private String phone;
+
+    @Email
+    @Size(max = 255)
     private String email;
+
+    @NotBlank
+    @Size(max = 50)
     private String aeCardNumber;
+
+    @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = "[0-9]*")
     private String nif;
+
+    @Size(max = 50)
+    @Pattern(regexp = "[0-9]*")
     private String nis;
+
+    @Size(max = 500)
     private String activityDescription;
+
+    @Size(max = 100)
     private String bankOrCcpAccount;
 
     public IssuerForm() {

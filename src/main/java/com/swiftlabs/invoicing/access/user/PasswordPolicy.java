@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.access.user;
 
+import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 
 import org.springframework.stereotype.Component;
@@ -24,16 +25,16 @@ public class PasswordPolicy {
         this.maxLength = properties.password().maxLength();
     }
 
-    /** @throws IllegalArgumentException with a message for the user when the password is not acceptable */
+    /** @throws BusinessException with a message for the user when the password is not acceptable */
     public void validate(String password, String username) {
         if (password == null || password.length() < minLength || password.length() > maxLength
             || !password.chars().anyMatch(Character::isUpperCase)
             || !password.chars().anyMatch(Character::isLowerCase)
             || !password.chars().anyMatch(Character::isDigit)) {
-            throw new IllegalArgumentException(describe());
+            throw new BusinessException(describe());
         }
         if (username != null && password.toLowerCase().contains(username.toLowerCase())) {
-            throw new IllegalArgumentException("Le mot de passe ne doit pas contenir le nom d'utilisateur.");
+            throw new BusinessException("Le mot de passe ne doit pas contenir le nom d'utilisateur.");
         }
     }
 

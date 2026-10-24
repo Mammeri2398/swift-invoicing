@@ -3,19 +3,20 @@ package com.swiftlabs.invoicing.invoice;
 import com.swiftlabs.invoicing.client.Client;
 import com.swiftlabs.invoicing.client.ClientService;
 import com.swiftlabs.invoicing.client.ClientType;
-import com.swiftlabs.invoicing.common.AmountUtils;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 import com.swiftlabs.invoicing.config.InvoiceProperties;
 import com.swiftlabs.invoicing.issuer.Issuer;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -23,20 +24,17 @@ import java.util.List;
 public class InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
-    private final InvoiceLineRepository invoiceLineRepository;
     private final InvoiceSequenceRepository sequenceRepository;
     private final IssuerService issuerService;
     private final ClientService clientService;
     private final InvoiceProperties properties;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
-                          InvoiceLineRepository invoiceLineRepository,
                           InvoiceSequenceRepository sequenceRepository,
                           IssuerService issuerService,
                           ClientService clientService,
                           InvoiceProperties properties) {
         this.invoiceRepository = invoiceRepository;
-        this.invoiceLineRepository = invoiceLineRepository;
         this.sequenceRepository = sequenceRepository;
         this.issuerService = issuerService;
         this.clientService = clientService;
@@ -52,14 +50,13 @@ public class InvoiceService {
 
     public Invoice findById(Long id) {
         return invoiceRepository.findById(id).orElseThrow(() ->
-            new BusinessException("Facture introuvable (id=" + id + ")."));
+            new ResourceNotFoundException("Facture introuvable (id=" + id + ")."));
     }
 
-    /** Invoice with its lines loaded (lines are not mapped on the entity). */
+    /** Invoice ready to display or print: client and lines loaded in one query. */
     public Invoice findWithLines(Long id) {
-        Invoice invoice = findById(id);
-        invoice.setLines(invoiceLineRepository.findByInvoiceIdOrderByPositionAsc(id));
-        return invoice;
+        return invoiceRepository.findWithLinesById(id).orElseThrow(() ->
+            new ResourceNotFoundException("Facture introuvable (id=" + id + ")."));
     }
 
     public boolean existsByNumber(String number) {
@@ -70,6 +67,17 @@ public class InvoiceService {
         return invoiceRepository.findByInvoiceNumber(number).orElse(null);
     }
 
+    /** One page of the invoices matching the filter, filtered and sorted by the database. */
+    public Page<Invoice> search(InvoiceFilter filter, Pageable pageable) {
+        return invoiceRepository.findAll(InvoiceSpecifications.matching(filter), pageable);
+    }
+
+    /** Sum of the totals of every invoice matching the filter, across all pages. */
+    public BigDecimal totalOf(InvoiceFilter filter) {
+        return invoiceRepository.sumTotal(InvoiceSpecifications.matching(filter));
+    }
+
+    /** Creates or updates a draft. The form has been validated (see the constraints on InvoiceForm). */
     @Transactional
     public Invoice saveDraft(InvoiceForm form) {
         // Existing invoice: check the stored status, never the submitted one
@@ -78,46 +86,21 @@ public class InvoiceService {
             throw new BusinessException("Seules les factures brouillon peuvent être modifiées.");
         }
         if (form.getClientId() == null) {
-            throw new BusinessException("Un client doit être sélectionné.");
+            throw new BusinessException("clientId", "Un client doit être sélectionné.");
+        }
+        if (form.getLines() == null || form.getLines().isEmpty()) {
+            throw new BusinessException("lines", "Une facture doit contenir au moins une ligne.");
         }
         invoice.setClient(clientService.findById(form.getClientId()));
         invoice.setIssueDate(form.getIssueDate() != null ? form.getIssueDate() : LocalDate.now());
         invoice.setDueDate(form.getDueDate());
-        invoice.setPaymentMethod(form.getPaymentMethod() != null && !form.getPaymentMethod().isEmpty()
-            ? PaymentMethod.valueOf(form.getPaymentMethod()) : null);
+        invoice.setPaymentMethod(form.getPaymentMethod());
         invoice.setNotes(form.getNotes());
-        List<InvoiceLineForm> lineForms = form.getLines() != null ? form.getLines() : List.of();
-        invoice.setTotalAmount(BigDecimal.ZERO);
-        Invoice saved = invoiceRepository.save(invoice);
-
-        invoiceLineRepository.deleteByInvoiceId(saved.getId());
-
-        List<InvoiceLine> lines = new ArrayList<InvoiceLine>();
-        int position = 1;
-        for (InvoiceLineForm lf : lineForms) {
-            if (lf.getDescription() == null || lf.getDescription().trim().isEmpty()) {
-                continue;
-            }
-            InvoiceLine line = new InvoiceLine();
-            line.setInvoice(saved);
-            line.setPosition(position);
-            line.setDescription(lf.getDescription().trim());
-            line.setUnit(lf.getUnit());
-            line.setQuantity(lf.getQuantity());
-            line.setUnitPrice(lf.getUnitPrice());
-            line.setLineTotal(AmountUtils.lineTotal(lf.getQuantity(), lf.getUnitPrice()));
-            lines.add(line);
-            position++;
-        }
-        if (lines.isEmpty()) {
-            throw new BusinessException("Une facture doit contenir au moins une ligne.");
-        }
-        for (InvoiceLine line : lines) {
-            invoiceLineRepository.save(line);
-        }
-        saved.setLines(lines);
-        saved.setTotalAmount(computeTotal(lines));
-        return invoiceRepository.save(saved);
+        invoice.replaceLines(form.getLines().stream()
+            .map(line -> InvoiceLine.of(line.getDescription(), line.getUnit(), line.getQuantity(), line.getUnitPrice()))
+            .toList());
+        // Lines are saved with the invoice (cascade); removed lines are deleted (orphan removal)
+        return invoiceRepository.save(invoice);
     }
 
     @Transactional
@@ -126,50 +109,36 @@ public class InvoiceService {
         if (!invoice.isDraft()) {
             throw new BusinessException("Cette facture est déjà émise et ne peut plus être modifiée.");
         }
-        if (invoice.getClient() == null || invoice.getClient().getId() == null) {
-            throw new BusinessException("Un client doit être sélectionné.");
-        }
-        Client client = clientService.findById(invoice.getClient().getId());
-        if (client.getType() == ClientType.PROFESSIONNEL
-            && (client.getNif() == null || client.getNif().trim().isEmpty())) {
+        Client client = invoice.getClient();
+        if (client.getType() == ClientType.PROFESSIONNEL && (client.getNif() == null || client.getNif().isBlank())) {
             throw new BusinessException("Le NIF du client professionnel est obligatoire avant d'émettre la facture.");
         }
-
-        List<InvoiceLine> lines = invoiceLineRepository.findByInvoiceIdOrderByPositionAsc(invoice.getId());
-        if (lines.isEmpty()) {
+        if (invoice.getLines().isEmpty()) {
             throw new BusinessException("Une facture doit contenir au moins une ligne pour être émise.");
         }
+        int year = invoice.getIssueDate().getYear();
 
-        int year = (invoice.getIssueDate() != null ? invoice.getIssueDate().getYear() : LocalDate.now().getYear());
-
-        return issueWithinTransaction(invoice, client, lines, year);
-    }
-
-    private Invoice issueWithinTransaction(Invoice invoice, Client client,
-                                           List<InvoiceLine> lines, int year) {
         // Concurrent issues of the same year queue on the counter's row lock: numbers stay
         // unique and gap-free, and the first invoice of a year cannot fail on the row creation.
         sequenceRepository.createIfAbsent(year);
-        InvoiceSequence seq = sequenceRepository.lockByYear(year);
-        int newValue = seq.getLastValue() + 1;
-        seq.setLastValue(newValue);
+        InvoiceSequence sequence = sequenceRepository.lockByYear(year);
+        int number = sequence.getLastValue() + 1;
+        sequence.setLastValue(number);
 
-        String number = properties.numberPrefix() + "-" + year + "-" + String.format("%04d", newValue);
-        if (invoiceRepository.existsByInvoiceNumber(number)) {
-            throw new BusinessException("Le numéro de facture " + number + " existe déjà.");
+        String invoiceNumber = properties.numberPrefix() + "-" + year + "-" + String.format("%04d", number);
+        if (invoiceRepository.existsByInvoiceNumber(invoiceNumber)) {
+            throw new BusinessException("Le numéro de facture " + invoiceNumber + " existe déjà.");
         }
 
-        invoice.setInvoiceNumber(number);
+        invoice.setInvoiceNumber(invoiceNumber);
         invoice.setInvoiceYear(year);
-        invoice.setSequenceNumber(newValue);
+        invoice.setSequenceNumber(number);
         invoice.setStatus(InvoiceStatus.ISSUED);
         invoice.setIssuedAt(LocalDateTime.now());
-        invoice.setTotalAmount(computeTotal(lines));
-
+        invoice.recalculateTotal();
         snapshotIssuer(invoice);
         snapshotClient(invoice, client);
-
-        return invoiceRepository.save(invoice);
+        return invoice;
     }
 
     @Transactional
@@ -180,7 +149,7 @@ public class InvoiceService {
         }
         invoice.setStatus(InvoiceStatus.PAID);
         invoice.setPaidAt(LocalDateTime.now());
-        return invoiceRepository.save(invoice);
+        return invoice;
     }
 
     @Transactional
@@ -191,55 +160,17 @@ public class InvoiceService {
         }
         invoice.setStatus(InvoiceStatus.CANCELLED);
         invoice.setCancelledAt(LocalDateTime.now());
-        return invoiceRepository.save(invoice);
+        return invoice;
     }
 
+    /** Deletes a draft and its lines (cascade). */
     @Transactional
     public void delete(Long id) {
         Invoice invoice = findById(id);
         if (!invoice.isDraft()) {
             throw new BusinessException("Seules les factures brouillon peuvent être supprimées.");
         }
-        invoiceLineRepository.deleteByInvoiceId(id);
         invoiceRepository.delete(invoice);
-    }
-
-    public List<Invoice> list(String status, Integer year, Long clientId, String search) {
-        List<Invoice> result = invoiceRepository.findAll();
-        List<Invoice> filtered = new ArrayList<Invoice>();
-        for (Invoice inv : result) {
-            if (matches(inv, status, year, clientId, search)) {
-                filtered.add(inv);
-            }
-        }
-        return filtered;
-    }
-
-    private boolean matches(Invoice inv, String status, Integer year, Long clientId, String search) {
-        if (status != null && !status.isEmpty() && !inv.getStatus().name().equals(status)) {
-            return false;
-        }
-        if (year != null) {
-            // Drafts have no invoice year yet: fall back to the issue date
-            Integer invYear = inv.getInvoiceYear() != null ? inv.getInvoiceYear()
-                : (inv.getIssueDate() != null ? Integer.valueOf(inv.getIssueDate().getYear()) : null);
-            if (!year.equals(invYear)) {
-                return false;
-            }
-        }
-        if (clientId != null && (inv.getClient() == null || !inv.getClient().getId().equals(clientId))) {
-            return false;
-        }
-        if (search != null && !search.isEmpty()) {
-            String s = search.toLowerCase();
-            String number = inv.getInvoiceNumber() != null ? inv.getInvoiceNumber().toLowerCase() : "";
-            String clientName = inv.getClient() != null ? inv.getClient().getName().toLowerCase() : "";
-            String snapshotClient = inv.getClientName() != null ? inv.getClientName().toLowerCase() : "";
-            if (!number.contains(s) && !clientName.contains(s) && !snapshotClient.contains(s)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /** Turnover of the year: issued and paid invoices only. */
@@ -266,26 +197,18 @@ public class InvoiceService {
         invoice.setIssuerFullName(issuer.getFullName());
         invoice.setIssuerTradeName(issuer.getTradeName());
         invoice.setIssuerAddress(issuer.getAddress());
+        invoice.setIssuerCity(issuer.getCity());
+        invoice.setIssuerPhone(issuer.getPhone());
+        invoice.setIssuerEmail(issuer.getEmail());
         invoice.setIssuerAeCardNumber(issuer.getAeCardNumber());
         invoice.setIssuerNif(issuer.getNif());
         invoice.setIssuerNis(issuer.getNis());
         invoice.setIssuerBankAccount(issuer.getBankOrCcpAccount());
-        invoice.setIssuerCity(issuer.getCity());
-        invoice.setIssuerPhone(issuer.getPhone());
-        invoice.setIssuerEmail(issuer.getEmail());
     }
 
     private void snapshotClient(Invoice invoice, Client client) {
         invoice.setClientName(client.getName());
         invoice.setClientAddress(client.getAddress());
         invoice.setClientNif(client.getNif());
-    }
-
-    private BigDecimal computeTotal(List<InvoiceLine> lines) {
-        BigDecimal total = BigDecimal.ZERO;
-        for (InvoiceLine line : lines) {
-            total = total.add(line.getLineTotal());
-        }
-        return AmountUtils.round2(total);
     }
 }

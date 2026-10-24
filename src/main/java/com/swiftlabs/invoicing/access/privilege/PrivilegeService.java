@@ -1,5 +1,8 @@
 package com.swiftlabs.invoicing.access.privilege;
 
+import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.ResourceNotFoundException;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,22 +34,22 @@ public class PrivilegeService {
     @Transactional
     public Privilege save(PrivilegeForm form) {
         if (form.getName() == null || form.getName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Le nom du privilège est obligatoire.");
+            throw new BusinessException("name", "Le nom du privilège est obligatoire.");
         }
         Privilege privilege;
         if (form.getId() == null) {
             String code = form.getCode() != null ? form.getCode().trim().toUpperCase() : "";
             if (code.isEmpty()) {
-                throw new IllegalArgumentException("Le code du privilège est obligatoire.");
+                throw new BusinessException("code", "Le code du privilège est obligatoire.");
             }
             if (privilegeRepository.existsByCode(code)) {
-                throw new IllegalArgumentException("Ce code de privilège existe déjà.");
+                throw new BusinessException("code", "Ce code de privilège existe déjà.");
             }
             privilege = new Privilege();
             privilege.setCode(code);
         } else {
             privilege = privilegeRepository.findById(form.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Privilège introuvable."));
+                .orElseThrow(() -> new ResourceNotFoundException("Privilège introuvable."));
         }
         privilege.setName(form.getName().trim());
         privilege.setDescription(form.getDescription());

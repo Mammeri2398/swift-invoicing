@@ -2,19 +2,34 @@ package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.common.AmountUtils;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+@DueDateNotBeforeIssueDate
 public class InvoiceForm {
 
     private Long id;
+
+    @NotNull
     private Long clientId;
+
+    @NotNull
     private LocalDate issueDate;
     private LocalDate dueDate;
-    private String paymentMethod;
+    private PaymentMethod paymentMethod;
+
+    @Size(max = 1000)
     private String notes;
+
+    @NotEmpty
+    @Valid
     private List<InvoiceLineForm> lines = new ArrayList<InvoiceLineForm>();
 
     public InvoiceForm() {
@@ -52,11 +67,11 @@ public class InvoiceForm {
         this.dueDate = dueDate;
     }
 
-    public String getPaymentMethod() {
+    public PaymentMethod getPaymentMethod() {
         return paymentMethod;
     }
 
-    public void setPaymentMethod(String paymentMethod) {
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
         this.paymentMethod = paymentMethod;
     }
 
@@ -99,7 +114,7 @@ public class InvoiceForm {
         form.setClientId(invoice.getClient() != null ? invoice.getClient().getId() : null);
         form.setIssueDate(invoice.getIssueDate());
         form.setDueDate(invoice.getDueDate());
-        form.setPaymentMethod(invoice.getPaymentMethod() != null ? invoice.getPaymentMethod().name() : null);
+        form.setPaymentMethod(invoice.getPaymentMethod());
         form.setNotes(invoice.getNotes());
         if (invoice.getLines() == null || invoice.getLines().isEmpty()) {
             form.addEmptyLine();

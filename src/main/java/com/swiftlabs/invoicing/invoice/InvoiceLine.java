@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.invoice;
 
+import com.swiftlabs.invoicing.common.AmountUtils;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -42,6 +44,17 @@ public class InvoiceLine {
     private BigDecimal lineTotal;
 
     public InvoiceLine() {
+    }
+
+    /** A line whose total is computed from quantity and unit price (rounded to the cent). */
+    public static InvoiceLine of(String description, String unit, BigDecimal quantity, BigDecimal unitPrice) {
+        InvoiceLine line = new InvoiceLine();
+        line.setDescription(description);
+        line.setUnit(unit);
+        line.setQuantity(quantity);
+        line.setUnitPrice(unitPrice);
+        line.setLineTotal(AmountUtils.lineTotal(quantity, unitPrice));
+        return line;
     }
 
     public Long getId() {

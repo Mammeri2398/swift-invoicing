@@ -113,6 +113,28 @@
     </div>
 </footer>
 
+<!--/* Form errors, used inside a <form th:object="...">.
+       Field: <p th:replace="~{layout/fragments :: fieldError('name')}"></p>
+       Whole form: <div th:replace="~{layout/fragments :: formErrors}"></div> */-->
+<p th:fragment="fieldError(field)" th:if="${#fields.hasErrors(field)}" class="field-error" th:errors="*{__${field}__}">Erreur</p>
+
+<div th:fragment="formErrors" th:if="${#fields.hasAnyErrors()}" class="alert alert-error" role="alert">
+    <span class="icon">error</span>
+    <div class="flex flex-col gap-1">
+        <p th:each="message : ${#fields.globalErrors()}" th:text="${message}">Erreur</p>
+        <p th:if="${#fields.hasErrors('*')}">Corrigez les champs signalés.</p>
+    </div>
+</div>
+
+<!--/* Pagination: ~{layout/fragments :: pagination(${page}, ${pageLinks})} */-->
+<nav th:fragment="pagination(page, links)" th:if="${page.totalPages > 1}" class="flex items-center gap-1" aria-label="Pagination">
+    <a th:if="${page.hasPrevious()}" th:href="${links.to(page.number - 1)}" class="btn-icon" aria-label="Page précédente"><span class="icon">chevron_left</span></a>
+    <span th:unless="${page.hasPrevious()}" class="btn-icon pointer-events-none opacity-30"><span class="icon">chevron_left</span></span>
+    <span class="px-2 tabular-nums" th:text="${'Page ' + (page.number + 1) + ' sur ' + page.totalPages}">Page 1 sur 3</span>
+    <a th:if="${page.hasNext()}" th:href="${links.to(page.number + 1)}" class="btn-icon" aria-label="Page suivante"><span class="icon">chevron_right</span></a>
+    <span th:unless="${page.hasNext()}" class="btn-icon pointer-events-none opacity-30"><span class="icon">chevron_right</span></span>
+</nav>
+
 <!--/* Invoice status badge: ~{layout/fragments :: statusBadge(${invoice.status})} */-->
 <span th:fragment="statusBadge(status)" class="badge" th:switch="${status.name()}"
       th:classappend="${status.name() == 'PAID'} ? 'badge-success' : (${status.name() == 'ISSUED'} ? 'badge-info' : (${status.name() == 'CANCELLED'} ? 'badge-danger' : 'badge-neutral'))">

@@ -82,7 +82,7 @@ public class PasswordResetService {
      * Changes the password, consumes every pending link of the user and ends their sessions.
      *
      * @throws InvalidResetTokenException if the token is unknown, used or expired
-     * @throws IllegalArgumentException if the password breaks the password policy
+     * @throws com.swiftlabs.invoicing.common.BusinessException if the password breaks the password policy
      */
     public void resetPassword(String token, String rawPassword) {
         PasswordResetToken resetToken = findValid(token).orElseThrow(InvalidResetTokenException::new);

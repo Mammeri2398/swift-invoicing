@@ -1,6 +1,11 @@
 package com.swiftlabs.invoicing.invoice;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -8,7 +13,17 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
-public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
+public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpecificationExecutor<Invoice>,
+    InvoiceRepositoryCustom {
+
+    /** One page of the list, with each invoice's client loaded in the same query (no N+1). */
+    @Override
+    @EntityGraph(attributePaths = "client")
+    Page<Invoice> findAll(Specification<Invoice> specification, Pageable pageable);
+
+    /** An invoice ready to display or print: client and lines loaded. */
+    @EntityGraph(attributePaths = {"client", "lines"})
+    Optional<Invoice> findWithLinesById(Long id);
 
     boolean existsByInvoiceNumber(String invoiceNumber);
 
@@ -18,11 +33,12 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     long countByStatus(InvoiceStatus status);
 
-    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.status = :status")
-    BigDecimal sumByStatus(@Param("status") InvoiceStatus status);
-
+    @EntityGraph(attributePaths = "client")
     List<Invoice> findTop10ByOrderByCreatedAtDescIdDesc();
 
     @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.invoiceYear = :year AND i.status IN ('ISSUED', 'PAID')")
     BigDecimal sumIssuedPaidByYear(@Param("year") Integer year);
+
+    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.status = :status")
+    BigDecimal sumByStatus(@Param("status") InvoiceStatus status);
 }

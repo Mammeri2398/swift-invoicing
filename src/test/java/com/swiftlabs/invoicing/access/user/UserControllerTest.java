@@ -19,8 +19,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -53,15 +55,12 @@ class UserControllerTest {
 
     @Test
     void createWithoutProfileShowsErrorAndKeepsInput() throws Exception {
-        MvcResult result = mockMvc.perform(post("/users/save").with(csrf())
+        mockMvc.perform(post("/users/save").with(csrf())
                 .param("username", "noprof").param("email", "noprof@example.test").param("profileId", ""))
-            .andExpect(redirectedUrl("/users/new"))
-            .andExpect(flash().attribute("error", "Un profil doit être attribué à l'utilisateur."))
-            .andReturn();
-
-        mockMvc.perform(get("/users/new").flashAttrs(result.getFlashMap()))
             .andExpect(status().isOk())
-            .andExpect(content().string(containsString("Un profil doit être attribué")))
+            .andExpect(view().name("access/user/form"))
+            .andExpect(model().attributeHasFieldErrorCode("user", "profileId", "NotNull"))
+            .andExpect(content().string(containsString("Choisissez un profil.")))
             .andExpect(content().string(containsString("value=\"noprof\"")));
     }
 
@@ -70,8 +69,9 @@ class UserControllerTest {
         mockMvc.perform(post("/users/save").with(csrf())
                 .param("id", "1").param("username", "admin").param("email", "admin@swiftinvoicing.local")
                 .param("enabled", "true").param("profileId", ""))
-            .andExpect(redirectedUrl("/users/1/edit"))
-            .andExpect(flash().attributeExists("error"));
+            .andExpect(status().isOk())
+            .andExpect(model().attributeHasFieldErrors("user", "profileId"))
+            .andExpect(content().string(containsString("Modifier l&#39;utilisateur")));
     }
 
     @Test

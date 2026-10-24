@@ -3,6 +3,8 @@ package com.swiftlabs.invoicing.access.profile;
 import com.swiftlabs.invoicing.access.privilege.Privilege;
 import com.swiftlabs.invoicing.access.privilege.PrivilegeRepository;
 import com.swiftlabs.invoicing.access.user.UserRepository;
+import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,23 +54,23 @@ public class ProfileService {
         String name = form.getName();
         List<Long> privilegeIds = form.getPrivilegeIds();
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Le nom du profil est obligatoire.");
+            throw new BusinessException("name", "Le nom du profil est obligatoire.");
         }
         String trimmedName = name.trim();
         Profile profile = id == null ? new Profile() : profileRepository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Profil introuvable."));
+            .orElseThrow(() -> new ResourceNotFoundException("Profil introuvable."));
 
         Profile sameName = profileRepository.findByName(trimmedName);
         if (sameName != null && !sameName.getId().equals(profile.getId())) {
-            throw new IllegalArgumentException("Ce nom de profil existe déjà.");
+            throw new BusinessException("name", "Ce nom de profil existe déjà.");
         }
 
         Set<Privilege> privileges = new HashSet<>(privilegeRepository.findAllById(privilegeIds));
         if (privileges.size() != new HashSet<>(privilegeIds).size()) {
-            throw new IllegalArgumentException("Privilège introuvable.");
+            throw new BusinessException("privilegeIds", "Privilège introuvable.");
         }
         if (profile.getId() != null && removesLastManageProfiles(profile, privileges)) {
-            throw new IllegalArgumentException("Au moins un utilisateur actif doit conserver le privilège "
+            throw new BusinessException("privilegeIds", "Au moins un utilisateur actif doit conserver le privilège "
                 + MANAGE_PROFILES + " : impossible de le retirer de ce profil.");
         }
 

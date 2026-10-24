@@ -21,7 +21,12 @@ public class GlobalExceptionHandler {
         throw ex;
     }
 
-    /** Business rule violations that a controller did not turn into a flash message. */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ModelAndView notFound(ResourceNotFoundException ex) {
+        return errorPage(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    /** Business rule violations that a controller did not turn into a form error. */
     @ExceptionHandler(BusinessException.class)
     public ModelAndView business(BusinessException ex) {
         return errorPage(HttpStatus.BAD_REQUEST, ex.getMessage());

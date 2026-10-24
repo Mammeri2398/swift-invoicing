@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -83,9 +84,9 @@ class IssuerControllerTest {
                 .param("fullName", "Karim Benali")
                 .param("aeCardNumber", "16-2024-00001")
                 .param("nif", "  "))
-            .andExpect(redirectedUrl("/settings/issuer"))
-            .andExpect(flash().attribute("error", "Le NIF est obligatoire."))
-            .andExpect(flash().attributeExists("issuer"));
+            .andExpect(status().isOk())
+            .andExpect(model().attributeHasFieldErrorCode("issuer", "nif", "NotBlank"))
+            .andExpect(content().string(containsString("value=\"Karim Benali\"")));
 
         assertThat(issuerRepository.findById(1L).orElseThrow().getNif()).isEqualTo("123456789012345");
     }

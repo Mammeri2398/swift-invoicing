@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.access.user;
 
+import com.swiftlabs.invoicing.common.BusinessException;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -53,7 +55,7 @@ class UserServiceTest {
     @Test
     void createWithoutProfileIsRejected() {
         assertThatThrownBy(() -> userService.create(newUser("noprofile", null)))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(BusinessException.class)
             .hasMessage("Un profil doit être attribué à l'utilisateur.");
         assertThat(userRepository.existsByUsername("noprofile")).isFalse();
     }
@@ -61,7 +63,7 @@ class UserServiceTest {
     @Test
     void createWithUnknownProfileIsRejected() {
         assertThatThrownBy(() -> userService.create(newUser("ghost", 9999L)))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(BusinessException.class)
             .hasMessage("Profil introuvable.");
         assertThat(userRepository.existsByUsername("ghost")).isFalse();
     }
@@ -73,7 +75,7 @@ class UserServiceTest {
         UserForm edit = newUser("keepprofile", null);
         edit.setId(created.getId());
         assertThatThrownBy(() -> userService.update(edit, null))
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(BusinessException.class);
         assertThat(userRepository.findById(created.getId()).orElseThrow().getProfile().getId()).isEqualTo(1L);
     }
 
@@ -109,9 +111,9 @@ class UserServiceTest {
 
     @Test
     void passwordPolicyRejectsWeakPasswordsAndTheUsername() {
-        assertThatThrownBy(() -> passwordPolicy.validate("short1A", "bob")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> passwordPolicy.validate("alllowercase1", "bob")).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> passwordPolicy.validate("A1" + "a".repeat(200), "bob")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> passwordPolicy.validate("short1A", "bob")).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> passwordPolicy.validate("alllowercase1", "bob")).isInstanceOf(BusinessException.class);
+        assertThatThrownBy(() -> passwordPolicy.validate("A1" + "a".repeat(200), "bob")).isInstanceOf(BusinessException.class);
         assertThatThrownBy(() -> passwordPolicy.validate("Martin2026x", "martin"))
             .hasMessage("Le mot de passe ne doit pas contenir le nom d'utilisateur.");
         passwordPolicy.validate("Correct1Horse", "bob");

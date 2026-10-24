@@ -4,6 +4,7 @@ import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
 import com.swiftlabs.invoicing.access.auth.SessionService;
 import com.swiftlabs.invoicing.access.user.PasswordPolicy;
 import com.swiftlabs.invoicing.access.user.UserService;
+import com.swiftlabs.invoicing.common.BusinessException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -57,7 +58,7 @@ public class AccountController {
         }
         try {
             userService.changeOwnPassword(principal.getId(), currentPassword, newPassword);
-        } catch (IllegalArgumentException ex) {
+        } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
             return "redirect:/account/password";
         }

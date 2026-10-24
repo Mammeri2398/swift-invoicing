@@ -17,13 +17,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import javax.imageio.ImageIO;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -72,7 +72,7 @@ class InvoicePdfTest {
         InvoiceForm form = new InvoiceForm();
         form.setClientId(client.getId());
         form.setIssueDate(LocalDate.of(2026, 5, 4));
-        form.setPaymentMethod("BANK_TRANSFER");
+        form.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
         form.setLines(List.of(line));
         return invoiceService.saveDraft(form);
     }

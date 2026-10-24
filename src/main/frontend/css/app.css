@@ -221,6 +221,15 @@
     @apply text-body-sm text-on-surface-variant;
   }
 
+  /* Validation: th:errorclass="input-invalid" on the field, fieldError fragment below it */
+  .input-invalid {
+    @apply bg-error-container/30 ring-2 ring-error focus:ring-error;
+  }
+
+  .field-error {
+    @apply flex items-center gap-1 text-body-sm text-error;
+  }
+
   .checkbox {
     @apply mt-0.5 h-4 w-4 shrink-0 rounded accent-primary;
   }

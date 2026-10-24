@@ -2,26 +2,36 @@ package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.client.ClientService;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.PageLinks;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.List;
 
 @Controller
 @RequestMapping("/invoices")
 public class InvoiceController {
+
+    /** Newest first. Fixed: the "sort" request parameter is ignored (no sorting on arbitrary properties). */
+    private static final Sort LIST_ORDER = Sort.by(Sort.Order.desc("issueDate"), Sort.Order.desc("id"));
 
     private final InvoiceService invoiceService;
     private final ClientService clientService;
@@ -34,86 +44,70 @@ public class InvoiceController {
         this.pdfService = pdfService;
     }
 
+    /**
+     * Filtered, paginated list. An invalid filter value in the URL (e.g. an unknown status) is
+     * ignored rather than failing the page: the binding errors are collected and not shown.
+     */
     @GetMapping
     @PreAuthorize("hasAuthority('VIEW_INVOICES')")
-    public String list(@RequestParam(name = "status", required = false) String status,
-                       @RequestParam(name = "year", required = false) Integer year,
-                       @RequestParam(name = "client", required = false) Long clientId,
-                       @RequestParam(name = "search", required = false) String search,
-                       Model model) {
-        List<Invoice> invoices = invoiceService.list(status, year, clientId, search);
-        BigDecimal total = invoices.stream()
-            .map(Invoice::getTotalAmount)
-            .filter(amount -> amount != null)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        model.addAttribute("invoices", invoices);
-        model.addAttribute("total", total);
+    public String list(@ModelAttribute("filter") InvoiceFilter filter, BindingResult ignoredFilterErrors,
+                       @PageableDefault(size = 20) Pageable pageable, HttpServletRequest request, Model model) {
+        Page<Invoice> page = invoiceService.search(filter,
+            PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), LIST_ORDER));
+        model.addAttribute("page", page);
+        model.addAttribute("total", invoiceService.totalOf(filter));
+        model.addAttribute("pageLinks", new PageLinks(request));
         model.addAttribute("clients", clientService.findAll());
         model.addAttribute("statuses", InvoiceStatus.values());
-        model.addAttribute("selectedStatus", status);
-        model.addAttribute("selectedYear", year);
-        model.addAttribute("selectedClient", clientId);
-        model.addAttribute("search", search);
         return "invoice/list";
     }
 
     @GetMapping("/new")
     @PreAuthorize("hasAuthority('CREATE_INVOICE')")
     public String newForm(Model model) {
-        // After a failed save the submitted form comes back as a flash attribute
-        if (!model.containsAttribute("invoice")) {
-            InvoiceForm form = new InvoiceForm();
-            form.addEmptyLine();
-            model.addAttribute("invoice", form);
-        }
-        addFormChoices(model);
-        return "invoice/form";
+        InvoiceForm form = new InvoiceForm();
+        form.addEmptyLine();
+        model.addAttribute("invoice", form);
+        return formView(model);
     }
 
     @GetMapping("/{id}/edit")
     @PreAuthorize("hasAuthority('CREATE_INVOICE')")
     public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
-        try {
-            Invoice invoice = invoiceService.findWithLines(id);
-            if (!invoice.isDraft()) {
-                redirectAttributes.addFlashAttribute("error", "Seules les factures brouillon peuvent être modifiées.");
-                return "redirect:/invoices/" + id;
-            }
-            if (!model.containsAttribute("invoice")) {
-                model.addAttribute("invoice", InvoiceForm.from(invoice));
-            }
-            addFormChoices(model);
-            return "invoice/form";
-        } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-            return "redirect:/invoices";
+        Invoice invoice = invoiceService.findWithLines(id);
+        if (!invoice.isDraft()) {
+            redirectAttributes.addFlashAttribute("error", "Seules les factures brouillon peuvent être modifiées.");
+            return "redirect:/invoices/" + id;
         }
+        model.addAttribute("invoice", InvoiceForm.from(invoice));
+        return formView(model);
     }
 
+    /** Invalid input is shown again with the errors next to each field (no redirect, nothing lost). */
     @PostMapping("/save")
     @PreAuthorize("hasAuthority('CREATE_INVOICE')")
-    public String save(@ModelAttribute InvoiceForm form, RedirectAttributes redirectAttributes) {
-        try {
-            Invoice saved = invoiceService.saveDraft(form);
-            redirectAttributes.addFlashAttribute("success", "Facture brouillon enregistrée.");
-            return "redirect:/invoices/" + saved.getId();
-        } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-            redirectAttributes.addFlashAttribute("invoice", form);
-            return form.getId() == null ? "redirect:/invoices/new" : "redirect:/invoices/" + form.getId() + "/edit";
+    public String save(@Valid @ModelAttribute("invoice") InvoiceForm form, BindingResult result, Model model,
+                       RedirectAttributes redirectAttributes) {
+        if (!result.hasErrors()) {
+            try {
+                Invoice saved = invoiceService.saveDraft(form);
+                redirectAttributes.addFlashAttribute("success", "Facture brouillon enregistrée.");
+                return "redirect:/invoices/" + saved.getId();
+            } catch (BusinessException ex) {
+                FormErrors.reject(result, ex);
+            }
         }
+        if (form.getLines().isEmpty()) {
+            form.addEmptyLine();
+        }
+        return formView(model);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('VIEW_INVOICES')")
-    public String view(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
-        try {
-            model.addAttribute("invoice", invoiceService.findWithLines(id));
-            return "invoice/view";
-        } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-            return "redirect:/invoices";
-        }
+    public String view(@PathVariable Long id, Model model) {
+        model.addAttribute("invoice", invoiceService.findWithLines(id));
+        return "invoice/view";
     }
 
     @PostMapping("/{id}/issue")
@@ -177,8 +171,9 @@ public class InvoiceController {
         response.getOutputStream().write(bytes);
     }
 
-    private void addFormChoices(Model model) {
+    private String formView(Model model) {
         model.addAttribute("clients", clientService.findAll());
         model.addAttribute("paymentMethods", PaymentMethod.values());
+        return "invoice/form";
     }
 }

@@ -1,8 +1,14 @@
 package com.swiftlabs.invoicing.access.privilege;
 
+import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.ResourceNotFoundException;
+
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,34 +35,32 @@ public class PrivilegeController {
 
     @GetMapping("/new")
     public String newForm(Model model) {
-        // After a failed save the submitted form comes back as a flash attribute
-        if (!model.containsAttribute("privilege")) {
-            model.addAttribute("privilege", new PrivilegeForm());
-        }
+        model.addAttribute("privilege", new PrivilegeForm());
         return "access/privilege/form";
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
         Privilege privilege = privilegeService.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Privilège introuvable."));
-        if (!model.containsAttribute("privilege")) {
-            model.addAttribute("privilege", PrivilegeForm.from(privilege));
-        }
+            .orElseThrow(() -> new ResourceNotFoundException("Privilège introuvable."));
+        model.addAttribute("privilege", PrivilegeForm.from(privilege));
         return "access/privilege/form";
     }
 
+    /** Invalid input is shown again with the errors next to each field. */
     @PostMapping("/save")
-    public String save(@ModelAttribute PrivilegeForm form, RedirectAttributes redirectAttributes) {
-        try {
-            privilegeService.save(form);
-            redirectAttributes.addFlashAttribute("success", "Privilège enregistré.");
-            return "redirect:/privileges";
-        } catch (IllegalArgumentException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
-            redirectAttributes.addFlashAttribute("privilege", form);
-            return form.getId() == null ? "redirect:/privileges/new" : "redirect:/privileges/" + form.getId() + "/edit";
+    public String save(@Valid @ModelAttribute("privilege") PrivilegeForm form, BindingResult result,
+                       RedirectAttributes redirectAttributes) {
+        if (!result.hasErrors()) {
+            try {
+                privilegeService.save(form);
+                redirectAttributes.addFlashAttribute("success", "Privilège enregistré.");
+                return "redirect:/privileges";
+            } catch (BusinessException ex) {
+                FormErrors.reject(result, ex);
+            }
         }
+        return "access/privilege/form";
     }
 
     @PostMapping("/{id}/delete")

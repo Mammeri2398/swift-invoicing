@@ -16,12 +16,8 @@ public class InvoiceSequence {
     @Column(name = "last_value", nullable = false)
     private Integer lastValue;
 
-    public InvoiceSequence() {
-    }
-
-    public InvoiceSequence(Integer year, Integer lastValue) {
-        this.year = year;
-        this.lastValue = lastValue;
+    /** Rows are created by InvoiceSequenceRepository#createIfAbsent, never with new. */
+    protected InvoiceSequence() {
     }
 
     public Integer getYear() {

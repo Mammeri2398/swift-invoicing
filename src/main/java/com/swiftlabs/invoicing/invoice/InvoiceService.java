@@ -147,17 +147,12 @@ public class InvoiceService {
 
     private Invoice issueWithinTransaction(Invoice invoice, Client client,
                                            List<InvoiceLine> lines, int year) {
-        InvoiceSequence seq = sequenceRepository.findByYear(year);
-        if (seq == null) {
-            seq = new InvoiceSequence(year, 0);
-            sequenceRepository.save(seq);
-            seq = sequenceRepository.lockByYear(year);
-        } else {
-            seq = sequenceRepository.lockByYear(year);
-        }
+        // Concurrent issues of the same year queue on the counter's row lock: numbers stay
+        // unique and gap-free, and the first invoice of a year cannot fail on the row creation.
+        sequenceRepository.createIfAbsent(year);
+        InvoiceSequence seq = sequenceRepository.lockByYear(year);
         int newValue = seq.getLastValue() + 1;
         seq.setLastValue(newValue);
-        sequenceRepository.save(seq);
 
         String number = properties.numberPrefix() + "-" + year + "-" + String.format("%04d", newValue);
         if (invoiceRepository.existsByInvoiceNumber(number)) {

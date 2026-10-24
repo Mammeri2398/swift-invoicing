@@ -7,7 +7,7 @@
         <div>
             <p class="page-eyebrow">Vérification</p>
             <h1 class="page-title">Vérifier une facture</h1>
-            <p class="page-subtitle">Saisissez le numéro imprimé sur la facture pour vérifier qu'elle existe.</p>
+            <p class="page-subtitle">Saisissez le numéro imprimé sur la facture pour vérifier qu'elle a bien été émise.</p>
         </div>
     </div>
 
@@ -22,24 +22,28 @@
     </form>
 
     <th:block th:if="${number != null}">
-        <div th:unless="${found}" class="alert alert-error">
+        <div th:if="${verification == null}" class="alert alert-error">
             <span class="icon">error</span>
             <span>Aucune facture ne porte le numéro <strong th:text="${number}">FA-2026-0001</strong>.</span>
         </div>
-        <section th:if="${found}" class="card">
+        <!-- Existence, status and date only: never the client or the amount -->
+        <section th:if="${verification != null}" class="card">
             <div class="card-header">
-                <h2 class="card-title"><span class="icon icon-fill text-tertiary">verified</span>Facture trouvée</h2>
-                <span th:replace="~{layout/fragments :: statusBadge(${invoice.status})}"></span>
+                <h2 class="card-title"><span class="icon icon-fill text-tertiary">verified</span>Facture authentique</h2>
+                <span th:replace="~{layout/fragments :: statusBadge(${verification.status})}"></span>
             </div>
-            <dl class="card-body grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div><dt class="hint">Numéro</dt><dd class="font-semibold" th:text="${invoice.invoiceNumber}">FA-2026-0001</dd></div>
-                <div><dt class="hint">Client</dt><dd class="font-semibold" th:text="${invoice.clientName ?: invoice.client.name}">Client</dd></div>
-                <div><dt class="hint">Montant</dt><dd class="font-semibold tabular-nums" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</dd></div>
+            <dl class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div><dt class="hint">Numéro</dt><dd class="font-semibold" th:text="${verification.number}">FA-2026-0001</dd></div>
+                <div><dt class="hint">Date d'émission</dt><dd class="font-semibold" th:text="${#temporals.format(verification.issueDate, 'dd/MM/yyyy')}">01/01/2026</dd></div>
             </dl>
-            <div th:if="${currentUser != null}" class="card-footer justify-end">
-                <a th:href="@{/invoices/{id}(id=${invoice.id})}" class="btn btn-ghost btn-sm">Ouvrir la facture<span class="icon">arrow_forward</span></a>
+            <div th:if="${verification.status.name() == 'CANCELLED'}" class="card-body pt-0">
+                <p class="alert alert-warning"><span class="icon">warning</span><span>Cette facture a été annulée par l'émetteur.</span></p>
+            </div>
+            <div th:if="${invoiceId}" class="card-footer justify-end">
+                <a th:href="@{/invoices/{id}(id=${invoiceId})}" class="btn btn-ghost btn-sm">Ouvrir la facture<span class="icon">arrow_forward</span></a>
             </div>
         </section>
+        <p class="hint mt-4">Pour toute question sur le contenu d'une facture, contactez directement son émetteur.</p>
     </th:block>
 </main>
 </body>

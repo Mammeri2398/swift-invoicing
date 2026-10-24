@@ -3,14 +3,25 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/base :: page('Erreur', ~{::main}, ~{})}">
 <body>
-<main class="page-narrow">
+<main class="page-narrow" th:with="hasMessage=${!#strings.isEmpty(message) and message != 'No message available'}">
     <section class="card">
         <div class="card-body flex flex-col items-center gap-3 py-12 text-center">
             <span class="flex h-14 w-14 items-center justify-center rounded-full bg-error-container text-error"><span class="icon icon-lg">error</span></span>
             <p class="text-label-sm uppercase tracking-wider text-on-surface-variant" th:if="${status}" th:text="${'Erreur ' + status}">Erreur 500</p>
-            <h1 class="text-headline-md" th:text="${status == 404} ? 'Page introuvable' : 'Une erreur est survenue'">Une erreur est survenue</h1>
-            <p class="max-w-md text-on-surface-variant"
-               th:text="${status == 404} ? 'Cette page n\'existe pas ou a été déplacée.' : (${message} ?: 'Veuillez réessayer.')">Veuillez réessayer.</p>
+            <th:block th:switch="${status}">
+                <th:block th:case="404">
+                    <h1 class="text-headline-md">Page introuvable</h1>
+                    <p class="max-w-md text-on-surface-variant" th:text="${hasMessage} ? ${message} : 'Cette page n\'existe pas ou a été déplacée.'">Introuvable.</p>
+                </th:block>
+                <th:block th:case="429">
+                    <h1 class="text-headline-md">Trop de tentatives</h1>
+                    <p class="max-w-md text-on-surface-variant">Trop de requêtes depuis votre adresse. Patientez quelques minutes avant de réessayer.</p>
+                </th:block>
+                <th:block th:case="*">
+                    <h1 class="text-headline-md">Une erreur est survenue</h1>
+                    <p class="max-w-md text-on-surface-variant" th:text="${hasMessage} ? ${message} : 'Veuillez réessayer.'">Veuillez réessayer.</p>
+                </th:block>
+            </th:block>
             <a th:href="@{/}" class="btn btn-primary mt-2"><span class="icon">home</span>Retour à l'accueil</a>
         </div>
     </section>

@@ -110,6 +110,35 @@
             <p class="text-body-sm text-on-surface-variant" th:text="${vatMention}">TVA non applicable</p>
         </div>
     </section>
+
+    <!-- Audit trail: who did what, and when (InvoiceAudit) -->
+    <section class="card mt-6">
+        <div class="card-header"><h2 class="card-title"><span class="icon">schedule</span>Historique</h2></div>
+        <ol class="card-body flex flex-col gap-3">
+            <li th:each="event : ${history}" class="flex items-start gap-3">
+                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-container text-primary" th:switch="${event.action.name()}">
+                    <span th:case="'CREATED'" class="icon icon-sm">edit_note</span>
+                    <span th:case="'ISSUED'" class="icon icon-sm">send</span>
+                    <span th:case="'PAID'" class="icon icon-sm">price_check</span>
+                    <span th:case="'CANCELLED'" class="icon icon-sm">block</span>
+                </span>
+                <div>
+                    <p class="font-medium" th:switch="${event.action.name()}">
+                        <th:block th:case="'CREATED'">Brouillon créé</th:block>
+                        <th:block th:case="'ISSUED'">Facture émise</th:block>
+                        <th:block th:case="'PAID'">Marquée payée</th:block>
+                        <th:block th:case="'CANCELLED'">Annulée</th:block>
+                    </p>
+                    <p class="text-body-sm text-on-surface-variant">
+                        <span th:text="${#temporals.format(event.occurredAt, 'dd/MM/yyyy à HH:mm')}">01/01/2026 à 10:00</span>
+                        · <span th:if="${event.username}" th:text="${event.username}">admin</span>
+                        <span th:unless="${event.username}" title="Action antérieure au suivi de l'historique">auteur inconnu</span>
+                    </p>
+                </div>
+            </li>
+            <li th:if="${history.isEmpty()}" class="hint">Aucun événement enregistré.</li>
+        </ol>
+    </section>
 </main>
 </body>
 </html>

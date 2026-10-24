@@ -36,12 +36,14 @@ public class InvoiceController {
     private final InvoiceService invoiceService;
     private final ClientService clientService;
     private final InvoicePdfService pdfService;
+    private final InvoiceAudit audit;
 
     public InvoiceController(InvoiceService invoiceService, ClientService clientService,
-                             InvoicePdfService pdfService) {
+                             InvoicePdfService pdfService, InvoiceAudit audit) {
         this.invoiceService = invoiceService;
         this.clientService = clientService;
         this.pdfService = pdfService;
+        this.audit = audit;
     }
 
     /**
@@ -107,6 +109,7 @@ public class InvoiceController {
     @PreAuthorize("hasAuthority('VIEW_INVOICES')")
     public String view(@PathVariable Long id, Model model) {
         model.addAttribute("invoice", invoiceService.findWithLines(id));
+        model.addAttribute("history", audit.history(id));
         return "invoice/view";
     }
 

@@ -27,17 +27,20 @@ public class InvoiceService {
     private final InvoiceSequenceRepository sequenceRepository;
     private final IssuerService issuerService;
     private final ClientService clientService;
+    private final InvoiceAudit audit;
     private final InvoiceProperties properties;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
                           InvoiceSequenceRepository sequenceRepository,
                           IssuerService issuerService,
                           ClientService clientService,
+                          InvoiceAudit audit,
                           InvoiceProperties properties) {
         this.invoiceRepository = invoiceRepository;
         this.sequenceRepository = sequenceRepository;
         this.issuerService = issuerService;
         this.clientService = clientService;
+        this.audit = audit;
         this.properties = properties;
     }
 
@@ -99,8 +102,13 @@ public class InvoiceService {
         invoice.replaceLines(form.getLines().stream()
             .map(line -> InvoiceLine.of(line.getDescription(), line.getUnit(), line.getQuantity(), line.getUnitPrice()))
             .toList());
+        boolean created = invoice.getId() == null;
         // Lines are saved with the invoice (cascade); removed lines are deleted (orphan removal)
-        return invoiceRepository.save(invoice);
+        Invoice saved = invoiceRepository.save(invoice);
+        if (created) {
+            audit.record(saved, InvoiceEvent.Action.CREATED);
+        }
+        return saved;
     }
 
     @Transactional
@@ -138,6 +146,7 @@ public class InvoiceService {
         invoice.recalculateTotal();
         snapshotIssuer(invoice);
         snapshotClient(invoice, client);
+        audit.record(invoice, InvoiceEvent.Action.ISSUED);
         return invoice;
     }
 
@@ -149,6 +158,7 @@ public class InvoiceService {
         }
         invoice.setStatus(InvoiceStatus.PAID);
         invoice.setPaidAt(LocalDateTime.now());
+        audit.record(invoice, InvoiceEvent.Action.PAID);
         return invoice;
     }
 
@@ -160,16 +170,18 @@ public class InvoiceService {
         }
         invoice.setStatus(InvoiceStatus.CANCELLED);
         invoice.setCancelledAt(LocalDateTime.now());
+        audit.record(invoice, InvoiceEvent.Action.CANCELLED);
         return invoice;
     }
 
-    /** Deletes a draft and its lines (cascade). */
+    /** Deletes a draft, its lines (cascade) and its history. */
     @Transactional
     public void delete(Long id) {
         Invoice invoice = findById(id);
         if (!invoice.isDraft()) {
             throw new BusinessException("Seules les factures brouillon peuvent être supprimées.");
         }
+        audit.forget(invoice);
         invoiceRepository.delete(invoice);
     }
 

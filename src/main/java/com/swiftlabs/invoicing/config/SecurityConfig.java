@@ -1,6 +1,8 @@
 package com.swiftlabs.invoicing.config;
 
 import com.swiftlabs.invoicing.access.auth.ForcePasswordChangeFilter;
+import com.swiftlabs.invoicing.access.auth.RateLimitFilter;
+import com.swiftlabs.invoicing.access.auth.RateLimiter;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
@@ -60,7 +63,8 @@ public class SecurityConfig {
         "object-src 'none'");
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, SessionRegistry sessionRegistry) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, SessionRegistry sessionRegistry, RateLimiter rateLimiter,
+                                           SecurityProperties properties) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_URLS).permitAll()
@@ -92,6 +96,8 @@ public class SecurityConfig {
                 .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 .permissionsPolicyHeader(permissions -> permissions.policy(
                     "camera=(), microphone=(), geolocation=(), payment=(), usb=()")))
+            // Per-IP limits on login, password reset and the public lookup (HTTP 429 beyond)
+            .addFilterBefore(new RateLimitFilter(rateLimiter, properties), UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(new ForcePasswordChangeFilter(), AuthorizationFilter.class);
         return http.build();
     }

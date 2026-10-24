@@ -109,7 +109,7 @@ class PageRenderingTest {
         assertPage("/invoices/new", "name=\"lines[0].description\"");
         assertPage("/invoices/" + draft.getId() + "/edit", "value=\"Audit\"");
         assertPage("/invoices/" + issued.getId(), "Facture " + issued.getInvoiceNumber());
-        assertPage("/invoices/lookup?number=" + issued.getInvoiceNumber(), "Facture trouvée");
+        assertPage("/invoices/lookup?number=" + issued.getInvoiceNumber(), "Facture authentique");
         assertPage("/settings/issuer", "Identifiants légaux et fiscaux");
     }
 

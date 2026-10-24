@@ -38,6 +38,8 @@ public class SecurityConfig {
         "/css/**", "/js/**", "/fonts/**", "/images/**", "/favicon.ico", "/error",
         "/login", "/forgot-password", "/forgot-password/send", "/reset-password", "/reset-password/save",
         "/invoices/lookup",
+        // Status only (UP/DOWN), no details: see management.* in application.properties
+        "/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness",
     };
 
     /**

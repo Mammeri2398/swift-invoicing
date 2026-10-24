@@ -1,0 +1,14 @@
+# Only what the Docker build needs: pom.xml, the Maven wrapper and src/
+target/
+.git/
+.gitignore
+.gitattributes
+.idea/
+*.iml
+.vscode/
+.claude/
+HELP.md
+README.md
+docker-compose.yml
+Dockerfile
+.dockerignore

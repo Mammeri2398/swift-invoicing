@@ -1,0 +1,373 @@
+/*
+ * Swift Invoicing stylesheet, compiled by the Tailwind CLI into static/css/app.css (see pom.xml).
+ * Pages use Tailwind utilities for layout and the components below for recurring elements.
+ */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/material-symbols-outlined.woff2') format('woff2');
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface text-body-md text-on-surface antialiased;
+  }
+
+  [x-cloak] {
+    display: none !important;
+  }
+}
+
+@layer components {
+  /* Icons: <span class="icon">receipt_long</span> */
+  .icon {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 20px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    direction: ltr;
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+
+  .icon-fill {
+    font-variation-settings: 'FILL' 1;
+  }
+
+  .icon-xs {
+    font-size: 14px;
+  }
+
+  .icon-sm {
+    font-size: 16px;
+  }
+
+  .icon-lg {
+    font-size: 28px;
+  }
+
+  /* Page structure */
+  .page {
+    @apply mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-12;
+  }
+
+  .page-narrow {
+    @apply mx-auto w-full max-w-3xl px-4 py-6 sm:px-6;
+  }
+
+  .page-header {
+    @apply mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between;
+  }
+
+  .page-eyebrow {
+    @apply text-label-sm uppercase tracking-wider text-primary;
+  }
+
+  .page-title {
+    @apply text-headline-lg tracking-tight text-on-surface;
+  }
+
+  .page-subtitle {
+    @apply mt-1 text-body-md text-on-surface-variant;
+  }
+
+  .breadcrumb {
+    @apply mb-4 flex flex-wrap items-center gap-1 text-label-sm uppercase tracking-wider text-on-surface-variant;
+  }
+
+  .breadcrumb a {
+    @apply transition-colors hover:text-primary;
+  }
+
+  /* Cards */
+  .card {
+    @apply overflow-hidden rounded-xl bg-surface-container-lowest shadow-sm;
+  }
+
+  .card-header {
+    @apply flex items-center justify-between gap-3 bg-surface-container-low px-5 py-3;
+  }
+
+  .card-title {
+    @apply flex items-center gap-2 text-title-sm text-on-surface;
+  }
+
+  .card-title .icon {
+    @apply text-primary;
+  }
+
+  .card-body {
+    @apply p-5;
+  }
+
+  .card-footer {
+    @apply flex flex-wrap items-center justify-between gap-2 bg-surface-container-low px-5 py-3 text-body-sm text-on-surface-variant;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2 text-label-md
+      shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary
+      focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+  }
+
+  .btn .icon {
+    font-size: 18px;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-on-primary hover:bg-primary-container hover:shadow-md;
+  }
+
+  .btn-secondary {
+    @apply bg-surface-container-high text-on-surface hover:bg-surface-container-highest;
+  }
+
+  .btn-success {
+    @apply bg-tertiary-container text-on-tertiary hover:bg-tertiary;
+  }
+
+  .btn-danger {
+    @apply bg-error-container text-on-error-container hover:bg-error hover:text-on-error;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-primary shadow-none hover:bg-surface-container;
+  }
+
+  .btn-sm {
+    @apply rounded-lg px-2.5 py-1 text-label-sm;
+  }
+
+  .btn-sm .icon {
+    font-size: 16px;
+  }
+
+  .btn-icon {
+    @apply rounded-lg p-1.5 text-on-surface-variant shadow-none hover:bg-surface-container hover:text-on-surface;
+  }
+
+  .btn-icon.danger {
+    @apply hover:bg-error-container hover:text-error;
+  }
+
+  /* Forms */
+  .field {
+    @apply flex flex-col gap-1;
+  }
+
+  .label {
+    @apply flex items-center justify-between gap-2 text-label-md text-on-surface;
+  }
+
+  .label .required {
+    @apply text-error;
+  }
+
+  .label .optional {
+    @apply text-label-sm font-normal text-on-surface-variant;
+  }
+
+  .input {
+    @apply w-full rounded-lg border-0 bg-surface px-3.5 py-2.5 text-body-md text-on-surface shadow-sm
+      ring-1 ring-inset ring-outline-variant/60 transition placeholder:text-outline
+      focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary
+      disabled:cursor-not-allowed disabled:bg-surface-container-high/50 disabled:text-on-surface-variant
+      read-only:bg-surface-container-high/40 read-only:text-on-surface-variant;
+  }
+
+  .input-mono {
+    @apply font-mono tracking-wide;
+  }
+
+  .input-sm {
+    @apply px-2.5 py-1.5;
+  }
+
+  .hint {
+    @apply text-body-sm text-on-surface-variant;
+  }
+
+  .checkbox {
+    @apply mt-0.5 h-4 w-4 shrink-0 rounded accent-primary;
+  }
+
+  .form-grid {
+    @apply grid grid-cols-1 gap-4 md:grid-cols-2;
+  }
+
+  .form-actions {
+    @apply flex flex-wrap items-center justify-end gap-2;
+  }
+
+  /* Tables */
+  .table-wrap {
+    @apply w-full overflow-x-auto;
+  }
+
+  .table {
+    @apply w-full text-left text-body-md;
+  }
+
+  .table thead tr {
+    @apply bg-surface-container text-label-sm uppercase tracking-wider text-on-surface-variant;
+  }
+
+  .table th {
+    @apply px-4 py-3 font-semibold first:pl-5 last:pr-5;
+  }
+
+  .table td {
+    @apply px-4 py-3 align-middle first:pl-5 last:pr-5;
+  }
+
+  .table tbody {
+    @apply divide-y divide-surface-container-high;
+  }
+
+  .table tbody tr {
+    @apply transition-colors hover:bg-surface-container-low;
+  }
+
+  .table .num {
+    @apply whitespace-nowrap text-right tabular-nums;
+  }
+
+  .table-empty {
+    @apply py-10 text-center text-on-surface-variant;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 text-label-sm;
+  }
+
+  .badge-neutral {
+    @apply bg-surface-container-high text-on-surface-variant;
+  }
+
+  .badge-info {
+    @apply bg-secondary-fixed text-on-secondary-fixed-variant;
+  }
+
+  .badge-success {
+    @apply bg-tertiary-fixed text-on-tertiary-fixed-variant;
+  }
+
+  .badge-danger {
+    @apply bg-error-container text-on-error-container;
+  }
+
+  .badge-code {
+    @apply bg-surface-container font-mono text-on-surface-variant;
+  }
+
+  /* Alerts */
+  .alert {
+    @apply flex items-start gap-3 rounded-xl p-4 text-body-md shadow-sm;
+  }
+
+  .alert .icon {
+    @apply mt-0.5 shrink-0;
+  }
+
+  .alert-success {
+    @apply bg-surface-container-lowest text-on-surface;
+  }
+
+  .alert-success .icon {
+    @apply text-tertiary;
+  }
+
+  .alert-error {
+    @apply bg-error-container text-on-error-container;
+  }
+
+  .alert-error .icon {
+    @apply text-error;
+  }
+
+  .alert-info {
+    @apply bg-surface-container-low text-on-surface;
+  }
+
+  .alert-info .icon {
+    @apply text-secondary;
+  }
+
+  .alert-warning {
+    @apply bg-amber-50 text-amber-900;
+  }
+
+  .alert-warning .icon {
+    @apply text-amber-600;
+  }
+
+  /* Navigation */
+  .nav-link {
+    @apply rounded-lg px-3 py-1.5 text-label-md text-on-surface-variant transition-colors
+      hover:bg-surface-container hover:text-on-surface;
+  }
+
+  .nav-link.active {
+    @apply bg-surface-container-high text-on-surface;
+  }
+
+  /* Key figures */
+  .stat {
+    @apply flex flex-col gap-3 rounded-xl bg-surface-container-lowest p-5 shadow-sm;
+  }
+
+  .stat-label {
+    @apply text-label-md text-on-surface-variant;
+  }
+
+  .stat-value {
+    @apply text-headline-md font-bold tabular-nums text-on-surface;
+  }
+
+  .stat-icon {
+    @apply flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container text-primary;
+  }
+
+  .progress {
+    @apply h-3 w-full overflow-hidden rounded-full bg-surface-container-highest p-0.5;
+  }
+
+  .progress-bar {
+    @apply h-full rounded-full bg-gradient-to-r from-primary to-secondary-container transition-all duration-700;
+  }
+}

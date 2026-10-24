@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/auth :: page('Connexion', ~{::main})}">
+<body>
+<main class="card">
+    <div class="card-body flex flex-col gap-5 p-6 sm:p-8">
+        <div>
+            <h1 class="text-headline-md text-on-surface">Connexion</h1>
+            <p class="mt-1 text-body-md text-on-surface-variant">Accédez à vos factures et à votre registre.</p>
+        </div>
+
+        <div th:if="${logout}" class="alert alert-info">
+            <span class="icon">info</span><span th:text="${logout}">Vous avez été déconnecté.</span>
+        </div>
+
+        <form th:action="@{/perform-login}" method="post" class="flex flex-col gap-4">
+            <div class="field">
+                <label class="label" for="username">Nom d'utilisateur</label>
+                <input class="input" id="username" name="username" type="text" autocomplete="username" required autofocus/>
+            </div>
+            <div class="field">
+                <label class="label" for="password">
+                    <span>Mot de passe</span>
+                    <a th:href="@{/forgot-password}" class="text-label-sm font-normal text-primary hover:underline">Mot de passe oublié ?</a>
+                </label>
+                <div class="relative">
+                    <input class="input pr-11" id="password" name="password" type="password" autocomplete="current-password" required/>
+                    <button type="button" class="btn-icon absolute right-1.5 top-1/2 -translate-y-1/2" data-toggle-password="password"
+                            aria-label="Afficher le mot de passe"><span class="icon">visibility</span></button>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-2 w-full py-2.5">
+                Se connecter<span class="icon">arrow_forward</span>
+            </button>
+        </form>
+
+        <p class="flex items-center gap-1.5 text-body-sm text-on-surface-variant">
+            <span class="icon icon-sm">lock</span>
+            Session fermée automatiquement après 20 minutes d'inactivité.
+        </p>
+    </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page('Vérifier une facture', ~{::main}, ~{})}">
+<body>
+<main class="page-narrow">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Vérification</p>
+            <h1 class="page-title">Vérifier une facture</h1>
+            <p class="page-subtitle">Saisissez le numéro imprimé sur la facture pour vérifier qu'elle existe.</p>
+        </div>
+    </div>
+
+    <form th:action="@{/invoices/lookup}" method="get" class="card mb-6">
+        <div class="card-body flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div class="field flex-1">
+                <label class="label" for="number">Numéro de facture</label>
+                <input class="input input-mono" id="number" name="number" type="text" th:value="${number}" placeholder="FA-2026-0001" required autofocus/>
+            </div>
+            <button type="submit" class="btn btn-primary"><span class="icon">search</span>Vérifier</button>
+        </div>
+    </form>
+
+    <th:block th:if="${number != null}">
+        <div th:unless="${found}" class="alert alert-error">
+            <span class="icon">error</span>
+            <span>Aucune facture ne porte le numéro <strong th:text="${number}">FA-2026-0001</strong>.</span>
+        </div>
+        <section th:if="${found}" class="card">
+            <div class="card-header">
+                <h2 class="card-title"><span class="icon icon-fill text-tertiary">verified</span>Facture trouvée</h2>
+                <span th:replace="~{layout/fragments :: statusBadge(${invoice.status})}"></span>
+            </div>
+            <dl class="card-body grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div><dt class="hint">Numéro</dt><dd class="font-semibold" th:text="${invoice.invoiceNumber}">FA-2026-0001</dd></div>
+                <div><dt class="hint">Client</dt><dd class="font-semibold" th:text="${invoice.clientName ?: invoice.client.name}">Client</dd></div>
+                <div><dt class="hint">Montant</dt><dd class="font-semibold tabular-nums" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</dd></div>
+            </dl>
+            <div th:if="${currentUser != null}" class="card-footer justify-end">
+                <a th:href="@{/invoices/{id}(id=${invoice.id})}" class="btn btn-ghost btn-sm">Ouvrir la facture<span class="icon">arrow_forward</span></a>
+            </div>
+        </section>
+    </th:block>
+</main>
+</body>
+</html>

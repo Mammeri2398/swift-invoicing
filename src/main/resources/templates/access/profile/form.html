@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(${profile.id == null ? 'Nouveau profil' : 'Modifier le profil'}, ~{::main}, ~{})}">
+<body>
+<main class="page-narrow">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane">
+        <a th:href="@{/profiles}">Profils</a><span class="icon icon-xs">chevron_right</span>
+        <span class="text-primary" th:text="${profile.id == null ? 'Nouveau' : profile.name}">Nouveau</span>
+    </nav>
+    <div class="page-header">
+        <h1 class="page-title" th:text="${profile.id == null ? 'Nouveau profil' : 'Modifier le profil'}">Nouveau profil</h1>
+    </div>
+
+    <form th:action="@{/profiles/save}" method="post" th:object="${profile}" class="card">
+        <input type="hidden" th:field="*{id}"/>
+        <div class="card-body flex flex-col gap-4">
+            <div class="field">
+                <label class="label" for="name">Nom du profil <span class="required">*</span></label>
+                <input class="input" th:field="*{name}" type="text" required maxlength="100"/>
+            </div>
+            <div class="field">
+                <label class="label" for="description">Description <span class="optional">Optionnel</span></label>
+                <input class="input" th:field="*{description}" type="text" maxlength="500"/>
+            </div>
+            <fieldset class="field">
+                <legend class="label mb-1">Privilèges</legend>
+                <p class="hint mb-2">Au moins un utilisateur actif doit garder MANAGE_PROFILES.</p>
+                <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <label th:each="priv : ${allPrivileges}"
+                           class="flex cursor-pointer items-start gap-3 rounded-lg bg-surface p-3 ring-1 ring-outline-variant/60 has-[:checked]:bg-primary-fixed/40 has-[:checked]:ring-primary">
+                        <input type="checkbox" class="checkbox" name="privilegeIds" th:value="${priv.id}"
+                               th:checked="${profile.privilegeIds.contains(priv.id)}"/>
+                        <span>
+                            <span class="block font-medium" th:text="${priv.name}">Voir les factures</span>
+                            <span class="block font-mono text-label-sm text-on-surface-variant" th:text="${priv.code}">VIEW_INVOICES</span>
+                        </span>
+                    </label>
+                </div>
+            </fieldset>
+        </div>
+        <div class="card-footer justify-end">
+            <a th:href="@{/profiles}" class="btn btn-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

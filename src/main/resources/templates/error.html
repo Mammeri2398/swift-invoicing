@@ -1,17 +1,19 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8"/>
-    <title>Erreur</title>
-    <link th:href="@{/css/style.css}" rel="stylesheet"/>
-</head>
+<!--/* Used by GlobalExceptionHandler and by Spring Boot's error handling (404, 405...) */-->
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page('Erreur', ~{::main}, ~{})}">
 <body>
-<div th:replace="~{fragments/header :: header}"></div>
-<div class="container">
-    <h2>Erreur</h2>
-    <div class="flash error" th:text="${message}">Une erreur est survenue.</div>
-    <a class="btn" href="/">Retour au tableau de bord</a>
-</div>
-<div th:replace="~{fragments/header :: footer}"></div>
+<main class="page-narrow">
+    <section class="card">
+        <div class="card-body flex flex-col items-center gap-3 py-12 text-center">
+            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-error-container text-error"><span class="icon icon-lg">error</span></span>
+            <p class="text-label-sm uppercase tracking-wider text-on-surface-variant" th:if="${status}" th:text="${'Erreur ' + status}">Erreur 500</p>
+            <h1 class="text-headline-md" th:text="${status == 404} ? 'Page introuvable' : 'Une erreur est survenue'">Une erreur est survenue</h1>
+            <p class="max-w-md text-on-surface-variant"
+               th:text="${status == 404} ? 'Cette page n\'existe pas ou a été déplacée.' : (${message} ?: 'Veuillez réessayer.')">Veuillez réessayer.</p>
+            <a th:href="@{/}" class="btn btn-primary mt-2"><span class="icon">home</span>Retour à l'accueil</a>
+        </div>
+    </section>
+</main>
 </body>
 </html>

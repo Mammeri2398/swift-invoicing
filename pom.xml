@@ -16,6 +16,11 @@
 	<properties>
 		<java.version>17</java.version>
 		<openhtmltopdf.version>1.0.10</openhtmltopdf.version>
+
+		<!-- Front end: Tailwind standalone CLI, no Node project needed (see the antrun execution below).
+		     The platform-specific binary and its checksum come from the os profiles at the end. -->
+		<tailwind.version>3.4.17</tailwind.version>
+		<tailwind.cache>${settings.localRepository}/.cache/tailwindcss/${tailwind.version}</tailwind.cache>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -129,7 +134,103 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<!-- Compiles src/main/frontend/css/app.css into static/css/app.css.
+			     The CLI is downloaded once into the local Maven repository cache and checksum-verified. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>tailwind</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<property name="tailwind.cli" value="${tailwind.cache}/${tailwind.binary}"/>
+								<mkdir dir="${tailwind.cache}"/>
+								<get src="https://github.com/tailwindlabs/tailwindcss/releases/download/v${tailwind.version}/${tailwind.binary}"
+									 dest="${tailwind.cli}" skipexisting="true">
+									<!-- GitHub answers 406 to Ant's default Accept header -->
+									<header name="Accept" value="application/octet-stream"/>
+								</get>
+								<checksum file="${tailwind.cli}" algorithm="SHA-256" property="${tailwind.sha256}"
+										  verifyproperty="tailwind.checksum.ok"/>
+								<fail message="Tailwind CLI checksum mismatch: delete ${tailwind.cli} and rebuild.">
+									<condition>
+										<isfalse value="${tailwind.checksum.ok}"/>
+									</condition>
+								</fail>
+								<chmod file="${tailwind.cli}" perm="755"/>
+								<exec executable="${tailwind.cli}" dir="${project.basedir}" failonerror="true">
+									<arg value="--config"/>
+									<arg value="src/main/frontend/tailwind.config.js"/>
+									<arg value="--input"/>
+									<arg value="src/main/frontend/css/app.css"/>
+									<arg value="--output"/>
+									<arg value="${project.build.outputDirectory}/static/css/app.css"/>
+									<arg value="--minify"/>
+								</exec>
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>tailwind-linux-x64</id>
+			<activation>
+				<os><family>unix</family><name>linux</name><arch>amd64</arch></os>
+			</activation>
+			<properties>
+				<tailwind.binary>tailwindcss-linux-x64</tailwind.binary>
+				<tailwind.sha256>7d24f7fa191d2193b78cd5f5a42a6093e14409521908529f42d80b11fde1f1d4</tailwind.sha256>
+			</properties>
+		</profile>
+		<profile>
+			<id>tailwind-linux-arm64</id>
+			<activation>
+				<os><family>unix</family><name>linux</name><arch>aarch64</arch></os>
+			</activation>
+			<properties>
+				<tailwind.binary>tailwindcss-linux-arm64</tailwind.binary>
+				<tailwind.sha256>69b1378b8133192d7d2feb12a116fa12d035594f58db3eff215879e4ad8cf39b</tailwind.sha256>
+			</properties>
+		</profile>
+		<profile>
+			<id>tailwind-macos-x64</id>
+			<activation>
+				<os><family>mac</family><arch>x86_64</arch></os>
+			</activation>
+			<properties>
+				<tailwind.binary>tailwindcss-macos-x64</tailwind.binary>
+				<tailwind.sha256>6cbdad74be776c087ffa5e9a057512c54898f9fe8828d3362212dfe32fc933a3</tailwind.sha256>
+			</properties>
+		</profile>
+		<profile>
+			<id>tailwind-macos-arm64</id>
+			<activation>
+				<os><family>mac</family><arch>aarch64</arch></os>
+			</activation>
+			<properties>
+				<tailwind.binary>tailwindcss-macos-arm64</tailwind.binary>
+				<tailwind.sha256>a1d0c7985759accca0bf12e51ac1dcbf0f6cf2fffb62e6e0f62d091c477a10a3</tailwind.sha256>
+			</properties>
+		</profile>
+		<profile>
+			<id>tailwind-windows-x64</id>
+			<activation>
+				<os><family>windows</family><arch>amd64</arch></os>
+			</activation>
+			<properties>
+				<tailwind.binary>tailwindcss-windows-x64.exe</tailwind.binary>
+				<tailwind.sha256>67f1c5e3f5a03406a7bf5badf5ada09b79f3ae78ec43450c15f7e983068da346</tailwind.sha256>
+			</properties>
+		</profile>
+	</profiles>
 
 </project>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page('Privilèges', ~{::main}, ~{})}">
+<body>
+<main class="page">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Accès</p>
+            <h1 class="page-title">Privilèges</h1>
+            <p class="page-subtitle">Actions élémentaires attribuées aux profils. Le code est vérifié par l'application et ne change pas.</p>
+        </div>
+        <a th:href="@{/privileges/new}" class="btn btn-primary"><span class="icon">add</span>Nouveau privilège</a>
+    </div>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">Code</th>
+                    <th scope="col">Nom</th>
+                    <th scope="col">Description</th>
+                    <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="priv : ${privileges}">
+                    <td><span class="badge badge-code" th:text="${priv.code}">VIEW_INVOICES</span></td>
+                    <td class="font-medium" th:text="${priv.name}">Voir les factures</td>
+                    <td class="text-body-sm text-on-surface-variant" th:text="${priv.description}">Description</td>
+                    <td>
+                        <div class="flex justify-end gap-1">
+                            <a th:href="@{/privileges/{id}/edit(id=${priv.id})}" class="btn-icon" title="Modifier" aria-label="Modifier"><span class="icon">edit</span></a>
+                            <form th:action="@{/privileges/{id}/delete(id=${priv.id})}" method="post"
+                                  th:attr="data-confirm=${'Supprimer le privilège ' + priv.code + ' ? Les profils qui l''ont le perdront.'}">
+                                <button type="submit" class="btn-icon danger" title="Supprimer" aria-label="Supprimer"><span class="icon">delete</span></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${privileges.isEmpty()}">
+                    <td colspan="4" class="table-empty">Aucun privilège.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

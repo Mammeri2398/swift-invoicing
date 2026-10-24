@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page('Profils', ~{::main}, ~{})}">
+<body>
+<main class="page">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Accès</p>
+            <h1 class="page-title">Profils</h1>
+            <p class="page-subtitle">Un profil regroupe des privilèges ; chaque utilisateur a un profil.</p>
+        </div>
+        <a th:href="@{/profiles/new}" class="btn btn-primary"><span class="icon">add</span>Nouveau profil</a>
+    </div>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">Profil</th>
+                    <th scope="col">Privilèges</th>
+                    <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${profiles}">
+                    <td class="align-top">
+                        <div class="font-medium" th:text="${p.name}">Administrateur</div>
+                        <div class="text-body-sm text-on-surface-variant" th:text="${p.description}">Description</div>
+                    </td>
+                    <td>
+                        <div class="flex flex-wrap gap-1">
+                            <span th:each="priv : ${p.privileges}" class="badge badge-code" th:text="${priv.code}" th:title="${priv.name}">VIEW_INVOICES</span>
+                            <span th:if="${p.privileges.isEmpty()}" class="text-body-sm text-on-surface-variant">Aucun privilège</span>
+                        </div>
+                    </td>
+                    <td class="align-top">
+                        <div class="flex justify-end gap-1">
+                            <a th:href="@{/profiles/{id}/edit(id=${p.id})}" class="btn-icon" title="Modifier" aria-label="Modifier"><span class="icon">edit</span></a>
+                            <form th:action="@{/profiles/{id}/delete(id=${p.id})}" method="post"
+                                  th:attr="data-confirm=${'Supprimer le profil ' + p.name + ' ?'}">
+                                <button type="submit" class="btn-icon danger" title="Supprimer" aria-label="Supprimer"><span class="icon">delete</span></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${profiles.isEmpty()}">
+                    <td colspan="3" class="table-empty">Aucun profil.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

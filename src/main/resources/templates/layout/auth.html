@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!--/*
+    Layout of the pages reached without being logged in (login, password reset):
+        <html th:replace="~{layout/auth :: page('Title', ~{::main})}">
+*/-->
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, content)">
+<head th:replace="~{layout/fragments :: head(${title})}"></head>
+<body class="flex min-h-screen flex-col bg-surface-container-low">
+
+<div class="flex flex-1 items-center justify-center px-4 py-10">
+    <div class="w-full max-w-md">
+        <a th:href="@{/}" class="mb-6 flex items-center justify-center gap-2">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary shadow-sm">
+                <span class="icon">receipt_long</span>
+            </span>
+            <span class="flex flex-col leading-tight">
+                <span class="text-title-sm text-primary">Swift Invoicing</span>
+                <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Auto-entrepreneur ANAE</span>
+            </span>
+        </a>
+        <div th:replace="~{layout/fragments :: alerts}"></div>
+        <th:block th:replace="${content}"></th:block>
+    </div>
+</div>
+
+<footer th:replace="~{layout/fragments :: footer}"></footer>
+<script th:src="@{/js/app.js}" defer></script>
+</body>
+</html>

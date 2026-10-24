@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page('Utilisateurs', ~{::main}, ~{})}">
+<body>
+<main class="page">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Accès</p>
+            <h1 class="page-title">Utilisateurs</h1>
+            <p class="page-subtitle">Chaque utilisateur reçoit les privilèges de son profil.</p>
+        </div>
+        <a th:href="@{/users/new}" class="btn btn-primary"><span class="icon">person_add</span>Nouvel utilisateur</a>
+    </div>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">Utilisateur</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Profil</th>
+                    <th scope="col">État</th>
+                    <th scope="col">Créé le</th>
+                    <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="user : ${users}">
+                    <td class="font-medium" th:text="${user.username}">admin</td>
+                    <td class="text-on-surface-variant" th:text="${user.email}">admin@exemple.dz</td>
+                    <td><span class="badge badge-info" th:text="${user.profile.name}">Administrateur</span></td>
+                    <td>
+                        <span th:if="${user.enabled}" class="badge badge-success">Actif</span>
+                        <span th:unless="${user.enabled}" class="badge badge-neutral">Désactivé</span>
+                    </td>
+                    <td class="text-on-surface-variant" th:text="${#temporals.format(user.createdAt, 'dd/MM/yyyy')}">01/01/2026</td>
+                    <td>
+                        <div class="flex justify-end gap-1">
+                            <a th:href="@{/users/{id}/edit(id=${user.id})}" class="btn-icon" title="Modifier" aria-label="Modifier"><span class="icon">edit</span></a>
+                            <form th:action="@{/users/{id}/delete(id=${user.id})}" method="post"
+                                  th:attr="data-confirm=${'Supprimer l''utilisateur ' + user.username + ' ?'}">
+                                <button type="submit" class="btn-icon danger" title="Supprimer" aria-label="Supprimer"><span class="icon">delete</span></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${users.isEmpty()}">
+                    <td colspan="6" class="table-empty">Aucun utilisateur.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

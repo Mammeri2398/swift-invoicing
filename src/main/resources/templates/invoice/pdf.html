@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Facture</title>
+    <style>
+        * { box-sizing: border-box; }
+        @page { size: A4; margin: 18mm 16mm 20mm 16mm;
+            @bottom-center { content: "Page " counter(page) " sur " counter(pages); font-size: 8pt; color: #666; font-family: 'DejaVu Sans', sans-serif; } }
+        body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; color: #222; margin: 0; }
+        .watermark { position: fixed; top: 40%; left: 15%; width: 70%; font-size: 72pt; color: rgba(200,0,0,0.10); font-weight: 800; letter-spacing: 4px; transform: rotate(-30px); z-index: 9; opacity: 0.15; }
+        .header { border-bottom: 2.5px solid #1d6f9c; padding-bottom: 10px; margin-bottom: 18px; }
+        .issuer-name { font-size: 15pt; font-weight: 800; color: #1d6f9c; letter-spacing: 0.5px; }
+        .issuer-trade { font-size: 9.5pt; font-weight: 600; }
+        .issuer-kind { font-size: 8pt; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+        .issuer-meta { font-size: 8pt; color: #444; margin-top: 4px; }
+        .issuer-meta b { color: #1d6f9c; }
+        .title-block { margin-bottom: 16px; }
+        .title-block .fa-title { font-size: 19pt; font-weight: 800; letter-spacing: 2px; }
+        .title-block .fa-number { font-size: 12pt; font-weight: 700; color: #1d6f9c; }
+        .title-block .meta { font-size: 8pt; color: #555; margin-top: 4px; }
+        .blocks { display: flex; gap: 30px; margin-bottom: 18px; }
+        .block { flex: 1; }
+        .block h3 { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 1px; color: #1d6f9c; border-bottom: 1px solid #d4d9dd; padding-bottom: 3px; margin: 0 0 7px 0; }
+        .block div { font-size: 8.5pt; line-height: 1.5; color: #333; margin-bottom: 3px; }
+        .block b { color: #1d6f9c; }
+        table.lines { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 8.5pt; }
+        table.lines th { background: #eef2f5; color: #1d6f9c; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #999; padding: 5px 6px; text-align: left; }
+        table.lines th.num, table.lines td.num { text-align: right; }
+        table.lines td { border: 1px solid #999; padding: 5px 6px; }
+        table.lines tr.total td { font-weight: 800; background: #eef2f5; border-top: 2px solid #1d6f9c; }
+        .total-in-words { font-size: 8.5pt; margin: 10px 0; }
+        .vat-mention { font-size: 8pt; color: #666; margin: 6px 0; font-style: italic; }
+        .footer-note { font-size: 7pt; color: #777; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 6px; }
+    </style>
+</head>
+<body>
+<div th:if="${invoice.status.name() == 'DRAFT'}" class="watermark">BROUILLON</div>
+
+<div class="header">
+    <div class="issuer-name" th:text="${invoice.issuerFullName != null ? invoice.issuerFullName : liveIssuer.fullName}">Nom émetteur</div>
+    <div class="issuer-trade" th:if="${invoice.issuerTradeName != null ? invoice.issuerTradeName : liveIssuer.tradeName}" th:text="${invoice.issuerTradeName != null ? invoice.issuerTradeName : liveIssuer.tradeName}">Nom commercial</div>
+    <div class="issuer-kind">Entrepreneur individuel / Auto-entrepreneur</div>
+    <div class="issuer-meta">
+        <span th:text="${invoice.issuerAddress != null ? invoice.issuerAddress : liveIssuer.address}">Adresse</span>
+        <span th:text="${invoice.issuerAddress != null ? invoice.issuerAddress : liveIssuer.address} != null ? ', ' : ''">,</span>
+        <span th:text="${invoice.issuerAddress != null ? invoice.issuerAddress : liveIssuer.city}">Ville</span>
+    </div>
+    <div class="issuer-meta">
+        <b>Tél :</b> <span th:text="${liveIssuer.phone}">0000</span>
+        <span th:if="${liveIssuer.email}"> | </span>
+        <b>Email :</b> <span th:text="${liveIssuer.email}">email</span>
+    </div>
+    <div class="issuer-meta">
+        <b>N° carte auto-entrepreneur :</b> <span th:text="${invoice.issuerAeCardNumber != null ? invoice.issuerAeCardNumber : liveIssuer.aeCardNumber}">-</span>
+        <b> NIF :</b> <span th:text="${invoice.issuerNif != null ? invoice.issuerNif : liveIssuer.nif}">-</span>
+        <span th:if="${invoice.issuerNis != null ? invoice.issuerNis : liveIssuer.nis}"> | <b>NIS :</b> <span th:text="${invoice.issuerNis != null ? invoice.issuerNis : liveIssuer.nis}">-</span></span>
+    </div>
+</div>
+
+<div class="title-block">
+    <div class="fa-title">FACTURE</div>
+    <div class="fa-number" th:text="${invoice.invoiceNumber}">FA-2026-0001</div>
+    <div class="meta">
+        <span th:text="${'Date d emission : ' + #temporals.format(invoice.issueDate, 'dd/MM/yyyy')}">Date d'émission</span>
+        <span th:if="${invoice.dueDate != null}" th:text="${' | Echeance : ' + #temporals.format(invoice.dueDate, 'dd/MM/yyyy')}"> | Échéance</span>
+    </div>
+</div>
+
+<div class="blocks">
+    <div class="block">
+        <h3>Client</h3>
+        <div th:text="${invoice.clientName != null ? invoice.clientName : (invoice.client != null ? invoice.client.name : '-')}">Nom client</div>
+        <div th:text="${invoice.clientAddress != null ? invoice.clientAddress : (invoice.client != null ? invoice.client.address : '-')}">Adresse</div>
+        <div th:if="${invoice.clientNif != null ? invoice.clientNif : (invoice.client != null ? invoice.client.nif : null)}" th:text="${'NIF : ' + (invoice.clientNif != null ? invoice.clientNif : invoice.client.nif)}">NIF</div>
+    </div>
+</div>
+
+<table class="lines">
+    <thead>
+    <tr>
+        <th style="width:6%">N°</th>
+        <th>Désignation</th>
+        <th style="width:12%" class="num">Unité</th>
+        <th style="width:14%" class="num">Quantité</th>
+        <th style="width:18%" class="num">Prix unitaire (DA)</th>
+        <th style="width:18%" class="num">Total (DA)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="line, stat : ${invoice.lines}">
+        <td th:text="${stat.index + 1}">1</td>
+        <td th:text="${line.description}">-</td>
+        <td class="num" th:text="${line.unit}" th:if="${line.unit != null}" th:remove="tag">-</td>
+        <td class="num" th:text="${amountUtils.formatQuantity(line.quantity)}">-</td>
+        <td class="num" th:text="${amountUtils.format(line.unitPrice)}">0,00</td>
+        <td class="num" th:text="${amountUtils.format(line.lineTotal)}">0,00</td>
+    </tr>
+    <tr class="total">
+        <td colspan="4"></td>
+        <td class="num">Total à payer</td>
+        <td class="num" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="total-in-words" th:text="${amountInWords.convert(invoice.totalAmount)}">Montant en lettres</div>
+
+<div class="vat-mention" th:text="${vatMention}">TVA non applicable</div>
+
+<div th:if="${invoice.issuerBankAccount != null ? invoice.issuerBankAccount : liveIssuer.bankOrCcpAccount}">
+    <div class="block" style="margin-top:10px;">
+        <h3>Paiement</h3>
+        <div th:text="${'Mode : ' + (invoice.paymentMethod != null ? invoice.paymentMethod : '')}">Mode</div>
+        <div th:text="${'Compte bancaire / CCP : ' + (invoice.issuerBankAccount != null ? invoice.issuerBankAccount : liveIssuer.bankOrCcpAccount)}">Compte</div>
+    </div>
+</div>
+<div th:if="${invoice.notes != null}">
+    <div class="block" style="margin-top:10px;">
+        <h3>Notes</h3>
+        <div th:text="${invoice.notes}">-</div>
+    </div>
+</div>
+
+<div class="footer-note">
+    Auto-entrepreneur (ANAE) — TVA non applicable.<br/>
+    Montants exprimés en dinars algériens (DA). Facture générée par Swift Invoicing.
+</div>
+</body>
+</html>

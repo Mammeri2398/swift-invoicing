@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page('Accès refusé', ~{::main}, ~{})}">
+<body>
+<main class="page-narrow">
+    <section class="card">
+        <div class="card-body flex flex-col items-center gap-3 py-12 text-center">
+            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-error-container text-error"><span class="icon icon-lg">lock</span></span>
+            <h1 class="text-headline-md">Accès refusé</h1>
+            <p class="max-w-md text-on-surface-variant">Votre profil ne donne pas accès à cette page. Demandez à un administrateur s'il vous faut ce droit.</p>
+            <a th:href="@{/}" class="btn btn-primary mt-2"><span class="icon">home</span>Retour à l'accueil</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

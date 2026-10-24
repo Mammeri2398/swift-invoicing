@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(${user.id == null ? 'Nouvel utilisateur' : 'Modifier l''utilisateur'}, ~{::main}, ~{})}">
+<body>
+<main class="page-narrow">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane">
+        <a th:href="@{/users}">Utilisateurs</a><span class="icon icon-xs">chevron_right</span>
+        <span class="text-primary" th:text="${user.id == null ? 'Nouveau' : user.username}">Nouveau</span>
+    </nav>
+    <div class="page-header">
+        <h1 class="page-title" th:text="${user.id == null ? 'Nouvel utilisateur' : 'Modifier l''utilisateur'}">Nouvel utilisateur</h1>
+    </div>
+
+    <form th:action="@{/users/save}" method="post" th:object="${user}" class="card">
+        <input type="hidden" th:field="*{id}"/>
+        <div class="card-body flex flex-col gap-4">
+            <div class="field">
+                <label class="label" for="username">Nom d'utilisateur <span class="required">*</span></label>
+                <input class="input" th:field="*{username}" type="text" required maxlength="100" autocomplete="off"
+                       th:readonly="*{id != null}"/>
+                <p th:if="*{id != null}" class="hint">Le nom d'utilisateur ne peut pas être modifié.</p>
+            </div>
+            <div class="field">
+                <label class="label" for="email">Email <span class="required">*</span></label>
+                <input class="input" th:field="*{email}" type="email" required maxlength="255"/>
+            </div>
+            <div class="field">
+                <label class="label" for="profileId">Profil <span class="required">*</span></label>
+                <select class="input" th:field="*{profileId}" required>
+                    <option value="">Sélectionner un profil…</option>
+                    <option th:each="p : ${profiles}" th:value="${p.id}" th:text="${p.name}">Administrateur</option>
+                </select>
+            </div>
+            <label th:if="*{id != null}" class="flex items-start gap-2">
+                <input type="checkbox" class="checkbox" th:field="*{enabled}"/>
+                <span>Compte actif <span class="hint block">Un compte désactivé ne peut plus se connecter.</span></span>
+            </label>
+            <div th:if="*{id == null}" class="alert alert-info">
+                <span class="icon">key</span>
+                <span>Un mot de passe temporaire est attribué à la création et affiché après l'enregistrement.
+                    L'utilisateur peut le changer via « Mot de passe oublié ».</span>
+            </div>
+        </div>
+        <div class="card-footer justify-end">
+            <a th:href="@{/users}" class="btn btn-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

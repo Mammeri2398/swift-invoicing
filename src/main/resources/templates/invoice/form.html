@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(${invoice.id == null ? 'Nouvelle facture' : 'Modifier le brouillon'}, ~{::main}, ~{::script})}">
+<body>
+<main class="page">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane">
+        <a th:href="@{/invoices}">Factures</a><span class="icon icon-xs">chevron_right</span>
+        <span class="text-primary" th:text="${invoice.id == null ? 'Nouvelle facture' : 'Brouillon'}">Nouvelle facture</span>
+    </nav>
+    <div class="page-header">
+        <div>
+            <h1 class="page-title" th:text="${invoice.id == null ? 'Nouvelle facture' : 'Modifier le brouillon'}">Nouvelle facture</h1>
+            <p class="page-subtitle">Le numéro est attribué à l'émission. Un brouillon reste modifiable.</p>
+        </div>
+    </div>
+
+    <form th:action="@{/invoices/save}" method="post" th:object="${invoice}" id="invoice-form" class="flex flex-col gap-6">
+        <input type="hidden" th:field="*{id}"/>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <section class="card lg:col-span-2">
+                <div class="card-header"><h2 class="card-title"><span class="icon">badge</span>Informations</h2></div>
+                <div class="card-body form-grid">
+                    <div class="field md:col-span-2">
+                        <label class="label" for="clientId">Client <span class="required">*</span></label>
+                        <select class="input" th:field="*{clientId}" required>
+                            <option value="">Sélectionner un client…</option>
+                            <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}">Client</option>
+                        </select>
+                        <p class="hint">Client absent ? <a th:href="@{/clients/new}" class="text-primary hover:underline">Créer un client</a></p>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="issueDate">Date d'émission <span class="required">*</span></label>
+                        <input class="input" type="date" th:field="*{issueDate}" required/>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="dueDate">Date d'échéance <span class="optional">Optionnel</span></label>
+                        <input class="input" type="date" th:field="*{dueDate}"/>
+                    </div>
+                    <div class="field md:col-span-2">
+                        <label class="label" for="paymentMethod">Mode de paiement <span class="optional">Optionnel</span></label>
+                        <select class="input" th:field="*{paymentMethod}">
+                            <option value="">—</option>
+                            <option th:each="pm : ${paymentMethods}" th:value="${pm.name()}">
+                                <th:block th:replace="~{layout/fragments :: paymentMethod(${pm.name()})}"></th:block>
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header"><h2 class="card-title"><span class="icon">payments</span>Total</h2></div>
+                <div class="card-body flex flex-col gap-3">
+                    <p class="text-display-lg tabular-nums text-primary" data-grand-total>0,00 DA</p>
+                    <p class="hint" th:text="${vatMention}">TVA non applicable</p>
+                    <p class="hint">Le montant en lettres est imprimé sur la facture.</p>
+                </div>
+            </section>
+        </div>
+
+        <section class="card">
+            <div class="card-header">
+                <h2 class="card-title"><span class="icon">receipt</span>Lignes</h2>
+                <button type="button" class="btn btn-secondary btn-sm" data-add-line><span class="icon">add</span>Ajouter une ligne</button>
+            </div>
+            <div class="table-wrap">
+                <table class="table" id="lines-table">
+                    <thead>
+                    <tr>
+                        <th scope="col" class="w-10">N°</th>
+                        <th scope="col">Désignation</th>
+                        <th scope="col" class="w-32">Unité</th>
+                        <th scope="col" class="w-32">Quantité</th>
+                        <th scope="col" class="w-40">Prix unitaire (DA)</th>
+                        <th scope="col" class="num w-40">Total</th>
+                        <th scope="col" class="w-12"><span class="sr-only">Supprimer</span></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="line, stat : *{lines}" data-line>
+                        <td class="text-on-surface-variant tabular-nums" data-line-number th:text="${stat.count}">1</td>
+                        <td><input class="input input-sm" type="text" th:field="*{lines[__${stat.index}__].description}" required maxlength="255" placeholder="Prestation, produit…"/></td>
+                        <td><input class="input input-sm" type="text" th:field="*{lines[__${stat.index}__].unit}" maxlength="50" list="units" placeholder="jour"/></td>
+                        <td><input class="input input-sm text-right" type="number" th:field="*{lines[__${stat.index}__].quantity}" required min="0" step="0.001" data-quantity/></td>
+                        <td><input class="input input-sm text-right" type="number" th:field="*{lines[__${stat.index}__].unitPrice}" required min="0" step="0.01" data-unit-price/></td>
+                        <td class="num font-semibold" data-line-total>0,00 DA</td>
+                        <td><button type="button" class="btn-icon danger" data-remove-line title="Supprimer la ligne" aria-label="Supprimer la ligne"><span class="icon">delete</span></button></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                <span>Au moins une ligne est nécessaire.</span>
+                <span>Total : <strong class="text-on-surface" data-grand-total>0,00 DA</strong></span>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-body field">
+                <label class="label" for="notes">Notes / informations de paiement <span class="optional">Optionnel</span></label>
+                <textarea class="input" th:field="*{notes}" rows="3" maxlength="1000"></textarea>
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <a th:href="${invoice.id == null} ? @{/invoices} : @{/invoices/{id}(id=${invoice.id})}" class="btn btn-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer le brouillon</button>
+        </div>
+
+        <datalist id="units">
+            <option value="jour"></option>
+            <option value="heure"></option>
+            <option value="forfait"></option>
+            <option value="pièce"></option>
+            <option value="mois"></option>
+        </datalist>
+
+        <!-- Row added by "Ajouter une ligne" (INDEX is replaced by the script) -->
+        <template id="line-template">
+            <tr data-line>
+                <td class="text-on-surface-variant tabular-nums" data-line-number></td>
+                <td><input class="input input-sm" type="text" name="lines[INDEX].description" required maxlength="255" placeholder="Prestation, produit…"/></td>
+                <td><input class="input input-sm" type="text" name="lines[INDEX].unit" maxlength="50" list="units" placeholder="jour"/></td>
+                <td><input class="input input-sm text-right" type="number" name="lines[INDEX].quantity" value="1" required min="0" step="0.001" data-quantity/></td>
+                <td><input class="input input-sm text-right" type="number" name="lines[INDEX].unitPrice" required min="0" step="0.01" data-unit-price/></td>
+                <td class="num font-semibold" data-line-total>0,00 DA</td>
+                <td><button type="button" class="btn-icon danger" data-remove-line title="Supprimer la ligne" aria-label="Supprimer la ligne"><span class="icon">delete</span></button></td>
+            </tr>
+        </template>
+    </form>
+</main>
+<script th:src="@{/js/invoice-form.js}" defer></script>
+</body>
+</html>

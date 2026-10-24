@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(${invoice.invoiceNumber ?: 'Brouillon de facture'}, ~{::main}, ~{})}">
+<body>
+<main class="page" th:with="u=${currentUser}, status=${invoice.status.name()}">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane">
+        <a th:href="@{/invoices}">Factures</a><span class="icon icon-xs">chevron_right</span>
+        <span class="text-primary" th:text="${invoice.invoiceNumber ?: 'Brouillon'}">FA-2026-0001</span>
+    </nav>
+
+    <div class="page-header">
+        <div>
+            <div class="flex flex-wrap items-center gap-2">
+                <h1 class="page-title" th:text="${invoice.invoiceNumber != null ? 'Facture ' + invoice.invoiceNumber : 'Brouillon de facture'}">Facture</h1>
+                <span th:replace="~{layout/fragments :: statusBadge(${invoice.status})}"></span>
+            </div>
+            <p class="page-subtitle">
+                Créée le <span th:text="${#temporals.format(invoice.createdAt, 'dd/MM/yyyy à HH:mm')}"></span>
+                <th:block th:if="${invoice.issuedAt}"> · émise le <span th:text="${#temporals.format(invoice.issuedAt, 'dd/MM/yyyy à HH:mm')}"></span></th:block>
+                <th:block th:if="${invoice.paidAt}"> · payée le <span th:text="${#temporals.format(invoice.paidAt, 'dd/MM/yyyy')}"></span></th:block>
+                <th:block th:if="${invoice.cancelledAt}"> · annulée le <span th:text="${#temporals.format(invoice.cancelledAt, 'dd/MM/yyyy')}"></span></th:block>
+            </p>
+        </div>
+
+        <!-- Actions depend on the status and on the user's privileges -->
+        <div class="flex flex-wrap gap-2">
+            <a th:href="@{/invoices/{id}/pdf(id=${invoice.id})}" class="btn btn-secondary"><span class="icon">picture_as_pdf</span>PDF</a>
+            <a th:if="${status == 'DRAFT' and u != null and u.can('CREATE_INVOICE')}" th:href="@{/invoices/{id}/edit(id=${invoice.id})}" class="btn btn-secondary">
+                <span class="icon">edit</span>Modifier
+            </a>
+            <form th:if="${status == 'DRAFT' and u != null and u.can('ISSUE_INVOICE')}" th:action="@{/invoices/{id}/issue(id=${invoice.id})}" method="post"
+                  data-confirm="Émettre cette facture ? Elle recevra son numéro et ne sera plus modifiable.">
+                <button type="submit" class="btn btn-primary"><span class="icon">send</span>Émettre</button>
+            </form>
+            <form th:if="${status == 'ISSUED' and u != null and u.can('ISSUE_INVOICE')}" th:action="@{/invoices/{id}/pay(id=${invoice.id})}" method="post"
+                  data-confirm="Marquer cette facture comme payée ?">
+                <button type="submit" class="btn btn-success"><span class="icon">price_check</span>Marquer payée</button>
+            </form>
+            <form th:if="${status != 'CANCELLED' and u != null and u.can('ISSUE_INVOICE')}" th:action="@{/invoices/{id}/cancel(id=${invoice.id})}" method="post"
+                  data-confirm="Annuler cette facture ? Son numéro reste attribué et ne sera jamais réutilisé.">
+                <button type="submit" class="btn btn-danger"><span class="icon">block</span>Annuler</button>
+            </form>
+            <form th:if="${status == 'DRAFT' and u != null and u.can('DELETE_INVOICE')}" th:action="@{/invoices/{id}/delete(id=${invoice.id})}" method="post"
+                  data-confirm="Supprimer définitivement ce brouillon ?">
+                <button type="submit" class="btn btn-danger"><span class="icon">delete</span>Supprimer</button>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${status == 'DRAFT'}" class="alert alert-info mb-6">
+        <span class="icon">edit_note</span>
+        <span>Brouillon : pas encore de numéro. Les informations de l'émetteur et du client seront figées à l'émission.</span>
+    </div>
+
+    <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
+        <section class="card">
+            <div class="card-header"><h2 class="card-title"><span class="icon">domain</span>Client</h2></div>
+            <div class="card-body flex flex-col gap-1">
+                <p class="font-semibold" th:text="${invoice.clientName ?: invoice.client.name}">Client</p>
+                <p class="text-on-surface-variant" th:text="${invoice.clientAddress ?: invoice.client.address}">Adresse</p>
+                <p class="text-body-sm text-on-surface-variant" th:with="nif=${invoice.clientNif ?: invoice.client.nif}"
+                   th:text="${nif != null and !nif.isBlank() ? 'NIF ' + nif : 'NIF non renseigné'}">NIF</p>
+            </div>
+        </section>
+        <section class="card">
+            <div class="card-header"><h2 class="card-title"><span class="icon">calendar_today</span>Dates</h2></div>
+            <div class="card-body flex flex-col gap-1">
+                <p>Émission : <strong th:text="${#temporals.format(invoice.issueDate, 'dd/MM/yyyy')}">01/01/2026</strong></p>
+                <p>Échéance : <strong th:text="${invoice.dueDate != null ? #temporals.format(invoice.dueDate, 'dd/MM/yyyy') : '—'}">—</strong></p>
+            </div>
+        </section>
+        <section class="card">
+            <div class="card-header"><h2 class="card-title"><span class="icon">payments</span>Paiement</h2></div>
+            <div class="card-body flex flex-col gap-1">
+                <p th:if="${invoice.paymentMethod}"><th:block th:replace="~{layout/fragments :: paymentMethod(${invoice.paymentMethod.name()})}"></th:block></p>
+                <p th:unless="${invoice.paymentMethod}" class="text-on-surface-variant">Mode non précisé</p>
+                <p th:if="${invoice.notes}" class="whitespace-pre-line text-body-sm text-on-surface-variant" th:text="${invoice.notes}">Notes</p>
+            </div>
+        </section>
+    </div>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col" class="w-10">N°</th>
+                    <th scope="col">Désignation</th>
+                    <th scope="col">Unité</th>
+                    <th scope="col" class="num">Quantité</th>
+                    <th scope="col" class="num">Prix unitaire</th>
+                    <th scope="col" class="num">Total</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="line, stat : ${invoice.lines}">
+                    <td class="text-on-surface-variant" th:text="${stat.count}">1</td>
+                    <td th:text="${line.description}">Prestation</td>
+                    <td class="text-on-surface-variant" th:text="${line.unit ?: '—'}">jour</td>
+                    <td class="num" th:text="${amountUtils.formatQuantity(line.quantity)}">1</td>
+                    <td class="num" th:text="${amountUtils.format(line.unitPrice)}">0,00 DA</td>
+                    <td class="num font-semibold" th:text="${amountUtils.format(line.lineTotal)}">0,00 DA</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="flex flex-col items-end gap-1 bg-surface-container-low px-5 py-4">
+            <p class="text-body-md">Total à payer : <strong class="text-headline-md tabular-nums text-primary" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</strong></p>
+            <p class="text-body-sm italic text-on-surface-variant" th:text="${amountInWords.convert(invoice.totalAmount)}">Montant en lettres</p>
+            <p class="text-body-sm text-on-surface-variant" th:text="${vatMention}">TVA non applicable</p>
+        </div>
+    </section>
+</main>
+</body>
+</html>

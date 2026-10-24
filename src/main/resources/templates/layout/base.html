@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<!--/*
+    Application layout. A page uses it with:
+        <html th:replace="~{layout/base :: page('Title', ~{::main}, ~{::script})}">
+    and only defines its <main> (and an optional page <script>; pass ~{} when there is none).
+*/-->
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, content, scripts)">
+<head th:replace="~{layout/fragments :: head(${title})}"></head>
+<body class="flex min-h-screen flex-col">
+
+<header th:replace="~{layout/fragments :: header}"></header>
+
+<div class="flex-1">
+    <div th:replace="~{layout/fragments :: flash}"></div>
+    <th:block th:replace="${content}"></th:block>
+</div>
+
+<footer th:replace="~{layout/fragments :: footer}"></footer>
+
+<script th:src="@{/js/app.js}" defer></script>
+<th:block th:replace="${scripts}"></th:block>
+</body>
+</html>

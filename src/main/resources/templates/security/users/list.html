@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Utilisateurs</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2>Utilisateurs</h2>
+    <p><a class="btn primary" href="/users/new">+ Nouvel utilisateur</a></p>
+
+    <table>
+        <thead>
+        <tr><th>Nom d'utilisateur</th><th>Email</th><th>Profil</th><th>Actif</th><th>Créé le</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="u : ${users}">
+            <td th:text="${u.username}">-</td>
+            <td th:text="${u.email}">-</td>
+            <td th:text="${u.profile != null ? u.profile.name : '-'}">-</td>
+            <td>
+                <span th:if="${u.enabled}" class="status-badge status-issued">Actif</span>
+                <span th:if="${!u.enabled}" class="status-badge status-cancelled">Inactif</span>
+            </td>
+            <td th:text="${#temporals.format(u.createdAt, 'dd/MM/yyyy')}">-</td>
+            <td class="no-print">
+                <a class="btn small" th:href="@{/users/{id}/edit(id=${u.id})}">Modifier</a>
+                <form th:action="@{/users/{id}/delete(id=${u.id})}" method="post" style="display:inline;"
+                      onsubmit="return confirm('Supprimer cet utilisateur ?');">
+                    <button class="btn small danger" type="submit">Supprimer</button>
+                </form>
+            </td>
+        </tr>
+        <tr th:if="${users.isEmpty()}"><td colspan="6" class="text-center">Aucun utilisateur.</td></tr>
+        </tbody>
+    </table>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+</body>
+</html>

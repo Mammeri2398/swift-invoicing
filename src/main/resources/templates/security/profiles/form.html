@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${profile.id != null ? 'Modifier le profil' : 'Nouveau profil'}">Profil</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2 th:text="${profile.id != null ? 'Modifier le profil' : 'Nouveau profil'}">Profil</h2>
+
+    <form th:action="@{/profiles/save}" method="post" style="max-width: 500px;">
+        <input type="hidden" name="id" th:value="${profile.id}"/>
+
+        <label>Nom du profil <span style="color:#8f2d2d">*</span></label>
+        <input type="text" name="name" required th:value="${profile.name}" />
+
+        <label>Description</label>
+        <input type="text" name="description" th:value="${profile.description}" />
+
+        <div class="row-actions" style="margin-top:18px;">
+            <button class="btn primary" type="submit">Enregistrer</button>
+            <a class="btn" href="/profiles">Annuler</a>
+        </div>
+    </form>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+</body>
+</html>

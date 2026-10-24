@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,6 +62,16 @@ public class InvoiceController {
         model.addAttribute("selectedYear", year);
         model.addAttribute("selectedClient", clientId);
         model.addAttribute("search", search);
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (Invoice inv : invoices) {
+            if (inv.getTotalAmount() != null) {
+                total = total.add(inv.getTotalAmount());
+            }
+        }
+        InvoiceService.DashboardStats stats = new InvoiceService.DashboardStats();
+        stats.setTotalAmount(total);
+        model.addAttribute("stats", stats);
         return "invoices/list";
     }
 

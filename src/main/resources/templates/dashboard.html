@@ -1,50 +1,386 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8"/>
-    <title>Tableau de bord</title>
-    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta content="web_standard" name="shell-type"/>
+    <title>Swift Invoicing — Tableau de bord</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed": "#001e2f",
+                        "on-secondary-fixed": "#001e2f",
+                        "on-surface": "#121d25",
+                        "on-secondary-container": "#175b80",
+                        "inverse-surface": "#27323a",
+                        "tertiary-fixed-dim": "#75db93",
+                        "on-tertiary-fixed-variant": "#005228",
+                        "on-primary-fixed-variant": "#004b6f",
+                        "surface-tint": "#046491",
+                        "primary-fixed": "#c9e6ff",
+                        "tertiary-container": "#00793e",
+                        "background": "#f6faff",
+                        "surface-bright": "#f6faff",
+                        "on-tertiary-container": "#98ffb3",
+                        "secondary-fixed": "#c9e6ff",
+                        "inverse-primary": "#8aceff",
+                        "outline": "#70787f",
+                        "on-background": "#121d25",
+                        "on-surface-variant": "#40484e",
+                        "surface-container-low": "#ebf5ff",
+                        "on-secondary-fixed-variant": "#004c6e",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#d9e4ef",
+                        "outline-variant": "#c0c7cf",
+                        "surface-container-high": "#dee9f5",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "secondary-container": "#99d3fd",
+                        "primary-container": "#1d6f9c",
+                        "inverse-on-surface": "#e7f2fe",
+                        "primary": "#00567d",
+                        "primary-fixed-dim": "#8aceff",
+                        "surface": "#f6faff",
+                        "tertiary-fixed": "#91f8ad",
+                        "on-error": "#ffffff",
+                        "surface-variant": "#d9e4ef",
+                        "secondary-fixed-dim": "#93cdf8",
+                        "on-primary-container": "#d7ecff",
+                        "secondary": "#236489",
+                        "surface-container": "#e4effb",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#d0dbe7",
+                        "on-tertiary-fixed": "#00210c",
+                        "tertiary": "#005e2e",
+                        "error": "#ba1a1a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "space-xl": "1.75rem",
+                        "space-xs": "0.25rem",
+                        "space-md": "0.75rem",
+                        "margin-lg": "2rem",
+                        "gutter": "1rem",
+                        "margin-md": "1.5rem",
+                        "margin": "1rem",
+                        "space-sm": "0.5rem",
+                        "gutter-lg": "1.5rem",
+                        "space-lg": "1.25rem"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "title-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "numeric-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "numeric-lg": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "title-sm": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "body-lg": ["15px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+                        "numeric-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "500" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+                        "numeric-lg": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @layer base {
+            html, body { margin: 0; padding: 0; }
+            body { overscroll-behavior: none; }
+            main > :first-child { margin-top: 0 !important; }
+            main > :last-child { margin-bottom: 0 !important; }
+        }
+        ::-webkit-scrollbar { display: none; }
+    </style>
 </head>
-<body>
+<body class="bg-surface font-body-md text-body-md text-on-surface antialiased min-h-screen flex flex-col">
+
 <div th:replace="~{fragments/header :: header}"></div>
-<div class="container">
-    <h2>Tableau de bord</h2>
 
-    <div class="card">
-        <h3>Activité de l'année <span th:text="${stats.year}"></span></h3>
-        <p>Total factures émises et payées : <strong th:text="${totalFormatted}" class="money"></strong></p>
-        <p>Plafond annuel configuré : <strong th:text="${ceilingFormatted}" class="money"></strong></p>
-        <p>Progression du plafond : <strong th:text="${stats.percent}">0</strong> %</p>
+<main class="w-full pt-16 bg-surface min-h-[calc(100vh-80px)] flex-1">
+    <div class="w-full max-w-7xl mx-auto px-6 lg:px-12 pt-space-md">
+        <div class="w-full flex flex-col gap-space-xs mb-space-md" id="flash-message-container">
+            <div th:if="${success}" class="flex items-center justify-between p-space-md bg-surface-container-lowest text-on-surface rounded-lg shadow-[0_1px_3px_0_rgba(15,23,42,0.04)]">
+                <div class="flex items-center gap-space-sm">
+                    <span class="material-symbols-outlined text-tertiary text-[20px]">verified</span>
+                    <span class="font-body-md text-body-md" th:text="${success}">Opération réussie.</span>
+                </div>
+                <button class="p-1 text-on-surface-variant hover:text-error rounded-lg transition-colors" onclick="this.parentElement.parentElement.remove()">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                </button>
+            </div>
+            <div th:if="${error}" class="flex items-center justify-between p-space-md bg-error-container text-on-error-container rounded-lg shadow-[0_1px_3px_0_rgba(15,23,42,0.04)]">
+                <div class="flex items-center gap-space-sm">
+                    <span class="material-symbols-outlined text-error text-[20px]">error</span>
+                    <span class="font-body-md text-body-md" th:text="${error}">Une erreur est survenue.</span>
+                </div>
+                <button class="p-1 text-on-error-container hover:text-error rounded-lg transition-colors" onclick="this.parentElement.parentElement.remove()">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                </button>
+            </div>
+        </div>
 
-        <div th:if="${stats.alert100}" class="banner alert">Alerte : le plafond annuel de 5 000 000 DA est dépassé (100% et plus).</div>
-        <div th:if="${stats.warning80 and not stats.alert100}" class="banner warning">Attention : vous avez atteint 80% du plafond annuel.</div>
+        <div class="w-full max-w-7xl mx-auto px-6 lg:px-12 pb-space-xl flex flex-col gap-space-lg">
+            <!-- Top Action & Context Header -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md pt-space-xs">
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+                        <span>Exercice Fiscal</span>
+                        <span>•</span>
+                        <span class="text-primary font-bold">2026 en cours</span>
+                    </div>
+                    <h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Tableau de bord financier</h1>
+                </div>
+                <div class="flex items-center gap-space-sm flex-wrap">
+                    <a th:href="@{/clients}" class="inline-flex items-center gap-space-xs px-4 py-2 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md rounded-xl transition-all shadow-sm">
+                        <span class="material-symbols-outlined text-[18px] text-secondary">group</span>
+                        <span>Gérer les clients</span>
+                    </a>
+                    <a th:href="@{/invoices/new}" class="inline-flex items-center gap-space-xs px-4 py-2 bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md rounded-xl transition-all shadow-md hover:shadow-lg">
+                        <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                        <span>+ Nouvelle facture</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main Ceiling Card (Plafond Légal Auto-Entrepreneur ANAE) -->
+            <div class="relative overflow-hidden bg-surface-container-lowest rounded-xl shadow-sm p-6 lg:p-8 flex flex-col gap-6">
+                <div class="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-secondary-fixed/30 blur-3xl pointer-events-none"></div>
+                <div class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div class="flex flex-col gap-1 max-w-xl">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-semibold tracking-wide uppercase">Régime IFU 0.5%</span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant">Activité de l'année 2026</span>
+                        </div>
+                        <div class="flex items-baseline gap-2 mt-2">
+                            <span class="font-display-lg text-display-lg text-on-surface font-bold tracking-tight">4 120 000,00</span>
+                            <span class="font-headline-md text-headline-md text-primary font-semibold">DA</span>
+                        </div>
+                        <p class="font-body-sm text-body-sm text-on-surface-variant">
+                            Chiffre d'affaires cumulé facturé et encaissé pour les prestations de services numériques et intellectuelles.
+                        </p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-4 rounded-xl bg-surface-container-low shrink-0">
+                        <div class="flex flex-col">
+                            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Plafond statutaire ANAE</span>
+                            <span class="font-numeric-lg text-numeric-lg text-on-surface font-bold">5 000 000,00 DA</span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Reste autorisé : <strong class="text-on-surface">880 000,00 DA</strong></span>
+                        </div>
+                        <div class="w-16 h-16 relative flex items-center justify-center shrink-0">
+                            <svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+                                <path class="text-surface-container-highest" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+                                <path class="text-primary-container" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="82.4, 100" stroke-linecap="round" stroke-width="3.5"></path>
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="font-label-md text-label-md font-bold text-primary">82,4%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Linear Gauge -->
+                <div class="relative w-full flex flex-col gap-1.5">
+                    <div class="flex justify-between items-center font-label-sm text-label-sm">
+                        <span class="text-on-surface-variant">Progression vers le seuil d'exclusion</span>
+                        <span class="font-semibold text-primary">82,4% consommé</span>
+                    </div>
+                    <div class="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden p-0.5">
+                        <div class="h-full bg-gradient-to-r from-primary to-secondary-container rounded-full transition-all duration-700" style="width: 82.4%;"></div>
+                    </div>
+                </div>
+
+                <!-- Regulatory Warning Banner (>80%) -->
+                <div th:if="${stats.alert100}" class="flex items-start gap-3 p-4 rounded-xl bg-[#fffbeb] text-[#92400e] shadow-sm">
+                    <span class="material-symbols-outlined text-[22px] text-[#d97706] shrink-0 mt-0.5">warning</span>
+                    <div class="flex flex-col">
+                        <span class="font-title-sm text-title-sm font-semibold text-[#78350f]">Attention : Seuil de 80% du plafond annuel réglementaire atteint</span>
+                        <p class="font-body-md text-body-md text-[#92400e] mt-0.5 leading-relaxed">
+                            Vous avez atteint <strong class="font-semibold">82,4%</strong> du seuil statutaire (<strong class="font-semibold">4 120 000,00 DA</strong> sur <strong class="font-semibold">5 000 000,00 DA</strong>). Au-delà de 5 000 000 DA de recettes sur l'exercice civil, votre régime fiscal forfaitaire d'auto-entrepreneur (IFU 0,5%) est susceptible d'évoluer vers le régime réel simplifié selon les dispositions légales de l'ANAE.
+                        </p>
+                    </div>
+                </div>
+                <div th:if="${stats.warning80 and not stats.alert100}" class="flex items-start gap-3 p-4 rounded-xl bg-[#fffbeb] text-[#92400e] shadow-sm">
+                    <span class="material-symbols-outlined text-[22px] text-[#d97706] shrink-0 mt-0.5">warning</span>
+                    <div class="flex flex-col">
+                        <span class="font-title-sm text-title-sm font-semibold text-[#78350f]">Attention : Proximité du plafond annuel</span>
+                        <p class="font-body-md text-body-md text-[#92400e] mt-0.5 leading-relaxed">
+                            Vous avez dépassé <strong class="font-semibold">80%</strong> du plafond annuel de 5 000 000 DA.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary KPI Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- KPI 1 -->
+                <div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col justify-between gap-3 hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between">
+                        <span class="font-label-md text-label-md text-on-surface-variant">Émises ce mois</span>
+                        <div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+                            <span class="material-symbols-outlined text-[20px]">calendar_today</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="font-headline-md text-headline-md text-on-surface font-bold">425 000,00 <span class="text-label-md font-normal text-on-surface-variant">DA</span></div>
+                        <div class="flex items-center gap-1.5 mt-1">
+                            <span class="w-2 h-2 rounded-full bg-tertiary"></span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant">3 factures comptabilisées</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- KPI 2 -->
+                <div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col justify-between gap-3 hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between">
+                        <span class="font-label-md text-label-md text-on-surface-variant">En attente (ISSUED)</span>
+                        <div class="w-9 h-9 rounded-lg bg-secondary-container/40 flex items-center justify-center text-secondary">
+                            <span class="material-symbols-outlined text-[20px]">schedule</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="font-headline-md text-headline-md text-on-surface font-bold">680 000,00 <span class="text-label-md font-normal text-on-surface-variant">DA</span></div>
+                        <div class="flex items-center gap-1.5 mt-1">
+                            <span class="w-2 h-2 rounded-full bg-secondary"></span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant">2 factures envoyées</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- KPI 3 -->
+                <div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col justify-between gap-3 hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between">
+                        <span class="font-label-md text-label-md text-on-surface-variant">Brouillons (DRAFT)</span>
+                        <div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center text-outline">
+                            <span class="material-symbols-outlined text-[20px]">edit_note</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="font-headline-md text-headline-md text-on-surface font-bold">1 <span class="text-label-md font-normal text-on-surface-variant">dossier</span></div>
+                        <div class="flex items-center gap-1.5 mt-1">
+                            <span class="w-2 h-2 rounded-full bg-outline"></span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant">Non transmise au client</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- KPI 4 -->
+                <div class="bg-surface-container-lowest p-5 rounded-xl shadow-sm flex flex-col justify-between gap-3 hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between">
+                        <span class="font-label-md text-label-md text-on-surface-variant">Clients actifs</span>
+                        <div class="w-9 h-9 rounded-lg bg-tertiary-fixed/30 flex items-center justify-center text-tertiary">
+                            <span class="material-symbols-outlined text-[20px]">domain</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="font-headline-md text-headline-md text-on-surface font-bold">14 <span class="text-label-md font-normal text-on-surface-variant">entités</span></div>
+                        <div class="flex items-center gap-1.5 mt-1">
+                            <span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant">Registre NIF &amp; NIS vérifiés</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Invoices Ledger Section -->
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+                <div class="p-5 lg:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-container-lowest">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-[20px]">receipt_long</span>
+                        <h2 class="font-title-sm text-title-sm text-on-surface">Dernières factures enregistrées</h2>
+                        <span class="px-2 py-0.5 rounded font-label-sm text-label-sm bg-surface-container-high text-on-surface-variant">10 récentes</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a th:href="@{/invoices}" class="text-primary hover:text-secondary font-label-md text-label-md inline-flex items-center gap-1 transition-colors">
+                            <span>Consulter le grand livre</span>
+                            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Compact Ledger Table -->
+                <div class="w-full overflow-x-auto">
+                    <table class="w-full text-left font-body-md text-body-md">
+                        <thead>
+                        <tr class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+                            <th class="py-3 px-4 pl-6" scope="col">N° Facture</th>
+                            <th class="py-3 px-4" scope="col">Client / Raison sociale</th>
+                            <th class="py-3 px-3 text-center" scope="col">Année</th>
+                            <th class="py-3 px-4 text-center" scope="col">Émission</th>
+                            <th class="py-3 px-4 text-center" scope="col">Statut</th>
+                            <th class="py-3 px-4 text-right" scope="col">Montant (DZD)</th>
+                            <th class="py-3 px-4 pr-6 text-center" scope="col">Action</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-surface-container-high">
+                        <tr th:each="inv : ${stats.recentInvoices}"
+                            class="hover:bg-surface-container-low transition-colors">
+                            <td class="py-3 px-4 pl-6 font-numeric-md text-numeric-md">
+                                <div class="flex items-center gap-1.5">
+                                    <span th:text="${inv.invoiceNumber}" class="font-semibold text-on-surface-variant">FA-2026-0013</span>
+                                    <span th:if="${inv.status.name() == 'DRAFT'}" class="px-1.5 py-0.2 rounded font-label-sm text-[10px] bg-surface-container-highest text-on-surface-variant uppercase font-bold">Brouillon</span>
+                                </div>
+                            </td>
+                            <td class="py-3 px-4 font-medium text-on-surface" th:text="${inv.clientName != null ? inv.clientName : (inv.client != null ? inv.client.name : '-')}">SARL Alger Digital Factory</td>
+                            <td class="py-3 px-3 text-center font-numeric-md text-numeric-md text-on-surface-variant" th:text="${inv.invoiceYear}">2026</td>
+                            <td class="py-3 px-4 text-center font-body-sm text-body-sm text-on-surface-variant" th:text="${#temporals.format(inv.issueDate, 'dd/MM/yyyy')}">18/04/2026</td>
+                            <td class="py-3 px-4 text-center">
+                                <span th:class="|inline-flex items-center px-2 py-0.5 rounded font-label-sm text-label-sm bg-${'surface-container-high'}|" th:text="${inv.status}">DRAFT</span>
+                            </td>
+                            <td class="py-3 px-4 text-right font-numeric-md text-numeric-md text-on-surface font-semibold" th:text="${amountUtils.format(inv.totalAmount)}">185 000,00 DA</td>
+                            <td class="py-3 px-4 pr-6 text-center">
+                                <a th:href="@{/invoices/{id}(id=${inv.id})}" class="px-2.5 py-1 rounded bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md transition-colors">Voir</a>
+                            </td>
+                        </tr>
+                        <tr th:if="${stats.recentInvoices.isEmpty()}">
+                            <td colspan="7" class="py-8 text-center text-on-surface-variant">Aucune facture récente.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Ledger Summary Bar -->
+                <div class="p-4 bg-surface-container-low flex flex-col sm:flex-row items-center justify-between text-on-surface-variant font-body-sm text-body-sm gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-primary"></span>
+                        <span>TVA non applicable conformément à l'article 282 sexies-B du Code des Impôts Directs (CID).</span>
+                    </div>
+                    <div class="font-numeric-md text-numeric-md">
+                        Total période : <span th:text="${amountUtils.format(stats.totalAmount)}" class="font-bold text-on-surface">3 345 000,00 DA</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+</main>
 
-    <h3>Dernières factures</h3>
-    <table>
-        <thead>
-        <tr><th>N°</th><th>Client</th><th>Date</th><th>Statut</th><th>Montant</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-        <tr th:each="inv : ${stats.recentInvoices}">
-            <td>
-                <span th:text="${inv.invoiceNumber}" />
-                <span th:if="${inv.status.name() == 'DRAFT'}" class="draft-badge">brouillon</span>
-            </td>
-            <td th:text="${inv.clientName != null ? inv.clientName : (inv.client != null ? inv.client.name : '-')}">-</td>
-            <td th:text="${inv.issueDate}">-</td>
-            <td>
-                <span class="status-badge" th:class="|status-${inv.status.name().toLowerCase()}|" th:text="${inv.status}">-</span>
-            </td>
-            <td class="text-right" th:text="${amountUtils.format(inv.totalAmount)}">0,00 DA</td>
-            <td>
-                <a class="btn small" th:href="@{/invoices/{id}(id=${inv.id})}">Voir</a>
-            </td>
-        </tr>
-        <tr th:if="${stats.recentInvoices.isEmpty()}"><td colspan="6" class="text-center">Aucune facture.</td></tr>
-        </tbody>
-    </table>
-</div>
 <div th:replace="~{fragments/header :: footer}"></div>
+
 </body>
 </html>

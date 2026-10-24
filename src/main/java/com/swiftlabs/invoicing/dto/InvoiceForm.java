@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.dto;
 
+import com.swiftlabs.invoicing.util.AmountUtils;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -76,5 +77,17 @@ public class InvoiceForm {
 
     public void addEmptyLine() {
         this.lines.add(new InvoiceLineForm());
+    }
+
+    public BigDecimal getTotalAmount() {
+        BigDecimal total = BigDecimal.ZERO;
+        if (lines != null) {
+            for (InvoiceLineForm line : lines) {
+                if (line.getLineTotal() != null) {
+                    total = total.add(line.getLineTotal());
+                }
+            }
+        }
+        return AmountUtils.round2(total);
     }
 }

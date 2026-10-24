@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Profils</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2>Profils</h2>
+    <p><a class="btn primary" href="/profiles/new">+ Nouveau profil</a></p>
+
+    <table>
+        <thead>
+        <tr><th>Nom</th><th>Description</th><th>Privilèges</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="p : ${profiles}">
+            <td th:text="${p.name}">-</td>
+            <td th:text="${p.description}" class="small">-</td>
+            <td>
+                <span th:each="priv : ${p.privileges}" th:text="${priv.code}" class="small" style="margin-right:4px;">-</span>
+                <span th:if="${p.privileges.isEmpty()}" class="muted">-</span>
+            </td>
+            <td class="no-print">
+                <a class="btn small" th:href="@{/profiles/{id}/edit(id=${p.id})}">Modifier</a>
+                <form th:action="@{/profiles/{id}/delete(id=${p.id})}" method="post" style="display:inline;"
+                      onsubmit="return confirm('Supprimer ce profil ?');">
+                    <button class="btn small danger" type="submit">Supprimer</button>
+                </form>
+            </td>
+        </tr>
+        <tr th:if="${profiles.isEmpty()}"><td colspan="4" class="text-center">Aucun profil.</td></tr>
+        </tbody>
+    </table>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+</body>
+</html>

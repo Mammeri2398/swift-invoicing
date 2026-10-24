@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${user.id != null ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}">Utilisateur</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2 th:text="${user.id != null ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}">Utilisateur</h2>
+
+    <form th:action="@{/users/save}" method="post" style="max-width: 500px;">
+        <input type="hidden" name="id" th:value="${user.id}"/>
+
+        <label>Nom d'utilisateur <span style="color:#8f2d2d">*</span></label>
+        <input type="text" name="username" required th:value="${user.username}" />
+
+        <label>Email <span style="color:#8f2d2d">*</span></label>
+        <input type="email" name="email" required th:value="${user.email}" />
+
+        <label>Mot de passe <span th:if="${user.id == null}" style="color:#8f2d2d">*</span></label>
+        <input type="password" name="password" th:required="${user.id == null}"
+               th:placeholder="${user.id == null ? 'Obligatoire' : 'Laisser vide pour conserver'}"/>
+
+        <label>Profil</label>
+        <select name="profile.id" required>
+            <option value="">-- Sélectionner un profil --</option>
+            <option th:each="p : ${profiles}" th:value="${p.id}" th:text="${p.name}" th:selected="${user.profile != null && user.profile.id == p.id}"></option>
+        </select>
+
+        <label>Actif</label>
+        <select name="enabled">
+            <option value="true" th:selected="${user.enabled != null ? user.enabled : true}">Oui</option>
+            <option value="false" th:selected="${user.enabled != null ? !user.enabled : false}">Non</option>
+        </select>
+
+        <div class="row-actions" style="margin-top:18px;">
+            <button class="btn primary" type="submit">Enregistrer</button>
+            <a class="btn" href="/users">Annuler</a>
+        </div>
+    </form>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+</body>
+</html>

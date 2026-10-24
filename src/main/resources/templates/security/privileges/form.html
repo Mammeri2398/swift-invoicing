@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${privilege.id != null ? 'Modifier le privilège' : 'Nouveau privilège'}">Privilège</title>
+    <link th:href="@{/css/style.css}" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="~{fragments/header :: header}"></div>
+<div class="container">
+    <h2 th:text="${privilege.id != null ? 'Modifier le privilège' : 'Nouveau privilège'}">Privilège</h2>
+
+    <form th:action="@{/privileges/save}" method="post" style="max-width: 500px;">
+        <input type="hidden" name="id" th:value="${privilege.id}"/>
+
+        <label>Code <span style="color:#8f2d2d">*</span> <span class="small">(ex: CREATE_INVOICE)</span></label>
+        <input type="text" name="code" required th:value="${privilege.code}" />
+
+        <label>Nom <span style="color:#8f2d2d">*</span></label>
+        <input type="text" name="name" required th:value="${privilege.name}" />
+
+        <label>Description</label>
+        <input type="text" name="description" th:value="${privilege.description}" />
+
+        <div class="row-actions" style="margin-top:18px;">
+            <button class="btn primary" type="submit">Enregistrer</button>
+            <a class="btn" href="/privileges">Annuler</a>
+        </div>
+    </form>
+</div>
+<div th:replace="~{fragments/header :: footer}"></div>
+</body>
+</html>

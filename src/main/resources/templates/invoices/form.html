@@ -1,149 +1,480 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8"/>
-    <title th:text="${invoice.id != null ? 'Modifier la facture' : 'Nouvelle facture'}">Facture</title>
-    <link th:href="@{/css/style.css}" rel="stylesheet"/>
-</head>
-<body>
+
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>Swift Invoicing — Nouvelle facture</title><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-primary-fixed": "#001e2f", "on-secondary-fixed": "#001e2f", "on-surface": "#121d25", "on-secondary-container": "#175b80", "inverse-surface": "#27323a", "tertiary-fixed-dim": "#75db93", "on-tertiary-fixed-variant": "#005228", "on-primary-fixed-variant": "#004b6f", "surface-tint": "#046491", "primary-fixed": "#c9e6ff", "tertiary-container": "#00793e", "background": "#f6faff", "surface-bright": "#f6faff", "on-tertiary-container": "#98ffb3", "secondary-fixed": "#c9e6ff", "inverse-primary": "#8aceff", "outline": "#70787f", "on-background": "#121d25", "on-surface-variant": "#40484e", "surface-container-low": "#ebf5ff", "on-secondary-fixed-variant": "#004c6e", "on-primary": "#ffffff", "surface-container-highest": "#d9e4ef", "outline-variant": "#c0c7cf", "surface-container-high": "#dee9f5", "on-secondary": "#ffffff", "on-error-container": "#93000a", "secondary-container": "#99d3fd", "primary-container": "#1d6f9c", "inverse-on-surface": "#e7f2fe", "primary": "#00567d", "primary-fixed-dim": "#8aceff", "surface": "#f6faff", "tertiary-fixed": "#91f8ad", "on-error": "#ffffff", "surface-variant": "#d9e4ef", "secondary-fixed-dim": "#93cdf8", "on-primary-container": "#d7ecff", "secondary": "#236489", "surface-container": "#e4effb", "surface-container-lowest": "#ffffff", "on-tertiary": "#ffffff", "error-container": "#ffdad6", "surface-dim": "#d0dbe7", "on-tertiary-fixed": "#00210c", "tertiary": "#005e2e", "error": "#ba1a1a" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xl": "1.75rem", "space-xs": "0.25rem", "space-md": "0.75rem", "margin-lg": "2rem", "gutter": "1rem", "margin-md": "1.5rem", "margin": "1rem", "space-sm": "0.5rem", "gutter-lg": "1.5rem", "space-lg": "1.25rem" }, "fontFamily": { "body-sm": ["Inter"], "headline-md": ["Inter"], "title-sm": ["Inter"], "display-lg": ["Inter"], "label-md": ["Inter"], "body-lg": ["Inter"], "label-sm": ["Inter"], "numeric-md": ["Inter"], "headline-lg": ["Inter"], "numeric-lg": ["Inter"], "body-md": ["Inter"] }, "fontSize": { "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "title-sm": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }], "body-lg": ["15px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "numeric-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "500" }], "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "600" }], "numeric-lg": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }] } } } }</script><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased min-h-screen flex flex-col">
+
 <div th:replace="~{fragments/header :: header}"></div>
-<div class="container">
-    <h2 th:text="${invoice.id != null ? 'Modifier la facture' : 'Nouvelle facture (brouillon)'}">Facture</h2>
 
-    <form th:action="@{/invoices/save}" method="post" class="no-print">
-        <input type="hidden" name="id" th:value="${invoice.id}"/>
-
-        <label>Client <span style="color:#8f2d2d">*</span></label>
-        <select name="clientId" required>
-            <option value="">-- Sélectionner un client --</option>
-            <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}" th:selected="${invoice.clientId == c.id}"></option>
-        </select>
-
-        <label>Date d'émission <span style="color:#8f2d2d">*</span></label>
-        <input type="date" name="issueDate" required th:value="${#temporals.format(invoice.issueDate, 'yyyy-MM-dd')}"/>
-
-        <label>Date d'échéance</label>
-        <input type="date" name="dueDate" th:value="${#temporals.format(invoice.dueDate, 'yyyy-MM-dd')}"/>
-
-        <label>Mode de paiement</label>
-        <select name="paymentMethod">
-            <option value="">--</option>
-            <option th:each="pm : ${paymentMethods}" th:value="${pm.name()}" th:selected="${invoice.paymentMethod == pm.name()}">[[${pm.name()}]]</option>
-        </select>
-
-        <label>Notes / informations de paiement</label>
-        <textarea name="notes" th:text="${invoice.notes}"></textarea>
-
-        <h3>Lignes de facture</h3>
-        <table class="lines-table" id="linesTable">
-            <thead>
-            <tr>
-                <th style="width:4%">N°</th>
-                <th style="width:34%">Désignation</th>
-                <th style="width:12%">Unité</th>
-                <th style="width:14%">Quantité</th>
-                <th style="width:16%">Prix unitaire</th>
-                <th style="width:16%">Total ligne</th>
-                <th style="width:4%"></th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="line, stat : ${invoice.lines}">
-                <input type="hidden" name="lines[${stat.index}].id" th:value="${line.id}"/>
-                <td><span th:text="${stat.index + 1}">1</span></td>
-                <td><input type="text" name="lines[${stat.index}].description" th:value="${line.description}" required/></td>
-                <td><input type="text" name="lines[${stat.index}].unit" th:value="${line.unit}" placeholder="pièce"/></td>
-                <td><input type="number" name="lines[${stat.index}].quantity" step="0.001" th:value="${line.quantity}" min="0" required/></td>
-                <td><input type="number" name="lines[${stat.index}].unitPrice" step="0.01" th:value="${line.unitPrice}" min="0" required/></td>
-                <td class="money line-total" th:text="${#numbers.formatDecimal(line.lineTotal, 2, 'COMMA', 2, 'POINT')}">0,00</td>
-                <td><button type="button" class="btn small danger remove-line" onclick="removeLine(this)">Suppr</button></td>
-            </tr>
-            </tbody>
-        </table>
-        <div class="add-line no-print">
-            <button type="button" class="btn primary" onclick="addLine()">+ Ajouter une ligne</button>
+<main class="w-full pt-16 bg-surface min-h-[calc(100vh-80px)] flex-1">
+    <div class="w-full max-w-7xl mx-auto px-6 lg:px-12 pt-space-md">
+        <div class="w-full flex flex-col gap-space-xs mb-space-md" id="flash-message-container">
+            <div th:if="${success}" class="flex items-center justify-between p-space-md bg-surface-container-lowest text-on-surface rounded-lg shadow-[0_1px_3px_0_rgba(15,23,42,0.04)]">
+                <div class="flex items-center gap-space-sm">
+                    <span class="material-symbols-outlined text-tertiary text-[20px]">verified</span>
+                    <span class="font-body-md text-body-md" th:text="${success}">Opération réussie.</span>
+                </div>
+                <button class="p-1 text-on-surface-variant hover:text-error rounded-lg transition-colors" onclick="this.parentElement.parentElement.remove()">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                </button>
+            </div>
+            <div th:if="${error}" class="flex items-center justify-between p-space-md bg-error-container text-on-error-container rounded-lg shadow-[0_1px_3px_0_rgba(15,23,42,0.04)]">
+                <div class="flex items-center gap-space-sm">
+                    <span class="material-symbols-outlined text-error text-[20px]">error</span>
+                    <span class="font-body-md text-body-md" th:text="${error}">Une erreur est survenue.</span>
+                </div>
+                <button class="p-1 text-on-error-container hover:text-error rounded-lg transition-colors" onclick="this.parentElement.parentElement.remove()">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                </button>
+            </div>
         </div>
 
-        <div class="total-row" style="margin-top:12px; text-align:right; font-weight:bold; font-size:1.1rem;">
-            Total à payer : <span id="grandTotal">0,00</span> DA
-        </div>
+        <div class="flex flex-col w-full">
+            <div class="w-full max-w-7xl mx-auto px-6 lg:px-12 py-space-md pb-margin-lg">
+                <!-- Top Context & Editorial Bar -->
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-lg">
+                    <div class="flex flex-col gap-space-xs">
+                        <div class="flex items-center gap-space-xs">
+                            <span class="font-label-sm text-label-sm uppercase tracking-widest text-primary font-semibold">Exercice Fiscal 2026</span>
+                            <span class="text-outline-variant">•</span>
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">Réf. Provisoire : #DRAFT-TEMP-042</span>
+                        </div>
+                        <h1 class="font-display-lg text-display-lg text-on-surface tracking-tight">Créer une nouvelle facture</h1>
+                        <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+                            Brouillon — Les numéros séquentiels définitifs ne sont attribués qu'à l'émission officielle conformément aux registres ANAE.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-space-sm bg-surface-container-low px-space-md py-space-sm rounded-xl">
+                        <span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">info</span>
+                        <div class="flex flex-col">
+                            <span class="font-label-sm text-label-sm text-on-surface">Seuil IFU en cours</span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant"><strong class="text-primary font-semibold">38.5%</strong> consommé (1 925 000 / 5 000 000 DA)</span>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="row-actions" style="margin-top:18px;">
-            <button class="btn primary" type="submit">Enregistrer le brouillon</button>
-            <a class="btn" href="/invoices">Annuler</a>
+                <!-- Main Workspace -->
+                <form th:action="@{/invoices/save}" method="post" class="flex flex-col gap-space-lg" id="invoice-form">
+                    <!-- Bento Grid: Meta, Client, Payment Details -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg">
+                        <!-- Left: Client Details (7 cols) -->
+                        <div class="lg:col-span-7 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md relative overflow-hidden">
+                            <div class="flex items-center justify-between pb-space-xs">
+                                <div class="flex items-center gap-space-sm">
+                                    <span class="w-2 h-2 rounded-full bg-primary"></span>
+                                    <h2 class="font-title-sm text-title-sm text-on-surface">Client destinataire</h2>
+                                </div>
+                                <button class="inline-flex items-center gap-space-xs font-label-md text-label-md text-primary hover:text-on-secondary-container transition-colors" id="btn-quick-client" type="button">
+                                    <span class="material-symbols-outlined text-[16px]">person_add</span>
+                                    <span>Nouveau client</span>
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                                <div class="md:col-span-2 flex flex-col gap-space-xs">
+                                    <label class="font-label-md text-label-md text-on-surface" for="client-select">
+                                        Sélectionner un client <span class="text-error font-semibold">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <select class="w-full h-10 px-3 pr-9 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-container appearance-none transition-shadow" id="client-select" name="clientId">
+                                            <option value="">-- Sélectionner un client --</option>
+                                            <option th:each="c : ${clients}" th:value="${c.id}" th:data-addr="${c.address}" th:data-art="${''}" th:data-nif="${c.nif}" th:data-nis="${''}" th:data-rc="${''}" th:text="${c.name}">Sarl Numidia Tech Solutions (Entreprise)</option>
+                                        </select>
+                                        <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+                                    </div>
+                                </div>
+                                <!-- Dynamic Autofill Fiscal Information Box -->
+                                <div class="md:col-span-2 bg-surface-container-low p-space-md rounded-lg flex flex-col gap-space-sm">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Identifiants fiscaux client</span>
+                                        <span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-high text-on-secondary-container" id="client-badge">Personne Morale</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm font-body-sm text-body-sm">
+                                        <div class="flex flex-col">
+                                            <span class="text-outline text-label-sm">NIF</span>
+                                            <span class="font-numeric-md text-numeric-md text-on-surface font-medium truncate" id="client-nif">001816098234125</span>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-outline text-label-sm">NIS</span>
+                                            <span class="font-numeric-md text-numeric-md text-on-surface font-medium truncate" id="client-nis">16091002341</span>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-outline text-label-sm">RC</span>
+                                            <span class="font-numeric-md text-numeric-md text-on-surface font-medium truncate" id="client-rc">16/00-987412B22</span>
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="text-outline text-label-sm">Art. Imposition</span>
+                                            <span class="font-numeric-md text-numeric-md text-on-surface font-medium truncate" id="client-art">16120493821</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-space-xs pt-space-xs text-on-surface-variant">
+                                        <span class="material-symbols-outlined text-[16px] text-outline shrink-0 mt-0.5">location_on</span>
+                                        <span class="font-body-sm text-body-sm" id="client-addr">Zone Industrielle Oued Smar, Lot 44, Alger</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Right: Invoice Metadata & Terms (5 cols) -->
+                        <div class="lg:col-span-5 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between gap-space-md">
+                            <div class="flex items-center gap-space-sm">
+                                <span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                <h2 class="font-title-sm text-title-sm text-on-surface">Échéances &amp; Réglement</h2>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+                                <div class="flex flex-col gap-space-xs">
+                                    <label class="font-label-md text-label-md text-on-surface" for="issueDate">
+                                        Date d'émission <span class="text-error font-semibold">*</span>
+                                    </label>
+                                    <input class="h-10 px-3 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition-shadow" id="issueDate" name="issueDate" type="date"/>
+                                </div>
+                                <div class="flex flex-col gap-space-xs">
+                                    <label class="font-label-md text-label-md text-on-surface" for="dueDate">
+                                        Date d'échéance
+                                    </label>
+                                    <input class="h-10 px-3 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-container transition-shadow" id="dueDate" name="dueDate" type="date"/>
+                                </div>
+                                <div class="sm:col-span-2 flex flex-col gap-space-xs">
+                                    <label class="font-label-md text-label-md text-on-surface" for="paymentMethod">
+                                        Mode de règlement <span class="text-error font-semibold">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <select class="w-full h-10 px-3 pr-9 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-container appearance-none transition-shadow" id="paymentMethod" name="paymentMethod">
+                                            <option value="">-- Sélectionner --</option>
+                                            <option th:each="pm : ${paymentMethods}" th:value="${pm.name()}" th:text="${pm.name()} + ' [' + ${pm.name()} + ']'">Virement bancaire [BANK_TRANSFER]</option>
+                                        </select>
+                                        <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+                                    </div>
+                                </div>
+                                <div class="sm:col-span-2 flex flex-col gap-space-xs">
+                                    <div class="flex items-center justify-between">
+                                        <label class="font-label-md text-label-md text-on-surface" for="notes">Coordonnées de règlement (RIB / RIP)</label>
+                                        <span class="font-label-sm text-label-sm text-on-surface-variant">Mention facture</span>
+                                    </div>
+                                    <textarea class="w-full p-2.5 bg-surface-container-low text-on-surface font-numeric-md text-numeric-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-container resize-none" id="notes" name="notes" rows="2">BANQUE : BNA Agence 612 Alger-Centre — RIB : 001 00612 0300012345 88
+CCP / RIP : 0021458992 Clé 45 (Titulaire : Auto-entrepreneur ANAE)</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Line Items Section (Dynamic Ledger Grid) -->
+                    <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+                        <!-- Table Action Header -->
+                        <div class="px-space-lg py-space-md flex flex-wrap items-center justify-between gap-space-md bg-surface-container-low/40">
+                            <div class="flex items-center gap-space-sm">
+                                <span class="material-symbols-outlined text-primary text-[20px]">receipt_long</span>
+                                <h2 class="font-title-sm text-title-sm text-on-surface">Prestations &amp; Lignes de Facturation</h2>
+                                <span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-semibold" id="line-count-badge">0 lignes</span>
+                            </div>
+                            <button class="inline-flex items-center gap-space-xs px-3.5 py-1.5 bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md rounded-lg shadow-sm transition-all transform active:scale-95" id="btn-add-line" type="button">
+                                <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                                <span>Ajouter une ligne</span>
+                            </button>
+                        </div>
+                        <!-- Scrollable Ledger Table -->
+                        <div class="w-full overflow-x-auto">
+                            <table class="w-full text-left border-collapse min-w-[760px]">
+                                <thead>
+                                <tr class="bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+                                    <th class="py-2.5 px-4 w-12 text-center">N°</th>
+                                    <th class="py-2.5 px-4">Désignation de la prestation / produit</th>
+                                    <th class="py-2.5 px-3 w-32">Unité</th>
+                                    <th class="py-2.5 px-3 w-28 text-right">Quantité</th>
+                                    <th class="py-2.5 px-4 w-44 text-right">Prix unitaire (DA)</th>
+                                    <th class="py-2.5 px-4 w-44 text-right">Total ligne (DA)</th>
+                                    <th class="py-2.5 px-3 w-14 text-center">Action</th>
+                                </tr>
+                                </thead>
+                                <tbody id="line-items-tbody">
+                                <!-- Lignes injectées dynamiquement via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Table Footer / Add Row Quick Trigger -->
+                        <div class="p-space-md bg-surface-container-lowest flex items-center justify-between">
+                            <button class="inline-flex items-center gap-space-xs font-label-md text-label-md text-primary hover:text-on-secondary-container transition-colors" id="btn-add-line-bottom" type="button">
+                                <span class="material-symbols-outlined text-[18px]">add</span>
+                                <span>+ Ajouter une ligne de facturation</span>
+                            </button>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant italic">Devise : Dinar Algérien (DZD)</span>
+                        </div>
+                    </div>
+
+                    <!-- Financial Recap & Regulatory Notice (Asymmetric Split) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-start">
+                        <!-- Left: Legal Exergue & ANAE Fiscal Statement (7 cols) -->
+                        <div class="lg:col-span-7 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+                            <div class="flex items-start gap-space-md p-space-md bg-surface-container-low rounded-lg">
+                                <span class="material-symbols-outlined text-tertiary text-[24px] shrink-0" style="font-variation-settings: 'FILL' 1;">gavel</span>
+                                <div class="flex flex-col gap-space-xs">
+                                    <span class="font-title-sm text-title-sm text-on-surface leading-snug">
+                                        TVA non applicable — Franchise de TVA
+                                    </span>
+                                    <p class="font-body-sm text-body-sm text-on-surface-variant">
+                                        Régime fiscal Auto-entrepreneur (ANAE) régi par les dispositions de l’article 282 sexies-B du Code des Impôts Directs (CID). Soumis à l'Impôt Forfaitaire Unique (IFU) libératoire au taux de 0,5% applicable aux activités de services numériques.
+                                    </p>
+                                </div>
+                            </div>
+                            <!-- Letters Transcription Card -->
+                            <div class="flex flex-col gap-space-xs bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+                                <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold">Arrêté de la présente facture</span>
+                                <div class="flex items-center gap-space-xs text-on-surface font-body-md text-body-md">
+                                    <span class="material-symbols-outlined text-primary text-[18px]">format_quote</span>
+                                    <p class="italic font-medium" id="total-words">
+                                        Montant en lettres : <span th:text="${amountInWords.convert(invoice.totalAmount)}">Zéro dinar algérien.</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Right: Summary Computation Card (5 cols) -->
+                        <div class="lg:col-span-5 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+                            <h3 class="font-title-sm text-title-sm text-on-surface">Récapitulatif Financier</h3>
+                            <div class="flex flex-col gap-space-sm font-body-md text-body-md">
+                                <div class="flex items-center justify-between text-on-surface-variant">
+                                    <span>Total Prestations HT</span>
+                                    <span class="font-numeric-md text-numeric-md font-medium text-on-surface" id="recap-subtotal">0,00 DA</span>
+                                </div>
+                                <div class="flex items-center justify-between text-on-surface-variant">
+                                    <div class="flex items-center gap-space-xs">
+                                        <span>TVA (Exonération Légale)</span>
+                                        <span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-surface-container-high text-on-surface-variant">0%</span>
+                                    </div>
+                                    <span class="font-numeric-md text-numeric-md font-medium text-on-surface">0,00 DA</span>
+                                </div>
+                                <div class="flex items-center justify-between text-on-surface-variant pb-space-xs">
+                                    <div class="flex items-center gap-space-xs">
+                                        <span>IFU statutaire calculé (0.5%)</span>
+                                        <span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-tertiary-fixed text-on-tertiary-fixed">Déclaratif</span>
+                                    </div>
+                                    <span class="font-numeric-md text-numeric-md font-medium text-tertiary" id="recap-ifu">0,00 DA</span>
+                                </div>
+                                <!-- Grand Total Highlight Card -->
+                                <div class="bg-primary/5 p-space-md rounded-xl flex flex-col gap-space-xs">
+                                    <span class="font-label-md text-label-md uppercase tracking-wider text-primary font-semibold">Total Net à Payer</span>
+                                    <div class="flex items-baseline justify-between">
+                                        <span class="font-display-lg text-display-lg text-primary tracking-tight font-bold" id="grand-total-display">0,00 DA</span>
+                                        <span class="font-label-sm text-label-sm text-on-surface-variant">Net d'impôt</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Sticky Action Bar -->
+                    <div class="sticky bottom-4 z-40 bg-surface-container-lowest/95 backdrop-blur-md p-space-md rounded-xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-space-md mt-space-md">
+                        <a th:href="@{/invoices}" class="inline-flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors py-2 px-3 rounded-lg hover:bg-surface-container">
+                            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                            <span>Annuler et revenir à la liste</span>
+                        </a>
+                        <div class="flex items-center gap-space-sm w-full sm:w-auto justify-end">
+                            <button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-4 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md rounded-lg shadow-sm transition-all" type="submit">
+                                <span class="material-symbols-outlined text-[18px]">save</span>
+                                <span>Enregistrer le brouillon</span>
+                            </button>
+                            <button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs px-5 py-2.5 bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md rounded-lg shadow-sm transition-all transform active:scale-95" type="button" onclick="if(confirm('Êtes-vous sûr de vouloir émettre cette facture ? Un numéro officiel sera assigné.')){ this.form.submit(); }">
+                                <span class="material-symbols-outlined text-[18px]">send</span>
+                                <span>Enregistrer et Émettre immédiatement</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
-    </form>
-</div>
+    </div>
+</main>
+
 <div th:replace="~{fragments/header :: footer}"></div>
 
 <script>
-    function computeLine(row) {
-        var qty = parseFloat(row.querySelector('input[name$=".quantity"]').value) || 0;
-        var price = parseFloat(row.querySelector('input[name$=".unitPrice"]').value) || 0;
-        var total = (qty * price).toFixed(2);
-        row.querySelector('.line-total').textContent = formatFr(total);
-    }
+    (function () {
+        const tbody = document.getElementById('line-items-tbody');
+        const btnAddTop = document.getElementById('btn-add-line');
+        const btnAddBottom = document.getElementById('btn-add-line-bottom');
+        const lineCountBadge = document.getElementById('line-count-badge');
+        const clientSelect = document.getElementById('client-select');
 
-    function formatFr(v) {
-        return v.toString().replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    }
+        // Number to French Words converter helper for DA currency
+        function numberToWordsDinars(num) {
+            if (isNaN(num) || num <= 0) return "Zéro dinar algérien.";
 
-    function computeGrandTotal() {
-        var sum = 0;
-        document.querySelectorAll('#linesTable tbody tr').forEach(function (row) {
-            var t = parseFloat(row.querySelector('.line-total').textContent.replace(/[^0-9,]/g, '').replace(',', '.')) || 0;
-            sum += t;
-        });
-        document.getElementById('grandTotal').textContent = formatFr(sum);
-    }
+            const units = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"];
+            const teens = ["dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
+            const tens = ["", "dix", "vingt", "trente", "quarante", "cinquante", "soixante", "soixante-dix", "quatre-vingts", "quatre-vingt-dix"];
 
-    function addLine() {
-        var tbody = document.querySelector('#linesTable tbody');
-        var index = tbody.querySelectorAll('tr').length;
-        var tr = document.createElement('tr');
-        tr.innerHTML = '' +
-            '<td>' + (index + 1) + '</td>' +
-            '<td><input type="text" name="lines[' + index + '].description" required/></td>' +
-            '<td><input type="text" name="lines[' + index + '].unit" placeholder="pièce"/></td>' +
-            '<td><input type="number" name="lines[' + index + '].quantity" step="0.001" min="0" required/></td>' +
-            '<td><input type="number" name="lines[' + index + '].unitPrice" step="0.01" min="0" required/></td>' +
-            '<td class="money line-total">0,00</td>' +
-            '<td><button type="button" class="btn small danger remove-line" onclick="removeLine(this)">Suppr</button></td>';
-        tbody.appendChild(tr);
-        renumber();
-    }
+            function convertBelowThousand(n) {
+                let str = "";
+                const c = Math.floor(n / 100);
+                const rem = n % 100;
 
-    function removeLine(btn) {
-        btn.closest('tr').remove();
-        renumber();
-        computeGrandTotal();
-    }
+                if (c === 1) str += "cent ";
+                else if (c > 1) str += units[c] + " cent" + (rem === 0 ? "s " : " ");
 
-    function renumber() {
-        var rows = document.querySelectorAll('#linesTable tbody tr');
-        rows.forEach(function (row, i) {
-            row.querySelector('td:first-child').textContent = i + 1;
-            // update input name indexes
-            var inputs = row.querySelectorAll('input');
-            inputs.forEach(function (input) {
-                var name = input.getAttribute('name');
-                if (name) {
-                    input.setAttribute('name', name.replace(/lines\[\d+\]/, 'lines[' + i + ']'));
+                if (rem > 0) {
+                    if (rem < 10) str += units[rem] + " ";
+                    else if (rem < 20) str += teens[rem - 10] + " ";
+                    else {
+                        const t = Math.floor(rem / 10);
+                        const u = rem % 10;
+                        if (t === 7) {
+                            str += "soixante-" + (u === 1 ? "et-onze " : teens[u] + " ");
+                        } else if (t === 9) {
+                            str += "quatre-vingt-" + teens[u] + " ";
+                        } else {
+                            str += tens[t] + (u === 1 && t < 8 ? "-et-un " : (u > 0 ? "-" + units[u] + " " : " "));
+                        }
+                    }
+                }
+                return str.trim();
+            }
+
+            const intPart = Math.floor(num);
+            const millions = Math.floor(intPart / 1000000);
+            const thousands = Math.floor((intPart % 1000000) / 1000);
+            const remainder = intPart % 1000;
+
+            let result = "";
+            if (millions > 0) {
+                result += (millions === 1 ? "un million " : convertBelowThousand(millions) + " millions ");
+            }
+            if (thousands > 0) {
+                result += (thousands === 1 ? "mille " : convertBelowThousand(thousands) + " mille ");
+            }
+            if (remainder > 0 || result === "") {
+                result += convertBelowThousand(remainder);
+            }
+
+            result = result.trim();
+            result = result.charAt(0).toUpperCase() + result.slice(1);
+            return result + " dinars algériens.";
+        }
+
+        function formatDZD(amount) {
+            return new Intl.NumberFormat('fr-FR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount) + " DA";
+        }
+
+        function recalculate() {
+            const rows = tbody.querySelectorAll('.line-row');
+            let total = 0;
+
+            rows.forEach((row, idx) => {
+                const indexEl = row.querySelector('.row-index');
+                if (indexEl) indexEl.textContent = idx + 1;
+
+                const qtyInput = row.querySelector('.item-qty');
+                const priceInput = row.querySelector('.item-price');
+                const totalSpan = row.querySelector('.item-total');
+
+                const qty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+                const price = parseFloat(priceInput ? priceInput.value : 0) || 0;
+                const lineTotal = qty * price;
+                total += lineTotal;
+
+                if (totalSpan) {
+                    totalSpan.textContent = formatDZD(lineTotal);
                 }
             });
-        });
-        computeGrandTotal();
-    }
 
-    document.querySelectorAll('#linesTable tbody tr').forEach(function (row) {
-        row.querySelectorAll('input').forEach(function (input) {
-            input.addEventListener('input', function () {
-                computeLine(row);
-                computeGrandTotal();
+            if (lineCountBadge) {
+                lineCountBadge.textContent = `${rows.length} ${rows.length > 1 ? 'lignes' : 'ligne'}`;
+            }
+
+            const recapSubtotal = document.getElementById('recap-subtotal');
+            const grandTotalDisplay = document.getElementById('grand-total-display');
+            const recapIfu = document.getElementById('recap-ifu');
+            const totalWords = document.getElementById('total-words');
+
+            if (recapSubtotal) recapSubtotal.textContent = formatDZD(total);
+            if (grandTotalDisplay) grandTotalDisplay.textContent = formatDZD(total);
+            if (recapIfu) recapIfu.textContent = formatDZD(total * 0.005);
+            if (totalWords) {
+                totalWords.textContent = "Arrêté la présente facture à la somme totale de : " + numberToWordsDinars(total);
+            }
+        }
+
+        function createRow(desc = '', unit = 'jour', qty = 1, price = 0) {
+            const tr = document.createElement('tr');
+            tr.className = 'line-row hover:bg-surface-container-low/50 transition-colors';
+            tr.innerHTML = `
+                <td class="py-3 px-4 text-center font-numeric-md text-numeric-md text-outline row-index"></td>
+                <td class="py-3 px-4">
+                    <input type="text" value="${desc}" placeholder="Désignation du service ou honoraire..." class="w-full px-2.5 py-1.5 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-container item-desc">
+                </td>
+                <td class="py-3 px-3">
+                    <select class="w-full px-2 py-1.5 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-container item-unit">
+                        <option value="jour" ${unit === 'jour' ? 'selected' : ''}>Jour</option>
+                        <option value="heure" ${unit === 'heure' ? 'selected' : ''}>Heure</option>
+                        <option value="forfait" ${unit === 'forfait' ? 'selected' : ''}>Forfait</option>
+                        <option value="pièce" ${unit === 'pièce' ? 'selected' : ''}>Pièce</option>
+                        <option value="mois" ${unit === 'mois' ? 'selected' : ''}>Mois</option>
+                    </select>
+                </td>
+                <td class="py-3 px-3 text-right">
+                    <input type="number" min="0.01" step="0.25" value="${qty}" class="w-full text-right px-2.5 py-1.5 bg-surface-container-lowest text-on-surface font-numeric-md text-numeric-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-container item-qty">
+                </td>
+                <td class="py-3 px-4 text-right">
+                    <input type="number" min="0" step="100" value="${price}" class="w-full text-right px-2.5 py-1.5 bg-surface-container-lowest text-on-surface font-numeric-md text-numeric-md rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-container item-price">
+                </td>
+                <td class="py-3 px-4 text-right">
+                    <span class="font-numeric-md text-numeric-md font-semibold text-on-surface item-total">0,00 DA</span>
+                </td>
+                <td class="py-3 px-3 text-center">
+                    <button type="button" class="btn-delete-line p-1 text-outline hover:text-error hover:bg-error-container/30 rounded-lg transition-colors" title="Supprimer la ligne">
+                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+            attachRowEvents(tr);
+            recalculate();
+        }
+
+        function attachRowEvents(row) {
+            const inputs = row.querySelectorAll('.item-qty, .item-price, .item-desc');
+            inputs.forEach(input => {
+                input.addEventListener('input', recalculate);
             });
-        });
-    });
-    computeGrandTotal();
+
+            const delBtn = row.querySelector('.btn-delete-line');
+            if (delBtn) {
+                delBtn.addEventListener('click', () => {
+                    if (tbody.querySelectorAll('.line-row').length > 1) {
+                        row.remove();
+                        recalculate();
+                    } else {
+                        alert("Une facture doit contenir au moins une ligne de prestation.");
+                    }
+                });
+            }
+        }
+
+        // Client autofill sync
+        if (clientSelect) {
+            clientSelect.addEventListener('change', (e) => {
+                const opt = e.target.selectedOptions[0];
+                document.getElementById('client-nif').textContent = opt.dataset.nif || '-';
+                document.getElementById('client-nis').textContent = opt.dataset.nis || '-';
+                document.getElementById('client-rc').textContent = opt.dataset.rc || '-';
+                document.getElementById('client-art').textContent = opt.dataset.art || '-';
+                document.getElementById('client-addr').textContent = opt.dataset.addr || '-';
+
+                const badge = document.getElementById('client-badge');
+                if (opt.value === '3') {
+                    badge.textContent = "Particulier";
+                    badge.className = "font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant";
+                } else {
+                    badge.textContent = "Personne Morale";
+                    badge.className = "font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container-high text-on-secondary-container";
+                }
+            });
+        }
+
+        if (btnAddTop) btnAddTop.addEventListener('click', () => createRow('', 'jour', 1, 0));
+        if (btnAddBottom) btnAddBottom.addEventListener('click', () => createRow('', 'jour', 1, 0));
+
+        // Initial calculation
+        recalculate();
+    })();
 </script>
-</body>
-</html>
+
+</body></html>

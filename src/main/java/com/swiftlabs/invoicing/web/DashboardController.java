@@ -19,7 +19,7 @@ public class DashboardController {
         this.issuerService = issuerService;
     }
 
-    @GetMapping("/")
+    @GetMapping({"/", "/dashboard"})
     @PreAuthorize("hasAuthority('VIEW_DASHBOARD')")
     public String dashboard(@RequestParam(name = "year", required = false) Integer year, Model model) {
         InvoiceService.DashboardStats stats = invoiceService.dashboard(year);

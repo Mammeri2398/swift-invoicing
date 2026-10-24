@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing;
 
+import com.swiftlabs.invoicing.access.user.User;
+import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.client.Client;
 import com.swiftlabs.invoicing.client.ClientRepository;
 import com.swiftlabs.invoicing.client.ClientType;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Renders every page with real data, as the seeded admin (all privileges). */
+/** Renders every page with real data, as the seeded admin (all privileges). The principal is loaded after @BeforeEach. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
@@ -50,12 +53,18 @@ class PageRenderingTest {
     @Autowired
     private InvoiceRepository invoiceRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     private Client client;
     private Invoice draft;
     private Invoice issued;
 
     @BeforeEach
     void data() {
+        // The seeded admin has a temporary password: mark it as chosen, or every page redirects to /account/password
+        User admin = userRepository.findByUsername("admin").orElseThrow();
+        admin.changePassword(admin.getPassword(), java.time.LocalDateTime.now());
         client = new Client();
         client.setType(ClientType.PROFESSIONNEL);
         client.setName("SARL Atlas");
@@ -88,9 +97,10 @@ class PageRenderingTest {
     }
 
     @Test
-    @WithUserDetails("admin")
+    @WithUserDetails(value = "admin", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void businessPagesRender() throws Exception {
-        assertPage("/", "Tableau de bord");
+        mockMvc.perform(get("/")).andExpect(redirectedUrlPattern("/dashboard*"));
+        assertPage("/dashboard", "Tableau de bord");
         assertPage("/clients", "SARL Atlas");
         assertPage("/clients/new", "Nouveau client");
         assertPage("/clients/" + client.getId() + "/edit", "value=\"SARL Atlas\"");
@@ -104,7 +114,7 @@ class PageRenderingTest {
     }
 
     @Test
-    @WithUserDetails("admin")
+    @WithUserDetails(value = "admin", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void accessPagesRender() throws Exception {
         assertPage("/users", "admin");
         assertPage("/users/new", "Nouvel utilisateur");
@@ -119,7 +129,7 @@ class PageRenderingTest {
     }
 
     @Test
-    @WithUserDetails("admin")
+    @WithUserDetails(value = "admin", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void navigationReflectsTheLoggedInUser() throws Exception {
         mockMvc.perform(get("/clients"))
             .andExpect(content().string(containsString(">admin<")))
@@ -129,7 +139,7 @@ class PageRenderingTest {
     }
 
     @Test
-    @WithUserDetails("admin")
+    @WithUserDetails(value = "admin", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void pdfIsGenerated() throws Exception {
         byte[] pdf = mockMvc.perform(get("/invoices/" + issued.getId() + "/pdf"))
             .andExpect(status().isOk())
@@ -138,7 +148,7 @@ class PageRenderingTest {
     }
 
     @Test
-    @WithUserDetails("admin")
+    @WithUserDetails(value = "admin", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void invoiceFormSubmitsItsLines() throws Exception {
         long before = invoiceRepository.count();
         mockMvc.perform(post("/invoices/save").with(csrf())
@@ -167,7 +177,7 @@ class PageRenderingTest {
     }
 
     @Test
-    @WithUserDetails("admin")
+    @WithUserDetails(value = "admin", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void unknownPageShowsTheErrorPage() throws Exception {
         mockMvc.perform(get("/does-not-exist"))
             .andExpect(status().isNotFound());

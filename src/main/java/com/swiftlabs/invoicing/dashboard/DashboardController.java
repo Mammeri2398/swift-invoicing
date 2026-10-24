@@ -15,7 +15,7 @@ public class DashboardController {
         this.dashboardService = dashboardService;
     }
 
-    @GetMapping({"/", "/dashboard"})
+    @GetMapping("/dashboard")
     @PreAuthorize("hasAuthority('VIEW_DASHBOARD')")
     public String dashboard(@RequestParam(name = "year", required = false) Integer year, Model model) {
         model.addAttribute("stats", dashboardService.stats(year));

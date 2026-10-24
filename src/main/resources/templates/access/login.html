@@ -19,15 +19,14 @@
                 <input class="input" id="username" name="username" type="text" autocomplete="username" required autofocus/>
             </div>
             <div class="field">
-                <label class="label" for="password">
-                    <span>Mot de passe</span>
-                    <a th:href="@{/forgot-password}" class="text-label-sm font-normal text-primary hover:underline">Mot de passe oublié ?</a>
-                </label>
+                <label class="label" for="password">Mot de passe</label>
                 <div class="relative">
                     <input class="input pr-11" id="password" name="password" type="password" autocomplete="current-password" required/>
                     <button type="button" class="btn-icon absolute right-1.5 top-1/2 -translate-y-1/2" data-toggle-password="password"
                             aria-label="Afficher le mot de passe"><span class="icon">visibility</span></button>
                 </div>
+                <!-- After the field, so Tab goes from the username straight to the password -->
+                <a th:href="@{/forgot-password}" class="self-end text-label-sm text-primary hover:underline">Mot de passe oublié ?</a>
             </div>
             <button type="submit" class="btn btn-primary mt-2 w-full py-2.5">
                 Se connecter<span class="icon">arrow_forward</span>

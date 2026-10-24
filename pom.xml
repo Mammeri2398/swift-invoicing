@@ -74,12 +74,7 @@
 			<version>${openhtmltopdf.version}</version>
 		</dependency>
 
-		<!-- Argon2 password hashing -->
-		<dependency>
-			<groupId>de.mkammerer</groupId>
-			<artifactId>argon2-jvm</artifactId>
-			<version>2.7</version>
-		</dependency>
+		<!-- Argon2 password hashing: Spring Security's Argon2PasswordEncoder uses Bouncy Castle -->
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk18on</artifactId>

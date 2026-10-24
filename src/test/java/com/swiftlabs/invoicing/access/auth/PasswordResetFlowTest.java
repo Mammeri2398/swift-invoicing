@@ -6,27 +6,42 @@ import com.swiftlabs.invoicing.access.user.UserRepository;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Anonymous password reset: no authenticated user on any of these requests. */
-@SpringBootTest
+/** Anonymous password reset: no authenticated user on any of these requests. The link is read from the sent email. */
+@SpringBootTest(properties = "mail.enabled=true")
 @AutoConfigureMockMvc
 @Transactional
 class PasswordResetFlowTest {
+
+    private static final Pattern TOKEN_IN_LINK = Pattern.compile("reset-password\\?token=([A-Za-z0-9_-]+)");
+
+    @MockitoBean
+    private JavaMailSender mailSender;
 
     private static final String GENERIC_MESSAGE = "Si cet email existe, un lien de réinitialisation vous a été envoyé.";
 
@@ -64,10 +79,36 @@ class PasswordResetFlowTest {
             .toList();
     }
 
+    /** Requests a link like a user would, and returns the token from the email. */
     private String requestToken() throws Exception {
+        clearInvocations(mailSender);
         mockMvc.perform(post("/forgot-password/send").with(csrf()).param("email", user.getEmail()))
             .andExpect(redirectedUrl("/login"));
-        return tokensOfUser().get(0).getToken();
+        ArgumentCaptor<SimpleMailMessage> sent = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(sent.capture());
+        assertThat(sent.getValue().getTo()).containsExactly(user.getEmail());
+        Matcher matcher = TOKEN_IN_LINK.matcher(sent.getValue().getText());
+        assertThat(matcher.find()).isTrue();
+        return matcher.group(1);
+    }
+
+    @Test
+    void onlyTheHashOfTheTokenIsStored() throws Exception {
+        String token = requestToken();
+
+        PasswordResetToken stored = tokensOfUser().get(0);
+        assertThat(stored.getTokenHash()).hasSize(64).isNotEqualTo(token).isEqualTo(PasswordResetService.hash(token));
+        assertThat(token).hasSizeGreaterThanOrEqualTo(43);
+    }
+
+    @Test
+    void disabledUserGetsNoLink() throws Exception {
+        user.setEnabled(false);
+        mockMvc.perform(post("/forgot-password/send").with(csrf()).param("email", user.getEmail()))
+            .andExpect(redirectedUrl("/login"))
+            .andExpect(flash().attribute("message", GENERIC_MESSAGE));
+        verify(mailSender, never()).send(any(SimpleMailMessage.class));
+        assertThat(tokensOfUser()).isEmpty();
     }
 
     @Test

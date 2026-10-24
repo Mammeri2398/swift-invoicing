@@ -14,11 +14,10 @@ public class CurrentUserAdvice {
 
     @ModelAttribute("currentUser")
     public CurrentUser currentUser(@CurrentSecurityContext(expression = "authentication") Authentication authentication) {
-        if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails details)) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof AppUserPrincipal principal)) {
             return null;
         }
-        String profileName = details.getUser().getProfile() != null ? details.getUser().getProfile().getName() : null;
-        return new CurrentUser(details.getUsername(), profileName,
+        return new CurrentUser(principal.getUsername(), principal.getProfileName(),
             authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet()));
     }
 }

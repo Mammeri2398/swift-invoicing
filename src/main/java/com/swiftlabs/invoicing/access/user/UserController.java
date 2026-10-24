@@ -1,7 +1,11 @@
 package com.swiftlabs.invoicing.access.user;
 
+import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
+import com.swiftlabs.invoicing.access.auth.SessionService;
 import com.swiftlabs.invoicing.access.profile.ProfileService;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,23 +15,31 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+
 @Controller
 @RequestMapping("/users")
+@PreAuthorize("hasAuthority('MANAGE_USERS')")
 public class UserController {
-
-    private static final String TEMPORARY_PASSWORD = "Temp1234!";
 
     private final UserService userService;
     private final ProfileService profileService;
+    private final SessionService sessionService;
+    private final Clock clock;
 
-    public UserController(UserService userService, ProfileService profileService) {
+    public UserController(UserService userService, ProfileService profileService, SessionService sessionService,
+                          Clock clock) {
         this.userService = userService;
         this.profileService = profileService;
+        this.sessionService = sessionService;
+        this.clock = clock;
     }
 
     @GetMapping
     public String list(Model model) {
         model.addAttribute("users", userService.findAll());
+        model.addAttribute("now", LocalDateTime.now(clock));
         return "access/user/list";
     }
 
@@ -53,14 +65,19 @@ public class UserController {
     }
 
     @PostMapping("/save")
-    public String save(@ModelAttribute UserForm form, RedirectAttributes redirectAttributes) {
+    public String save(@ModelAttribute UserForm form, @AuthenticationPrincipal AppUserPrincipal me,
+                       RedirectAttributes redirectAttributes) {
         try {
             if (form.getId() == null) {
-                userService.create(form, TEMPORARY_PASSWORD);
-                redirectAttributes.addFlashAttribute("success",
-                    "Utilisateur créé. Mot de passe temporaire : " + TEMPORARY_PASSWORD);
+                UserService.NewAccount account = userService.create(form);
+                redirectAttributes.addFlashAttribute("temporaryPassword", account.temporaryPassword());
+                redirectAttributes.addFlashAttribute("temporaryPasswordUser", account.user().getUsername());
+                redirectAttributes.addFlashAttribute("success", "Utilisateur créé.");
             } else {
-                userService.update(form);
+                User user = userService.update(form, me.getId());
+                if (!user.isEnabled()) {
+                    sessionService.expireSessions(user.getUsername(), null);
+                }
                 redirectAttributes.addFlashAttribute("success", "Utilisateur mis à jour.");
             }
             return "redirect:/users";
@@ -71,12 +88,31 @@ public class UserController {
         }
     }
 
-    @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    /** New temporary password (forgotten password without mail, locked account...). */
+    @PostMapping("/{id}/reset-password")
+    public String resetPassword(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
-            userService.delete(id);
+            String temporaryPassword = userService.resetToTemporaryPassword(id);
+            User user = userService.findById(id).orElseThrow();
+            sessionService.expireSessions(user.getUsername(), null);
+            redirectAttributes.addFlashAttribute("temporaryPassword", temporaryPassword);
+            redirectAttributes.addFlashAttribute("temporaryPasswordUser", user.getUsername());
+            redirectAttributes.addFlashAttribute("success", "Mot de passe réinitialisé et compte déverrouillé.");
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/users";
+    }
+
+    @PostMapping("/{id}/delete")
+    public String delete(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal me,
+                         RedirectAttributes redirectAttributes) {
+        try {
+            userService.delete(id, me.getId());
             redirectAttributes.addFlashAttribute("success", "Utilisateur supprimé.");
-        } catch (Exception ex) {
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        } catch (RuntimeException ex) {
             redirectAttributes.addFlashAttribute("error", "Impossible de supprimer cet utilisateur.");
         }
         return "redirect:/users";

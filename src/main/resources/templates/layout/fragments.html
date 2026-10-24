@@ -38,10 +38,11 @@
             <a th:if="${u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="btn btn-primary btn-sm hidden sm:inline-flex">
                 <span class="icon">add</span><span>Nouvelle facture</span>
             </a>
-            <div class="hidden flex-col text-right leading-tight md:flex">
+            <a th:href="@{/account/password}" class="hidden flex-col rounded-lg px-2 py-1 text-right leading-tight hover:bg-surface-container md:flex"
+               title="Mon mot de passe">
                 <span class="text-label-md text-on-surface" th:text="${u.username}">admin</span>
                 <span class="text-label-sm text-on-surface-variant" th:text="${u.profileName}">Administrateur</span>
-            </div>
+            </a>
             <form th:action="@{/perform-logout}" method="post">
                 <button type="submit" class="btn-icon danger" title="Se déconnecter" aria-label="Se déconnecter">
                     <span class="icon">logout</span>
@@ -53,6 +54,7 @@
                 <nav class="absolute right-0 mt-2 flex w-56 flex-col gap-1 rounded-xl bg-surface-container-lowest p-2 shadow-lg">
                     <th:block th:replace="~{layout/fragments :: navLinks}"></th:block>
                     <a th:if="${u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="nav-link sm:hidden">Nouvelle facture</a>
+                    <a th:href="@{/account/password}" class="nav-link">Mon mot de passe</a>
                 </nav>
             </details>
         </div>

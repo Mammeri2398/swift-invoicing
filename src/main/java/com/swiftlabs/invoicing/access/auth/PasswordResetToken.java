@@ -12,8 +12,11 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
+/**
+ * A pending password reset. Only the SHA-256 hash of the token is stored: the token itself
+ * exists only in the link sent to the user, so a database leak does not give usable links.
+ */
 @Entity
 @Table(name = "password_reset_token")
 public class PasswordResetToken {
@@ -22,8 +25,8 @@ public class PasswordResetToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "token", nullable = false, unique = true, length = 255)
-    private String token;
+    @Column(name = "token_hash", nullable = false, unique = true, length = 64)
+    private String tokenHash;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -32,51 +35,32 @@ public class PasswordResetToken {
     @Column(name = "expiry_date", nullable = false)
     private LocalDateTime expiryDate;
 
-    public PasswordResetToken() {
+    protected PasswordResetToken() {
+    }
+
+    public PasswordResetToken(String tokenHash, User user, LocalDateTime expiryDate) {
+        this.tokenHash = tokenHash;
+        this.user = user;
+        this.expiryDate = expiryDate;
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
+    public String getTokenHash() {
+        return tokenHash;
     }
 
     public User getUser() {
         return user;
     }
 
-    public void setUser(User user) {
-        this.user = user;
-    }
-
     public LocalDateTime getExpiryDate() {
         return expiryDate;
     }
 
-    public void setExpiryDate(LocalDateTime expiryDate) {
-        this.expiryDate = expiryDate;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PasswordResetToken that = (PasswordResetToken) o;
-        return Objects.equals(token, that.token);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(token);
+    public boolean isExpired(LocalDateTime now) {
+        return !expiryDate.isAfter(now);
     }
 }

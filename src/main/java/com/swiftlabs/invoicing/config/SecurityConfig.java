@@ -1,73 +1,136 @@
 package com.swiftlabs.invoicing.config;
 
+import com.swiftlabs.invoicing.access.auth.ForcePasswordChangeFilter;
+
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
+import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
+import java.util.Map;
+
+/**
+ * Web security. Only public URLs are listed here; every other request requires a login, and
+ * what a user may do is checked on the controllers with {@code @PreAuthorize("hasAuthority('...')")}.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final UserDetailsService userDetailsService;
+    private static final String[] PUBLIC_URLS = {
+        "/css/**", "/js/**", "/fonts/**", "/images/**", "/favicon.ico", "/error",
+        "/login", "/forgot-password", "/forgot-password/send", "/reset-password", "/reset-password/save",
+        "/invoices/lookup",
+    };
 
-    public SecurityConfig(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
+    /**
+     * Everything is served by the application itself (no CDN, no inline script).
+     * Inline style attributes are allowed for computed widths (progress bars).
+     */
+    private static final String CONTENT_SECURITY_POLICY = String.join("; ",
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self'",
+        "style-src-attr 'unsafe-inline'",
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "object-src 'none'");
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http, SessionRegistry sessionRegistry) throws Exception {
+        http
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(PUBLIC_URLS).permitAll()
+                .anyRequest().authenticated())
+            .formLogin(form -> form
+                .loginPage("/login")
+                .loginProcessingUrl("/perform-login")
+                .successHandler(loginSuccessHandler())
+                // Same message for every failure (unknown user, wrong password, locked, disabled)
+                .failureUrl("/login?error")
+                .permitAll())
+            .logout(logout -> logout
+                .logoutUrl("/perform-logout")
+                .logoutSuccessUrl("/login?logout")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .deleteCookies("JSESSIONID"))
+            .sessionManagement(session -> session
+                .sessionFixation(fixation -> fixation.changeSessionId())
+                // No limit on parallel sessions, but they are tracked so they can be ended
+                .maximumSessions(-1)
+                .sessionRegistry(sessionRegistry)
+                .expiredUrl("/login?expired"))
+            .exceptionHandling(ex -> ex.accessDeniedPage("/access-denied"))
+            .csrf(csrf -> csrf.csrfTokenRequestHandler(eagerCsrfTokenHandler()))
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))
+                .frameOptions(frame -> frame.deny())
+                .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .permissionsPolicyHeader(permissions -> permissions.policy(
+                    "camera=(), microphone=(), geolocation=(), payment=(), usb=()")))
+            .addFilterAfter(new ForcePasswordChangeFilter(), AuthorizationFilter.class);
+        return http.build();
     }
 
+    /**
+     * Argon2 for new hashes, behind a delegating encoder: hashes carry their algorithm
+     * ({argon2}...), so the algorithm or its parameters can change later. Hashes stored before
+     * the prefix existed are still checked with Argon2, then re-encoded at the next login
+     * (see AppUserDetailsService#updatePassword).
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
+        PasswordEncoder argon2 = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
+        DelegatingPasswordEncoder encoder = new DelegatingPasswordEncoder("argon2",
+            Map.of("argon2", argon2, "bcrypt", new BCryptPasswordEncoder()));
+        encoder.setDefaultPasswordEncoderForMatches(argon2);
+        return encoder;
+    }
+
+    /** Back to the page that required the login, otherwise "/" (the user's first allowed section). */
+    private SavedRequestAwareAuthenticationSuccessHandler loginSuccessHandler() {
+        SavedRequestAwareAuthenticationSuccessHandler handler = new SavedRequestAwareAuthenticationSuccessHandler();
+        handler.setDefaultTargetUrl("/");
+        return handler;
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/js/**", "/fonts/**", "/images/**", "/favicon.ico").permitAll()
-                        .requestMatchers("/login").permitAll()
-                        .requestMatchers("/forgot-password", "/forgot-password/send").permitAll()
-                        .requestMatchers("/reset-password", "/reset-password/save").permitAll()
-                        .requestMatchers("/invoices/lookup").permitAll()
-                        .requestMatchers("/users/**").hasAuthority("MANAGE_USERS")
-                        .requestMatchers("/profiles/**").hasAuthority("MANAGE_PROFILES")
-                        .requestMatchers("/privileges/**").hasAuthority("MANAGE_PRIVILEGES")
-                        .anyRequest().authenticated()
-                )
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .loginProcessingUrl("/perform-login")
-                        .defaultSuccessUrl("/dashboard", true)
-                        .failureUrl("/login?error=true")
-                        .usernameParameter("username")
-                        .passwordParameter("password")
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/perform-logout")
-                        .logoutSuccessUrl("/login?logout=true")
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
-                        .permitAll()
-                )
-                .exceptionHandling(ex -> ex
-                        .accessDeniedPage("/access-denied")
-                )
-                .csrf(csrf -> csrf
-                        .csrfTokenRequestHandler(eagerCsrfTokenHandler())
-                )
-                .headers(headers -> headers
-                        .frameOptions(frame -> frame.sameOrigin())
-                );
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
 
-        return http.build();
+    /** Tells the session registry when HTTP sessions end. */
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+
+    /** Publishes login successes and failures (lockout and audit, see LoginAttemptListener). */
+    @Bean
+    public AuthenticationEventPublisher authenticationEventPublisher(ApplicationEventPublisher publisher) {
+        return new DefaultAuthenticationEventPublisher(publisher);
     }
 
     /**

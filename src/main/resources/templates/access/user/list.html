@@ -12,6 +12,16 @@
         <a th:href="@{/users/new}" class="btn btn-primary"><span class="icon">person_add</span>Nouvel utilisateur</a>
     </div>
 
+    <!-- Shown once, right after creation or reset: it is not stored in clear anywhere -->
+    <div th:if="${temporaryPassword}" class="alert alert-warning mb-6">
+        <span class="icon">key</span>
+        <div>
+            <p>Mot de passe temporaire de <strong th:text="${temporaryPasswordUser}">user</strong> :
+                <code class="rounded bg-surface-container-lowest px-2 py-0.5 font-mono text-body-lg" th:text="${temporaryPassword}">Abc123</code></p>
+            <p class="text-body-sm">Transmettez-le de façon sûre. Il ne sera plus affiché ; l'utilisateur devra le changer à sa première connexion.</p>
+        </div>
+    </div>
+
     <section class="card">
         <div class="table-wrap">
             <table class="table">
@@ -21,7 +31,7 @@
                     <th scope="col">Email</th>
                     <th scope="col">Profil</th>
                     <th scope="col">État</th>
-                    <th scope="col">Créé le</th>
+                    <th scope="col">Dernière connexion</th>
                     <th scope="col"><span class="sr-only">Actions</span></th>
                 </tr>
                 </thead>
@@ -31,13 +41,23 @@
                     <td class="text-on-surface-variant" th:text="${user.email}">admin@exemple.dz</td>
                     <td><span class="badge badge-info" th:text="${user.profile.name}">Administrateur</span></td>
                     <td>
-                        <span th:if="${user.enabled}" class="badge badge-success">Actif</span>
-                        <span th:unless="${user.enabled}" class="badge badge-neutral">Désactivé</span>
+                        <div class="flex flex-wrap gap-1">
+                            <span th:if="${user.enabled}" class="badge badge-success">Actif</span>
+                            <span th:unless="${user.enabled}" class="badge badge-neutral">Désactivé</span>
+                            <span th:if="${user.isLocked(now)}" class="badge badge-danger"
+                                  th:title="${'Jusqu''à ' + #temporals.format(user.lockedUntil, 'HH:mm')}">Verrouillé</span>
+                            <span th:if="${user.mustChangePassword}" class="badge badge-info">Mot de passe à changer</span>
+                        </div>
                     </td>
-                    <td class="text-on-surface-variant" th:text="${#temporals.format(user.createdAt, 'dd/MM/yyyy')}">01/01/2026</td>
+                    <td class="text-on-surface-variant"
+                        th:text="${user.lastLoginAt != null ? #temporals.format(user.lastLoginAt, 'dd/MM/yyyy HH:mm') : 'Jamais'}">Jamais</td>
                     <td>
                         <div class="flex justify-end gap-1">
                             <a th:href="@{/users/{id}/edit(id=${user.id})}" class="btn-icon" title="Modifier" aria-label="Modifier"><span class="icon">edit</span></a>
+                            <form th:action="@{/users/{id}/reset-password(id=${user.id})}" method="post"
+                                  th:attr="data-confirm=${'Générer un nouveau mot de passe temporaire pour ' + user.username + ' ? Ses sessions seront fermées.'}">
+                                <button type="submit" class="btn-icon" title="Réinitialiser le mot de passe" aria-label="Réinitialiser le mot de passe"><span class="icon">lock_reset</span></button>
+                            </form>
                             <form th:action="@{/users/{id}/delete(id=${user.id})}" method="post"
                                   th:attr="data-confirm=${'Supprimer l''utilisateur ' + user.username + ' ?'}">
                                 <button type="submit" class="btn-icon danger" title="Supprimer" aria-label="Supprimer"><span class="icon">delete</span></button>

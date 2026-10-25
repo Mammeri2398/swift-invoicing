@@ -122,6 +122,7 @@ public class InvoiceService {
                 vatRate(issuer, line.getVatRate(), i)));
         }
         invoice.replaceLines(lines);
+        invoice.setStampDutyAmount(stampDuty(invoice));
         boolean created = invoice.getId() == null;
         // Lines are saved with the invoice (cascade); removed lines are deleted (orphan removal)
         Invoice saved = invoiceRepository.save(invoice);
@@ -181,6 +182,7 @@ public class InvoiceService {
         invoice.setStatus(InvoiceStatus.ISSUED);
         invoice.setIssuedAt(LocalDateTime.now());
         invoice.recalculateTotal();
+        invoice.setStampDutyAmount(stampDuty(invoice));
         snapshotIssuer(invoice, issuer);
         snapshotClient(invoice, client);
         if (invoice.isCreditNote()) {
@@ -355,6 +357,14 @@ public class InvoiceService {
 
     public List<Invoice> findRecent() {
         return invoiceRepository.findTop10ByOrderByCreatedAtDescIdDesc();
+    }
+
+    /** Droit de timbre: on invoices paid in cash, never on a credit note. */
+    private BigDecimal stampDuty(Invoice invoice) {
+        if (invoice.isCreditNote() || invoice.getPaymentMethod() != PaymentMethod.CASH) {
+            return BigDecimal.ZERO;
+        }
+        return properties.stampDuty().compute(invoice.getTotalAmount());
     }
 
     /** TVA rate of a line: none for an auto-entrepreneur, one of invoice.vat-rates for a company. */

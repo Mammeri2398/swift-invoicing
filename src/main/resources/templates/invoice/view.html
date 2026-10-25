@@ -148,10 +148,17 @@
                 <div th:if="${invoice.vatBreakdown.isEmpty()}" class="flex justify-between gap-6"><dt class="text-on-surface-variant">TVA</dt>
                     <dd class="tabular-nums" th:text="${amountUtils.format(invoice.vatAmount)}">0,00 DA</dd></div>
             </dl>
+            <!-- Paid in cash: droit de timbre on top of the total -->
+            <dl th:if="${invoice.stampDutyAmount.signum() > 0}" class="flex w-full max-w-xs flex-col gap-1 text-body-md">
+                <div class="flex justify-between gap-6"><dt class="text-on-surface-variant" th:text="${issuer.company} ? 'Total TTC' : 'Total'">Total</dt>
+                    <dd class="tabular-nums" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</dd></div>
+                <div class="flex justify-between gap-6"><dt class="text-on-surface-variant">Droit de timbre</dt>
+                    <dd class="tabular-nums" th:text="${amountUtils.format(invoice.stampDutyAmount)}">0,00 DA</dd></div>
+            </dl>
             <p class="text-body-md"><th:block th:text="${cn ? (issuer.company ? 'Montant TTC de l''avoir :' : 'Montant de l''avoir :')
-                : (issuer.company ? 'Total TTC à payer :' : 'Total à payer :')}">Total à payer :</th:block>
-                <strong class="text-headline-md tabular-nums text-primary" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</strong></p>
-            <p class="text-body-sm italic text-on-surface-variant" th:text="${cn ? amountInWords.convertCreditNote(invoice.totalAmount) : amountInWords.convert(invoice.totalAmount)}">Montant en lettres</p>
+                : (invoice.stampDutyAmount.signum() > 0 ? 'Net à payer :' : (issuer.company ? 'Total TTC à payer :' : 'Total à payer :'))}">Total à payer :</th:block>
+                <strong class="text-headline-md tabular-nums text-primary" th:text="${amountUtils.format(invoice.amountDue)}">0,00 DA</strong></p>
+            <p class="text-body-sm italic text-on-surface-variant" th:text="${cn ? amountInWords.convertCreditNote(invoice.totalAmount) : amountInWords.convert(invoice.amountDue)}">Montant en lettres</p>
             <p th:unless="${issuer.company}" class="text-body-sm text-on-surface-variant" th:text="${vatMention}">TVA non applicable</p>
         </div>
     </section>

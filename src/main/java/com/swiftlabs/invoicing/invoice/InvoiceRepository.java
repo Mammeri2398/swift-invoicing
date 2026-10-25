@@ -51,7 +51,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
         + " (SELECT COALESCE(SUM(c.totalAmount), 0) FROM Invoice c WHERE c.originalInvoice = i AND c.status = 'ISSUED')")
     long countUnpaid();
 
-    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.kind = 'INVOICE' AND i.status = 'ISSUED'")
+    /** What clients pay on issued invoices: TTC plus droit de timbre. */
+    @Query("SELECT COALESCE(SUM(i.totalAmount + i.stampDutyAmount), 0) FROM Invoice i WHERE i.kind = 'INVOICE' AND i.status = 'ISSUED'")
     BigDecimal sumUnpaidInvoices();
 
     /** Credit notes on invoices not paid yet: they reduce what clients still owe. */

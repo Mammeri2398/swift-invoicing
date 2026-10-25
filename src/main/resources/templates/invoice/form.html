@@ -17,7 +17,8 @@
         </div>
     </div>
 
-    <form th:action="@{/invoices/save}" method="post" th:object="${invoice}" id="invoice-form" class="flex flex-col gap-6">
+    <form th:action="@{/invoices/save}" method="post" th:object="${invoice}" id="invoice-form" class="flex flex-col gap-6"
+          th:attr="data-stamp-duty=${stampDutyRules}">
         <input type="hidden" th:field="*{id}"/>
         <div th:replace="~{layout/fragments :: formErrors}"></div>
 
@@ -68,11 +69,15 @@
             <section class="card">
                 <div class="card-header"><h2 class="card-title"><span class="icon">payments</span>Total</h2></div>
                 <div class="card-body flex flex-col gap-3">
-                    <dl th:if="${company}" class="flex flex-col gap-1 text-body-md">
-                        <div class="flex justify-between"><dt class="text-on-surface-variant">Total HT</dt><dd class="tabular-nums" data-subtotal>0,00 DA</dd></div>
-                        <div class="flex justify-between"><dt class="text-on-surface-variant">TVA</dt><dd class="tabular-nums" data-vat>0,00 DA</dd></div>
+                    <dl class="flex flex-col gap-1 text-body-md empty:hidden">
+                        <div th:if="${company}" class="flex justify-between"><dt class="text-on-surface-variant">Total HT</dt><dd class="tabular-nums" data-subtotal>0,00 DA</dd></div>
+                        <div th:if="${company}" class="flex justify-between"><dt class="text-on-surface-variant">TVA</dt><dd class="tabular-nums" data-vat>0,00 DA</dd></div>
+                        <!-- Paid in cash: droit de timbre on top of the total (invoice-form.js) -->
+                        <div class="hidden justify-between" data-stamp-row><dt class="text-on-surface-variant" th:text="${company} ? 'Total TTC' : 'Total'">Total</dt><dd class="tabular-nums" data-total>0,00 DA</dd></div>
+                        <div class="hidden justify-between" data-stamp-row><dt class="text-on-surface-variant">Droit de timbre</dt><dd class="tabular-nums" data-stamp>0,00 DA</dd></div>
                     </dl>
                     <p class="text-display-lg tabular-nums text-primary" data-grand-total>0,00 DA</p>
+                    <p class="hint hidden" data-stamp-row>Net à payer, droit de timbre inclus (paiement en espèces).</p>
                     <p th:if="${company}" class="hint">Total TTC, montant à payer.</p>
                     <p th:unless="${company}" class="hint" th:text="${vatMention}">TVA non applicable</p>
                     <p class="hint">Le montant en lettres est imprimé sur la facture.</p>
@@ -137,7 +142,8 @@
             <div class="card-footer">
                 <span>Au moins une ligne est nécessaire.</span>
                 <p th:replace="~{layout/fragments :: fieldError('lines')}"></p>
-                <span><th:block th:text="${company} ? 'Total TTC :' : 'Total :'">Total :</th:block> <strong class="text-on-surface" data-grand-total>0,00 DA</strong></span>
+                <span><span th:text="${company} ? 'Total TTC :' : 'Total :'" th:attr="data-label=${company} ? 'Total TTC :' : 'Total :'"
+                            data-grand-label>Total :</span> <strong class="text-on-surface" data-grand-total>0,00 DA</strong></span>
             </div>
         </section>
 

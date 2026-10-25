@@ -87,6 +87,10 @@ public class Invoice {
     @Column(name = "vat_amount", nullable = false, precision = 14, scale = 2)
     private BigDecimal vatAmount = BigDecimal.ZERO;
 
+    /** Droit de timbre: invoices paid in cash only. Not part of the turnover nor of the TVA base. */
+    @Column(name = "stamp_duty_amount", nullable = false, precision = 14, scale = 2)
+    private BigDecimal stampDutyAmount = BigDecimal.ZERO;
+
     // Issuer snapshot (copied at issue time)
     @Column(name = "issuer_full_name")
     private String issuerFullName;
@@ -500,6 +504,19 @@ public class Invoice {
         bases.forEach((rate, base) -> breakdown.add(new VatLine(rate, AmountUtils.round2(base),
             AmountUtils.round2(base.multiply(rate).divide(BigDecimal.valueOf(100))))));
         return breakdown;
+    }
+
+    public BigDecimal getStampDutyAmount() {
+        return stampDutyAmount;
+    }
+
+    public void setStampDutyAmount(BigDecimal stampDutyAmount) {
+        this.stampDutyAmount = stampDutyAmount;
+    }
+
+    /** What the client pays: the total (TTC) plus the droit de timbre. */
+    public BigDecimal getAmountDue() {
+        return totalAmount.add(stampDutyAmount);
     }
 
     public BigDecimal getSubtotalAmount() {

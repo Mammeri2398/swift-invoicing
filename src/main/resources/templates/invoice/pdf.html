@@ -147,17 +147,35 @@
             <td class="num" th:text="${amountUtils.format(invoice.vatAmount)}">0,00 DA</td>
         </tr>
     </th:block>
-    <tr class="total">
+    <tr class="total" th:if="${invoice.stampDutyAmount.signum() == 0}">
         <td colspan="4"></td>
         <td class="num" th:colspan="${issuer.company} ? 2 : 1"
             th:text="${invoice.creditNote ? (issuer.company ? 'Avoir TTC' : 'Total avoir') : (issuer.company ? 'Total TTC' : 'Total à payer')}">Total à payer</td>
         <td class="num" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</td>
     </tr>
+    <!-- Paid in cash: droit de timbre, then the net to pay (labels over two columns) -->
+    <th:block th:if="${invoice.stampDutyAmount.signum() > 0}">
+        <tr>
+            <td th:colspan="${issuer.company} ? 4 : 3"></td>
+            <td class="num" colspan="2" th:text="${issuer.company} ? 'Total TTC' : 'Total'">Total</td>
+            <td class="num" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</td>
+        </tr>
+        <tr>
+            <td th:colspan="${issuer.company} ? 4 : 3"></td>
+            <td class="num" colspan="2">Droit de timbre</td>
+            <td class="num" th:text="${amountUtils.format(invoice.stampDutyAmount)}">0,00 DA</td>
+        </tr>
+        <tr class="total">
+            <td th:colspan="${issuer.company} ? 4 : 3"></td>
+            <td class="num" colspan="2">Net à payer</td>
+            <td class="num" th:text="${amountUtils.format(invoice.amountDue)}">0,00 DA</td>
+        </tr>
+    </th:block>
     </tbody>
 </table>
 
 <div class="total-in-words" th:text="${invoice.creditNote ? amountInWords.convertCreditNote(invoice.totalAmount)
-    : amountInWords.convert(invoice.totalAmount)}">Montant en lettres</div>
+    : amountInWords.convert(invoice.amountDue)}">Montant en lettres</div>
 
 <div class="vat-mention" th:unless="${issuer.company}" th:text="${vatMention}">TVA non applicable</div>
 

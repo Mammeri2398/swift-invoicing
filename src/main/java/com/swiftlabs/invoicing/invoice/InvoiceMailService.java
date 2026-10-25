@@ -128,7 +128,10 @@ public class InvoiceMailService {
         StringBuilder text = new StringBuilder("Bonjour,\n\n")
             .append("Veuillez trouver ci-joint la facture ").append(invoice.getInvoiceNumber())
             .append(" du ").append(invoice.getIssueDate().format(DATE))
-            .append(", d'un montant de ").append(AmountUtils.format(invoice.getTotalAmount()));
+            .append(", d'un montant de ").append(AmountUtils.format(invoice.getAmountDue()));
+        if (invoice.getStampDutyAmount().signum() > 0) {
+            text.append(" (droit de timbre inclus)");
+        }
         if (invoice.getStatus() == InvoiceStatus.PAID) {
             text.append(".\nCette facture est réglée : merci pour votre paiement.\n");
         } else if (invoice.getDueDate() != null) {

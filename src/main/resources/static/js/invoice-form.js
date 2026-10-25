@@ -6,6 +6,26 @@
     var tbody = form.querySelector('#lines-table tbody');
     var template = document.getElementById('line-template');
     var amountFormat = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Droit de timbre rules (InvoiceProperties.StampDuty), absent on a credit note
+    var stampRules = form.getAttribute('data-stamp-duty') ? JSON.parse(form.getAttribute('data-stamp-duty')) : null;
+    var paymentMethod = document.getElementById('paymentMethod');
+
+    // Same computation as StampDuty#compute: rate of the bracket containing the amount, rounded up to the dinar
+    function stampDuty(amount) {
+        if (!stampRules || !paymentMethod || paymentMethod.value !== 'CASH' || amount <= 0) {
+            return 0;
+        }
+        var rate = stampRules.brackets[stampRules.brackets.length - 1].rate;
+        for (var i = 0; i < stampRules.brackets.length; i++) {
+            var bracket = stampRules.brackets[i];
+            if (bracket.upTo === null || amount <= bracket.upTo) {
+                rate = bracket.rate;
+                break;
+            }
+        }
+        var duty = Math.max(Math.ceil(roundCents(amount * rate / 100)), stampRules.minimum);
+        return stampRules.maximum !== null ? Math.min(duty, stampRules.maximum) : duty;
+    }
 
     function formatAmount(value) {
         // Same output as AmountUtils.format: "1 234,50 DA" with a regular space
@@ -49,8 +69,23 @@
         form.querySelectorAll('[data-vat]').forEach(function (element) {
             element.textContent = formatAmount(vat);
         });
+        var totalWithTax = roundCents(subtotal + vat);
+        var stamp = stampDuty(totalWithTax);
+        form.querySelectorAll('[data-total]').forEach(function (element) {
+            element.textContent = formatAmount(totalWithTax);
+        });
+        form.querySelectorAll('[data-stamp]').forEach(function (element) {
+            element.textContent = formatAmount(stamp);
+        });
+        form.querySelectorAll('[data-stamp-row]').forEach(function (element) {
+            element.classList.toggle('hidden', stamp === 0);
+            element.classList.toggle('flex', stamp > 0 && element.tagName === 'DIV');
+        });
+        form.querySelectorAll('[data-grand-label]').forEach(function (element) {
+            element.textContent = stamp > 0 ? 'Net à payer :' : element.getAttribute('data-label');
+        });
         form.querySelectorAll('[data-grand-total]').forEach(function (element) {
-            element.textContent = formatAmount(roundCents(subtotal + vat));
+            element.textContent = formatAmount(roundCents(totalWithTax + stamp));
         });
         // The last remaining line cannot be removed
         tbody.querySelectorAll('[data-remove-line]').forEach(function (button) {
@@ -75,6 +110,9 @@
     });
     tbody.addEventListener('input', refresh);
     tbody.addEventListener('change', refresh);
+    if (paymentMethod) {
+        paymentMethod.addEventListener('change', refresh);
+    }
 
     if (!tbody.querySelector('[data-line]')) {
         addLine();

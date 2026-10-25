@@ -55,7 +55,8 @@ public class InvoiceExport {
         new Column("Payée le", 17, Invoice::getPaidAt),
         new Column("Annulée le", 17, Invoice::getCancelledAt),
         new Column("Type", 10, i -> i.getKind().getLabel()),
-        new Column("Facture d'origine", 16, i -> i.getOriginalInvoice() != null ? i.getOriginalInvoice().getInvoiceNumber() : null));
+        new Column("Facture d'origine", 16, i -> i.getOriginalInvoice() != null ? i.getOriginalInvoice().getInvoiceNumber() : null),
+        new Column("Droit de timbre (DA)", 16, Invoice::getStampDutyAmount));
 
     public byte[] toCsv(List<Invoice> invoices) {
         StringBuilder csv = new StringBuilder("﻿");

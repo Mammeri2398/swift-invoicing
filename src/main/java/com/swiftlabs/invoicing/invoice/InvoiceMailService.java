@@ -65,7 +65,7 @@ public class InvoiceMailService {
         Invoice invoice = sendable(invoiceId);
         InvoiceEmailForm form = new InvoiceEmailForm();
         form.setTo(invoice.getClient().getEmail());
-        form.setSubject((invoice.isCreditNote() ? "Avoir " : "Facture ") + invoice.getInvoiceNumber() + " - " + senderName(invoice));
+        form.setSubject(documentName(invoice) + " " + invoice.getInvoiceNumber() + " - " + senderName(invoice));
         form.setMessage(defaultMessage(invoice));
         return form;
     }
@@ -105,7 +105,8 @@ public class InvoiceMailService {
     /** Only issued and paid invoices are sent: a draft has no number, a cancelled invoice is void. */
     private Invoice sendable(Long invoiceId) {
         Invoice invoice = invoiceService.findById(invoiceId);
-        if (invoice.getStatus() != InvoiceStatus.ISSUED && invoice.getStatus() != InvoiceStatus.PAID) {
+        if (invoice.getStatus() != InvoiceStatus.ISSUED && invoice.getStatus() != InvoiceStatus.PAID
+                && invoice.getStatus() != InvoiceStatus.ACCEPTED) {
             throw new BusinessException("Seule une facture émise ou payée peut être envoyée par email.");
         }
         return invoice;
@@ -116,7 +117,27 @@ public class InvoiceMailService {
             ? invoice.getIssuerTradeName() : invoice.getIssuerFullName();
     }
 
+    private static String documentName(Invoice invoice) {
+        return switch (invoice.getKind()) {
+            case INVOICE -> "Facture";
+            case CREDIT_NOTE -> "Avoir";
+            case QUOTE -> "Devis";
+            case PROFORMA -> "Facture pro forma";
+        };
+    }
+
     private static String defaultMessage(Invoice invoice) {
+        if (invoice.isOffer()) {
+            StringBuilder text = new StringBuilder("Bonjour,\n\nVeuillez trouver ci-joint ")
+                .append(invoice.isQuote() ? "notre devis " : "la facture pro forma ").append(invoice.getInvoiceNumber())
+                .append(" du ").append(invoice.getIssueDate().format(DATE))
+                .append(", d'un montant de ").append(AmountUtils.format(invoice.getTotalAmount()));
+            if (invoice.isQuote() && invoice.getDueDate() != null) {
+                text.append(", valable jusqu'au ").append(invoice.getDueDate().format(DATE));
+            }
+            return text.append(".\nNous restons à votre disposition pour toute question.\n\nCordialement,\n")
+                .append(invoice.getIssuerFullName()).toString();
+        }
         if (invoice.isCreditNote()) {
             Invoice original = invoice.getOriginalInvoice();
             return "Bonjour,\n\n"

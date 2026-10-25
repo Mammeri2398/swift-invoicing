@@ -44,6 +44,18 @@ public class Invoice {
     @Column(name = "kind", nullable = false, length = 20)
     private DocumentKind kind = DocumentKind.INVOICE;
 
+    /** Invoices created from a quote or a pro forma: that document. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_document_id")
+    private Invoice sourceDocument;
+
+    /** Quotes only. */
+    @Column(name = "accepted_at")
+    private LocalDateTime acceptedAt;
+
+    @Column(name = "refused_at")
+    private LocalDateTime refusedAt;
+
     /** Credit notes only: the invoice it cancels, in full or in part. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "original_invoice_id")
@@ -438,6 +450,39 @@ public class Invoice {
 
     public boolean isCreditNote() {
         return kind == DocumentKind.CREDIT_NOTE;
+    }
+
+    public boolean isQuote() {
+        return kind == DocumentKind.QUOTE;
+    }
+
+    /** A quote or a pro forma: no accounting value. */
+    public boolean isOffer() {
+        return !kind.isAccounting();
+    }
+
+    public Invoice getSourceDocument() {
+        return sourceDocument;
+    }
+
+    public void setSourceDocument(Invoice sourceDocument) {
+        this.sourceDocument = sourceDocument;
+    }
+
+    public LocalDateTime getAcceptedAt() {
+        return acceptedAt;
+    }
+
+    public void setAcceptedAt(LocalDateTime acceptedAt) {
+        this.acceptedAt = acceptedAt;
+    }
+
+    public LocalDateTime getRefusedAt() {
+        return refusedAt;
+    }
+
+    public void setRefusedAt(LocalDateTime refusedAt) {
+        this.refusedAt = refusedAt;
     }
 
     public Invoice getOriginalInvoice() {

@@ -28,6 +28,11 @@ public final class InvoiceVerification {
         return kind == DocumentKind.CREDIT_NOTE;
     }
 
+    /** "Facture", "Avoir", "Devis", "Facture pro forma". */
+    public String getLabel() {
+        return kind.getLabel();
+    }
+
     public String getNumber() {
         return number;
     }

@@ -4,5 +4,9 @@ public enum InvoiceStatus {
     DRAFT,
     ISSUED,
     PAID,
-    CANCELLED
+    CANCELLED,
+    /** Quotes only: accepted by the client. */
+    ACCEPTED,
+    /** Quotes only: refused by the client. */
+    REFUSED
 }

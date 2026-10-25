@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page('Devis', ~{::main}, ~{})}">
+<body>
+<main class="page" th:with="u=${currentUser}, currentYear=${#temporals.year(#temporals.createNow())}">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Offres</p>
+            <h1 class="page-title">Devis et factures pro forma</h1>
+            <p class="page-subtitle">Sans valeur comptable : ils ne comptent ni dans le chiffre d'affaires ni dans la TVA.
+                « Facturer » crée la facture à partir du document.</p>
+        </div>
+        <div th:if="${u != null and u.can('CREATE_INVOICE')}" class="flex flex-wrap gap-2">
+            <a th:href="@{/invoices/new(kind='PROFORMA')}" class="btn btn-secondary"><span class="icon">request_quote</span>Nouvelle pro forma</a>
+            <a th:href="@{/invoices/new(kind='QUOTE')}" class="btn btn-primary"><span class="icon">add_circle</span>Nouveau devis</a>
+        </div>
+    </div>
+
+    <form th:action="@{/quotes}" method="get" class="card mb-6">
+        <div class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_10rem_10rem_8rem_14rem_auto] lg:items-end">
+            <div class="field">
+                <label class="label" for="search">Recherche</label>
+                <input class="input" id="search" name="search" type="search" th:value="${filter.search}" placeholder="N° ou client"/>
+            </div>
+            <div class="field">
+                <label class="label" for="kind">Type</label>
+                <select class="input" id="kind" name="kind">
+                    <option value="">Tous</option>
+                    <option value="QUOTE" th:selected="${filter.kind != null and filter.kind.name() == 'QUOTE'}">Devis</option>
+                    <option value="PROFORMA" th:selected="${filter.kind != null and filter.kind.name() == 'PROFORMA'}">Pro forma</option>
+                </select>
+            </div>
+            <div class="field">
+                <label class="label" for="status">Statut</label>
+                <select class="input" id="status" name="status">
+                    <option value="">Tous</option>
+                    <option th:each="s : ${statuses}" th:value="${s.name()}" th:selected="${filter.status == s}"
+                            th:text="${s.name() == 'DRAFT'} ? 'Brouillon' : (${s.name() == 'ISSUED'} ? 'Émis' : (${s.name() == 'ACCEPTED'} ? 'Accepté'
+                                     : (${s.name() == 'REFUSED'} ? 'Refusé' : 'Annulé')))">Statut</option>
+                </select>
+            </div>
+            <div class="field">
+                <label class="label" for="year">Année</label>
+                <select class="input" id="year" name="year">
+                    <option value="">Toutes</option>
+                    <option th:each="y : ${#numbers.sequence(currentYear, currentYear - 4, -1)}" th:value="${y}"
+                            th:text="${y}" th:selected="${filter.year == y}">2026</option>
+                </select>
+            </div>
+            <div class="field">
+                <label class="label" for="client">Client</label>
+                <select class="input" id="client" name="client">
+                    <option value="">Tous</option>
+                    <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}" th:selected="${filter.client == c.id}">Client</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary"><span class="icon">filter_alt</span>Filtrer</button>
+                <a th:href="@{/quotes}" class="btn btn-secondary" title="Réinitialiser" aria-label="Réinitialiser"><span class="icon">restart_alt</span></a>
+            </div>
+        </div>
+    </form>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">N°</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Client</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Validité</th>
+                    <th scope="col">Statut</th>
+                    <th scope="col" class="num">Montant</th>
+                    <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="doc : ${page.content}">
+                    <td class="whitespace-nowrap font-semibold">
+                        <a th:href="@{/invoices/{id}(id=${doc.id})}" class="hover:text-primary" th:text="${doc.invoiceNumber ?: 'Brouillon'}">DV-2026-0001</a>
+                    </td>
+                    <td th:text="${doc.quote} ? 'Devis' : 'Pro forma'">Devis</td>
+                    <td class="font-medium" th:text="${doc.clientName ?: doc.client.name}">Client</td>
+                    <td class="text-on-surface-variant" th:text="${#temporals.format(doc.issueDate, 'dd/MM/yyyy')}">01/01/2026</td>
+                    <td class="text-on-surface-variant" th:text="${doc.dueDate != null ? #temporals.format(doc.dueDate, 'dd/MM/yyyy') : '—'}">—</td>
+                    <td>
+                        <!--/* th:replace runs before th:if: the condition sits on a wrapper */-->
+                        <th:block th:if="${doc.quote}"><span th:replace="~{layout/fragments :: quoteStatusBadge(${doc.status})}"></span></th:block>
+                        <th:block th:unless="${doc.quote}"><span th:replace="~{layout/fragments :: statusBadge(${doc.status})}"></span></th:block>
+                    </td>
+                    <td class="num font-semibold" th:text="${amountUtils.format(doc.totalAmount)}">0,00 DA</td>
+                    <td>
+                        <div class="flex justify-end gap-1">
+                            <a th:href="@{/invoices/{id}(id=${doc.id})}" class="btn-icon" title="Voir" aria-label="Voir"><span class="icon">visibility</span></a>
+                            <a th:href="@{/invoices/{id}/pdf(id=${doc.id})}" class="btn-icon" title="PDF" aria-label="Télécharger le PDF"><span class="icon">picture_as_pdf</span></a>
+                            <a th:if="${doc.draft and u != null and u.can('CREATE_INVOICE')}" th:href="@{/invoices/{id}/edit(id=${doc.id})}"
+                               class="btn-icon" title="Modifier" aria-label="Modifier"><span class="icon">edit</span></a>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${page.isEmpty()}">
+                    <td colspan="8" class="table-empty">Aucun devis ni facture pro forma ne correspond à ces critères.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <span th:text="${page.totalElements + ' document(s)'}">0 document</span>
+            <nav th:replace="~{layout/fragments :: pagination(${page}, ${pageLinks})}"></nav>
+        </div>
+    </section>
+</main>
+</body>
+</html>

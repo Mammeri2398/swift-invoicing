@@ -17,6 +17,9 @@ public class InvoiceForm {
 
     private Long id;
 
+    /** For a new document: invoice, quote or pro forma (credit notes come from an invoice). */
+    private DocumentKind kind;
+
     @NotNull
     private Long clientId;
 
@@ -41,6 +44,14 @@ public class InvoiceForm {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public DocumentKind getKind() {
+        return kind;
+    }
+
+    public void setKind(DocumentKind kind) {
+        this.kind = kind;
     }
 
     public Long getClientId() {
@@ -111,6 +122,7 @@ public class InvoiceForm {
     public static InvoiceForm from(Invoice invoice) {
         InvoiceForm form = new InvoiceForm();
         form.setId(invoice.getId());
+        form.setKind(invoice.getKind());
         form.setClientId(invoice.getClient() != null ? invoice.getClient().getId() : null);
         form.setIssueDate(invoice.getIssueDate());
         form.setDueDate(invoice.getDueDate());

@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page(${creditNoteOf != null ? 'Avoir sur ' + creditNoteOf.invoiceNumber : (invoice.id == null ? 'Nouvelle facture' : 'Modifier le brouillon')}, ~{::main}, ~{::script})}">
+      th:replace="~{layout/base :: page(${formTitle}, ~{::main}, ~{::script})}">
 <body>
-<main class="page">
+<main class="page" th:with="offer=${!formKind.accounting}">
     <nav class="breadcrumb" aria-label="Fil d'Ariane">
-        <a th:href="@{/invoices}">Factures</a><span class="icon icon-xs">chevron_right</span>
-        <span class="text-primary" th:text="${invoice.id == null ? 'Nouvelle facture' : 'Brouillon'}">Nouvelle facture</span>
+        <a th:href="${offer} ? @{/quotes} : @{/invoices}" th:text="${offer} ? 'Devis' : 'Factures'">Factures</a><span class="icon icon-xs">chevron_right</span>
+        <span class="text-primary" th:text="${invoice.id == null ? 'Nouveau' : 'Brouillon'}">Nouveau</span>
     </nav>
     <div class="page-header">
         <div>
-            <h1 class="page-title" th:text="${creditNoteOf != null ? 'Avoir sur la facture ' + creditNoteOf.invoiceNumber
-                : (invoice.id == null ? 'Nouvelle facture' : 'Modifier le brouillon')}">Nouvelle facture</h1>
-            <p th:if="${creditNoteOf == null}" class="page-subtitle">Le numéro est attribué à l'émission. Un brouillon reste modifiable.</p>
+            <h1 class="page-title" th:text="${formTitle}">Nouvelle facture</h1>
+            <p th:if="${creditNoteOf == null and !offer}" class="page-subtitle">Le numéro est attribué à l'émission. Un brouillon reste modifiable.</p>
+            <p th:if="${offer}" class="page-subtitle">Document sans valeur comptable : le numéro est attribué à l'émission,
+                « Facturer » le transformera en facture.</p>
             <p th:if="${creditNoteOf != null}" class="page-subtitle">Gardez toutes les lignes pour un avoir total, ou réduisez-les
                 (quantités, prix, lignes supprimées) pour un avoir partiel. Le numéro AV est attribué à l'émission.</p>
         </div>
@@ -20,6 +21,7 @@
     <form th:action="@{/invoices/save}" method="post" th:object="${invoice}" id="invoice-form" class="flex flex-col gap-6"
           th:attr="data-stamp-duty=${stampDutyRules}">
         <input type="hidden" th:field="*{id}"/>
+        <input type="hidden" th:field="*{kind}"/>
         <div th:replace="~{layout/fragments :: formErrors}"></div>
 
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -49,7 +51,8 @@
                         <p th:replace="~{layout/fragments :: fieldError('issueDate')}"></p>
                     </div>
                     <div class="field">
-                        <label class="label" for="dueDate">Date d'échéance <span class="optional">Optionnel</span></label>
+                        <label class="label" for="dueDate"><th:block th:text="${formKind.name() == 'QUOTE' ? 'Valable jusqu''au' : 'Date d''échéance'}">Date d'échéance</th:block>
+                            <span class="optional">Optionnel</span></label>
                         <input class="input" type="date" th:errorclass="input-invalid" th:field="*{dueDate}"/>
                         <p th:replace="~{layout/fragments :: fieldError('dueDate')}"></p>
                     </div>

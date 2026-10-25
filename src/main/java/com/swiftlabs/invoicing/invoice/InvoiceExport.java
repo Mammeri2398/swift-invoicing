@@ -179,6 +179,8 @@ public class InvoiceExport {
             case ISSUED -> "Émise";
             case PAID -> "Payée";
             case CANCELLED -> "Annulée";
+            case ACCEPTED -> "Accepté";
+            case REFUSED -> "Refusé";
         };
     }
 

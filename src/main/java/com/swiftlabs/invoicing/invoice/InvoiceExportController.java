@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDate;
 
-/** Downloads of the invoice list, with the same filters as the list page. */
+/** Downloads of the invoice register (invoices and credit notes), with the same filters as the list page. */
 @Controller
 @RequestMapping("/invoices/export")
 @PreAuthorize("hasAuthority('VIEW_INVOICES')")
@@ -40,12 +40,14 @@ public class InvoiceExportController {
 
     @GetMapping("/csv")
     public ResponseEntity<byte[]> csv(@ModelAttribute("filter") InvoiceFilter filter, BindingResult ignoredFilterErrors) {
+        filter.setKinds(DocumentKind.ACCOUNTING);
         byte[] body = export.toCsv(invoiceService.searchAll(filter, EXPORT_ORDER));
         return download(body, new MediaType("text", "csv", StandardCharsets.UTF_8), fileName(filter, "csv"));
     }
 
     @GetMapping("/xlsx")
     public ResponseEntity<byte[]> xlsx(@ModelAttribute("filter") InvoiceFilter filter, BindingResult ignoredFilterErrors) {
+        filter.setKinds(DocumentKind.ACCOUNTING);
         byte[] body = export.toXlsx(invoiceService.searchAll(filter, EXPORT_ORDER));
         return download(body, XLSX, fileName(filter, "xlsx"));
     }

@@ -1,13 +1,25 @@
 package com.swiftlabs.invoicing.invoice;
 
+import java.util.List;
+
 /** Criteria of the invoice list, bound from the query string (?kind=&status=&year=&client=&search=). */
 public class InvoiceFilter {
 
     private DocumentKind kind;
+    /** The kinds a page shows (set by the controller: the register or the "Devis" page). */
+    private List<DocumentKind> kinds;
     private InvoiceStatus status;
     private Integer year;
     private Long client;
     private String search;
+
+    public List<DocumentKind> getKinds() {
+        return kinds;
+    }
+
+    public void setKinds(List<DocumentKind> kinds) {
+        this.kinds = kinds;
+    }
 
     public DocumentKind getKind() {
         return kind;

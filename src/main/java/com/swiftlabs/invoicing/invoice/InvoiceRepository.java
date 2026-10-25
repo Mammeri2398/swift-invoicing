@@ -37,7 +37,10 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
 
     long countByClientId(Long clientId);
 
-    long countByStatus(InvoiceStatus status);
+    long countByKindInAndStatus(List<DocumentKind> kinds, InvoiceStatus status);
+
+    /** Invoices created from a quote or a pro forma, latest first. */
+    List<Invoice> findBySourceDocumentIdOrderByIdDesc(Long sourceDocumentId);
 
     /** Credit notes of an invoice, oldest first. */
     List<Invoice> findByOriginalInvoiceIdOrderByIdAsc(Long originalInvoiceId);
@@ -61,17 +64,18 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
     BigDecimal sumCreditNotesOnUnpaidInvoices();
 
     @EntityGraph(attributePaths = "client")
-    List<Invoice> findTop10ByOrderByCreatedAtDescIdDesc();
+    List<Invoice> findTop10ByKindInOrderByCreatedAtDescIdDesc(List<DocumentKind> kinds);
 
     /** Turnover: totals before TVA (HT), issued credit notes subtracted. */
     @Query("SELECT COALESCE(SUM(CASE WHEN i.kind = 'CREDIT_NOTE' THEN -i.subtotalAmount ELSE i.subtotalAmount END), 0)"
-        + " FROM Invoice i WHERE i.invoiceYear = :year AND i.status IN ('ISSUED', 'PAID')")
+        + " FROM Invoice i WHERE i.invoiceYear = :year AND i.kind IN ('INVOICE', 'CREDIT_NOTE') AND i.status IN ('ISSUED', 'PAID')")
     BigDecimal sumIssuedPaidByYear(@Param("year") Integer year);
 
     /** Issued, paid and cancelled invoices of the year, by month of issue and status. */
     @Query("SELECT new com.swiftlabs.invoicing.invoice.MonthlyTotal(MONTH(i.issueDate), i.kind, i.status, COUNT(i),"
         + " SUM(i.subtotalAmount), SUM(i.vatAmount))"
-        + " FROM Invoice i WHERE i.invoiceYear = :year AND i.status <> 'DRAFT' GROUP BY MONTH(i.issueDate), i.kind, i.status")
+        + " FROM Invoice i WHERE i.invoiceYear = :year AND i.kind IN ('INVOICE', 'CREDIT_NOTE') AND i.status <> 'DRAFT'"
+        + " GROUP BY MONTH(i.issueDate), i.kind, i.status")
     List<MonthlyTotal> monthlyTotals(@Param("year") Integer year);
 
     /** The years that have issued invoices, most recent first. */

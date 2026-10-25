@@ -24,10 +24,12 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Controller
 @RequestMapping("/invoices")
@@ -62,20 +64,23 @@ public class InvoiceController {
     @PreAuthorize("hasAuthority('VIEW_INVOICES')")
     public String list(@ModelAttribute("filter") InvoiceFilter filter, BindingResult ignoredFilterErrors,
                        @PageableDefault(size = 20) Pageable pageable, HttpServletRequest request, Model model) {
+        // The register: invoices and credit notes (quotes and pro formas are on their own page)
+        filter.setKinds(DocumentKind.ACCOUNTING);
         Page<Invoice> page = invoiceService.search(filter,
             PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), LIST_ORDER));
         model.addAttribute("page", page);
         model.addAttribute("total", invoiceService.totalOf(filter));
         model.addAttribute("pageLinks", new PageLinks(request));
         model.addAttribute("clients", clientService.findAll());
-        model.addAttribute("statuses", InvoiceStatus.values());
+        model.addAttribute("statuses", List.of(InvoiceStatus.DRAFT, InvoiceStatus.ISSUED, InvoiceStatus.PAID, InvoiceStatus.CANCELLED));
         return "invoice/list";
     }
 
     @GetMapping("/new")
     @PreAuthorize("hasAuthority('CREATE_INVOICE')")
-    public String newForm(Model model) {
+    public String newForm(@RequestParam(name = "kind", required = false) DocumentKind kind, Model model) {
         InvoiceForm form = new InvoiceForm();
+        form.setKind(kind != null && !kind.isAccounting() ? kind : DocumentKind.INVOICE);
         form.addEmptyLine();
         model.addAttribute("invoice", form);
         return formView(form, model);
@@ -101,7 +106,12 @@ public class InvoiceController {
         if (!result.hasErrors()) {
             try {
                 Invoice saved = invoiceService.saveDraft(form);
-                redirectAttributes.addFlashAttribute("success", saved.isCreditNote() ? "Avoir brouillon enregistré." : "Facture brouillon enregistrée.");
+                redirectAttributes.addFlashAttribute("success", switch (saved.getKind()) {
+                    case INVOICE -> "Facture brouillon enregistrée.";
+                    case CREDIT_NOTE -> "Avoir brouillon enregistré.";
+                    case QUOTE -> "Devis brouillon enregistré.";
+                    case PROFORMA -> "Facture pro forma brouillon enregistrée.";
+                });
                 return "redirect:/invoices/" + saved.getId();
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
@@ -118,8 +128,18 @@ public class InvoiceController {
     public String view(@PathVariable Long id, Model model) {
         Invoice invoice = invoiceService.findWithLines(id);
         model.addAttribute("invoice", invoice);
+        model.addAttribute("docTitle", invoice.getInvoiceNumber() != null
+            ? invoice.getKind().getLabel() + " " + invoice.getInvoiceNumber()
+            : switch (invoice.getKind()) {
+                case INVOICE -> "Brouillon de facture";
+                case CREDIT_NOTE -> "Brouillon d'avoir";
+                case QUOTE -> "Brouillon de devis";
+                case PROFORMA -> "Brouillon de facture pro forma";
+            });
         model.addAttribute("issuer", IssuerDetails.of(invoice, issuerService.getIssuer()));
-        if (!invoice.isCreditNote()) {
+        if (invoice.isOffer()) {
+            model.addAttribute("invoiceOf", invoiceService.invoiceOf(id));
+        } else if (!invoice.isCreditNote()) {
             model.addAttribute("creditNotes", invoiceService.creditNotesOf(id));
             if (invoice.isIssuedOrPaid()) {
                 BigDecimal remaining = invoiceService.remainingToCredit(invoice);
@@ -136,12 +156,56 @@ public class InvoiceController {
     public String issue(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             Invoice issued = invoiceService.issue(id);
-            redirectAttributes.addFlashAttribute("success", (issued.isCreditNote() ? "Avoir émis : " : "Facture émise : ")
-                + issued.getInvoiceNumber());
+            redirectAttributes.addFlashAttribute("success", switch (issued.getKind()) {
+                case INVOICE -> "Facture émise : ";
+                case CREDIT_NOTE -> "Avoir émis : ";
+                case QUOTE -> "Devis émis : ";
+                case PROFORMA -> "Facture pro forma émise : ";
+            } + issued.getInvoiceNumber());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return "redirect:/invoices/" + id;
+    }
+
+    @PostMapping("/{id}/accept")
+    @PreAuthorize("hasAuthority('ISSUE_INVOICE')")
+    public String accept(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        return quoteAnswer(id, true, redirectAttributes);
+    }
+
+    @PostMapping("/{id}/refuse")
+    @PreAuthorize("hasAuthority('ISSUE_INVOICE')")
+    public String refuse(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        return quoteAnswer(id, false, redirectAttributes);
+    }
+
+    private String quoteAnswer(Long id, boolean accepted, RedirectAttributes redirectAttributes) {
+        try {
+            Invoice quote = accepted ? invoiceService.accept(id) : invoiceService.refuse(id);
+            redirectAttributes.addFlashAttribute("success", "Devis " + quote.getInvoiceNumber() + (accepted ? " accepté." : " refusé."));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/invoices/" + id;
+    }
+
+    /** Turns a quote or a pro forma into a draft invoice, opened for a last check before issuing. */
+    @PostMapping("/{id}/convert")
+    @PreAuthorize("hasAuthority('CREATE_INVOICE')")
+    public String convert(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            Invoice invoice = invoiceService.convertToInvoice(id);
+            if (!invoice.isDraft()) {
+                redirectAttributes.addFlashAttribute("message", "Ce document est déjà facturé : " + invoice.getInvoiceNumber() + ".");
+                return "redirect:/invoices/" + invoice.getId();
+            }
+            redirectAttributes.addFlashAttribute("message", "Facture brouillon créée à partir du document : vérifiez-la puis émettez-la.");
+            return "redirect:/invoices/" + invoice.getId() + "/edit";
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/invoices/" + id;
+        }
     }
 
     /** Opens the credit note of an issued invoice: a draft with its lines, to reduce for a partial credit. */
@@ -187,9 +251,10 @@ public class InvoiceController {
     @PreAuthorize("hasAuthority('DELETE_INVOICE')")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
+            boolean offer = invoiceService.findById(id).isOffer();
             invoiceService.delete(id);
-            redirectAttributes.addFlashAttribute("success", "Facture brouillon supprimée.");
-            return "redirect:/invoices";
+            redirectAttributes.addFlashAttribute("success", "Brouillon supprimé.");
+            return offer ? "redirect:/quotes" : "redirect:/invoices";
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
             return "redirect:/invoices/" + id;
@@ -229,8 +294,19 @@ public class InvoiceController {
     private String formView(InvoiceForm form, Model model) {
         // Editing a draft credit note: its invoice is shown and the client cannot change
         Invoice existing = form.getId() != null ? invoiceService.findById(form.getId()) : null;
-        model.addAttribute("creditNoteOf", existing != null && existing.isCreditNote() ? existing.getOriginalInvoice() : null);
-        model.addAttribute("stampDutyRules", existing != null && existing.isCreditNote() ? null : stampDutyRules());
+        Invoice creditNoteOf = existing != null && existing.isCreditNote() ? existing.getOriginalInvoice() : null;
+        DocumentKind kind = existing != null ? existing.getKind() : (form.getKind() != null ? form.getKind() : DocumentKind.INVOICE);
+        boolean creating = form.getId() == null;
+        model.addAttribute("creditNoteOf", creditNoteOf);
+        model.addAttribute("formKind", kind);
+        model.addAttribute("formTitle", switch (kind) {
+            case INVOICE -> creating ? "Nouvelle facture" : "Modifier le brouillon";
+            case CREDIT_NOTE -> "Avoir sur la facture " + creditNoteOf.getInvoiceNumber();
+            case QUOTE -> creating ? "Nouveau devis" : "Modifier le devis";
+            case PROFORMA -> creating ? "Nouvelle facture pro forma" : "Modifier la facture pro forma";
+        });
+        // Droit de timbre: invoices only
+        model.addAttribute("stampDutyRules", kind == DocumentKind.INVOICE ? stampDutyRules() : null);
         model.addAttribute("clients", clientService.findAll());
         model.addAttribute("paymentMethods", PaymentMethod.values());
         // TVA per line for a company only (a draft follows the current issuer type)

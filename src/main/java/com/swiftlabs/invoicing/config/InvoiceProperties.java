@@ -12,6 +12,8 @@ import java.util.List;
 public record InvoiceProperties(
     @DefaultValue("FA") String numberPrefix,
     @DefaultValue("AV") String creditNotePrefix,
+    @DefaultValue("DV") String quotePrefix,
+    @DefaultValue("PF") String proformaPrefix,
     @DefaultValue("TVA non applicable") String vatMention,
     /* TVA rates offered on invoice lines of a company, in percent. */
     @DefaultValue({"19", "9", "0"}) List<BigDecimal> vatRates,

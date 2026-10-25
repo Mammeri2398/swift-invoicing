@@ -2,7 +2,6 @@ package com.swiftlabs.invoicing.dashboard;
 
 import com.swiftlabs.invoicing.client.ClientService;
 import com.swiftlabs.invoicing.invoice.InvoiceService;
-import com.swiftlabs.invoicing.invoice.InvoiceStatus;
 import com.swiftlabs.invoicing.issuer.Issuer;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
@@ -33,6 +32,6 @@ public class DashboardService {
         return new DashboardStats(y, invoiceService.totalBilled(y), issuer.getAnnualCeiling(), !issuer.isCompany(),
             invoiceService.findRecent(),
             invoiceService.countUnpaid(), invoiceService.totalUnpaid(),
-            invoiceService.countByStatus(InvoiceStatus.DRAFT), clientService.count());
+            invoiceService.countDrafts(), clientService.count());
     }
 }

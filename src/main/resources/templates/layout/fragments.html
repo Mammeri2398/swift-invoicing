@@ -28,12 +28,13 @@
             </a>
             <nav class="hidden items-center gap-1 xl:flex" th:if="${u != null}">
                 <th:block th:replace="~{layout/fragments :: navLinks}"></th:block>
-                <details th:if="${u.can('MANAGE_USERS') or u.can('MANAGE_PROFILES') or u.can('MANAGE_PRIVILEGES')}"
+                <!--/* Settings and administration grouped: the bar has no room for each link on its own */-->
+                <details th:if="${u.can('VIEW_ISSUER') or u.can('MANAGE_USERS') or u.can('MANAGE_PROFILES') or u.can('MANAGE_PRIVILEGES')}"
                          class="relative" data-dropdown>
                     <summary class="nav-link inline-flex cursor-pointer list-none items-center gap-0.5"
-                             th:classappend="${#strings.startsWith(currentPath, '/users') or #strings.startsWith(currentPath, '/profiles')
-                                               or #strings.startsWith(currentPath, '/privileges')} ? 'active'">
-                        Administration<span class="icon icon-sm">expand_more</span>
+                             th:classappend="${#strings.startsWith(currentPath, '/settings') or #strings.startsWith(currentPath, '/users')
+                                               or #strings.startsWith(currentPath, '/profiles') or #strings.startsWith(currentPath, '/privileges')} ? 'active'">
+                        Réglages<span class="icon icon-sm">expand_more</span>
                     </summary>
                     <div class="absolute left-0 mt-2 flex w-48 flex-col gap-1 rounded-xl bg-surface-container-lowest p-2 shadow-lg">
                         <th:block th:replace="~{layout/fragments :: adminLinks}"></th:block>
@@ -79,16 +80,18 @@
        th:classappend="${p == '/' or p == '/dashboard'} ? 'active'">Tableau de bord</a>
     <a th:if="${u.can('VIEW_INVOICES')}" th:href="@{/invoices}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/invoices') and p != '/invoices/lookup'} ? 'active'">Factures</a>
+    <a th:if="${u.can('VIEW_INVOICES')}" th:href="@{/quotes}" class="nav-link"
+       th:classappend="${#strings.startsWith(p, '/quotes')} ? 'active'">Devis</a>
     <a th:if="${u.can('VIEW_DASHBOARD')}" th:href="@{/turnover}" class="nav-link"
        th:classappend="${p == '/turnover'} ? 'active'">Chiffre d'affaires</a>
     <a th:if="${u.can('VIEW_CLIENTS')}" th:href="@{/clients}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/clients')} ? 'active'">Clients</a>
-    <a th:if="${u.can('VIEW_ISSUER')}" th:href="@{/settings/issuer}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/settings')} ? 'active'">Paramètres</a>
 </th:block>
 
-<!--/* Administration links: a dropdown on wide screens, part of the list in the mobile menu */-->
+<!--/* Settings and administration links: the "Réglages" dropdown on wide screens, part of the list in the mobile menu */-->
 <th:block th:fragment="adminLinks" th:with="u=${currentUser}, p=${currentPath}">
+    <a th:if="${u.can('VIEW_ISSUER')}" th:href="@{/settings/issuer}" class="nav-link"
+       th:classappend="${#strings.startsWith(p, '/settings')} ? 'active'">Paramètres</a>
     <a th:if="${u.can('MANAGE_USERS')}" th:href="@{/users}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/users')} ? 'active'">Utilisateurs</a>
     <a th:if="${u.can('MANAGE_PROFILES')}" th:href="@{/profiles}" class="nav-link"
@@ -160,6 +163,18 @@
     <th:block th:case="'ISSUED'">Émise</th:block>
     <th:block th:case="'PAID'">Payée</th:block>
     <th:block th:case="'CANCELLED'">Annulée</th:block>
+    <th:block th:case="*" th:text="${status.name()}">Autre</th:block>
+</span>
+
+<!--/* Quote status badge (a "devis" is masculine): ~{layout/fragments :: quoteStatusBadge(${quote.status})} */-->
+<span th:fragment="quoteStatusBadge(status)" class="badge" th:switch="${status.name()}"
+      th:classappend="${status.name() == 'ACCEPTED'} ? 'badge-success' : (${status.name() == 'ISSUED'} ? 'badge-info' : (${status.name() == 'REFUSED' or status.name() == 'CANCELLED'} ? 'badge-danger' : 'badge-neutral'))">
+    <th:block th:case="'DRAFT'">Brouillon</th:block>
+    <th:block th:case="'ISSUED'">Émis</th:block>
+    <th:block th:case="'ACCEPTED'">Accepté</th:block>
+    <th:block th:case="'REFUSED'">Refusé</th:block>
+    <th:block th:case="'CANCELLED'">Annulé</th:block>
+    <th:block th:case="*" th:text="${status.name()}">Autre</th:block>
 </span>
 
 <!--/* Payment method label: ~{layout/fragments :: paymentMethod(${invoice.paymentMethod.name()})} */-->

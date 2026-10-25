@@ -1,20 +1,25 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page(${invoice.invoiceNumber ?: (invoice.creditNote ? 'Brouillon d''avoir' : 'Brouillon de facture')}, ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page(${docTitle}, ~{::main}, ~{})}">
 <body>
 <main class="page" th:with="u=${currentUser}, status=${invoice.status.name()}, cn=${invoice.creditNote},
+                            offer=${invoice.offer}, quote=${invoice.quote},
+                            convertible=${invoice.offer and invoiceOf == null and (status == 'ISSUED' or status == 'ACCEPTED')},
                             credited=${remainingToCredit != null and remainingToCredit.compareTo(invoice.totalAmount) < 0}">
     <nav class="breadcrumb" aria-label="Fil d'Ariane">
-        <a th:href="@{/invoices}">Factures</a><span class="icon icon-xs">chevron_right</span>
+        <a th:href="${offer} ? @{/quotes} : @{/invoices}" th:text="${offer} ? 'Devis' : 'Factures'">Factures</a><span class="icon icon-xs">chevron_right</span>
         <span class="text-primary" th:text="${invoice.invoiceNumber ?: 'Brouillon'}">FA-2026-0001</span>
     </nav>
 
     <div class="page-header">
         <div>
             <div class="flex flex-wrap items-center gap-2">
-                <h1 class="page-title" th:text="${invoice.invoiceNumber != null ? (cn ? 'Avoir ' : 'Facture ') + invoice.invoiceNumber
-                    : (cn ? 'Brouillon d''avoir' : 'Brouillon de facture')}">Facture</h1>
-                <span th:replace="~{layout/fragments :: statusBadge(${invoice.status})}"></span>
+                <h1 class="page-title" th:text="${docTitle}">Facture</h1>
+                <!--/* th:replace runs before th:if: the condition sits on a wrapper */-->
+                <th:block th:if="${quote}"><span th:replace="~{layout/fragments :: quoteStatusBadge(${invoice.status})}"></span></th:block>
+                <th:block th:unless="${quote}"><span th:replace="~{layout/fragments :: statusBadge(${invoice.status})}"></span></th:block>
+                <a th:if="${invoiceOf != null}" th:href="@{/invoices/{id}(id=${invoiceOf.id})}" class="badge badge-success hover:underline"
+                   th:text="${'Facturé : ' + (invoiceOf.invoiceNumber ?: 'facture brouillon')}">Facturé</a>
                 <span th:if="${fullyCredited}" class="badge badge-neutral"><span class="icon icon-sm">undo</span>Annulée par avoir</span>
                 <span th:if="${credited and !fullyCredited}" class="badge badge-info"><span class="icon icon-sm">undo</span>Avoir partiel</span>
             </div>
@@ -22,6 +27,8 @@
                 Créée le <span th:text="${#temporals.format(invoice.createdAt, 'dd/MM/yyyy à HH:mm')}"></span>
                 <th:block th:if="${invoice.issuedAt}"> · émise le <span th:text="${#temporals.format(invoice.issuedAt, 'dd/MM/yyyy à HH:mm')}"></span></th:block>
                 <th:block th:if="${invoice.paidAt}"> · payée le <span th:text="${#temporals.format(invoice.paidAt, 'dd/MM/yyyy')}"></span></th:block>
+                <th:block th:if="${invoice.acceptedAt}"> · accepté le <span th:text="${#temporals.format(invoice.acceptedAt, 'dd/MM/yyyy')}"></span></th:block>
+                <th:block th:if="${invoice.refusedAt}"> · refusé le <span th:text="${#temporals.format(invoice.refusedAt, 'dd/MM/yyyy')}"></span></th:block>
                 <th:block th:if="${invoice.cancelledAt}"> · annulée le <span th:text="${#temporals.format(invoice.cancelledAt, 'dd/MM/yyyy')}"></span></th:block>
             </p>
         </div>
@@ -34,13 +41,26 @@
             </a>
             <form th:if="${status == 'DRAFT' and u != null and u.can('ISSUE_INVOICE')}" th:action="@{/invoices/{id}/issue(id=${invoice.id})}" method="post"
                   th:attr="data-confirm=${cn ? 'Émettre cet avoir ? Il recevra son numéro AV et ne sera plus modifiable.'
-                                             : 'Émettre cette facture ? Elle recevra son numéro et ne sera plus modifiable.'}">
+                                             : (offer ? 'Émettre ce document ? Il recevra son numéro et ne sera plus modifiable.'
+                                             : 'Émettre cette facture ? Elle recevra son numéro et ne sera plus modifiable.')}">
                 <button type="submit" class="btn btn-primary"><span class="icon">send</span>
-                    <th:block th:text="${cn ? 'Émettre l''avoir' : 'Émettre'}">Émettre</th:block></button>
+                    <th:block th:text="${cn ? 'Émettre l''avoir' : (quote ? 'Émettre le devis' : 'Émettre')}">Émettre</th:block></button>
             </form>
-            <a th:if="${(status == 'ISSUED' or status == 'PAID') and u != null and u.can('ISSUE_INVOICE')}"
+            <!-- Quotes: the client's answer, then the invoice -->
+            <form th:if="${quote and status == 'ISSUED' and u != null and u.can('ISSUE_INVOICE')}"
+                  th:action="@{/invoices/{id}/accept(id=${invoice.id})}" method="post">
+                <button type="submit" class="btn btn-success"><span class="icon">thumb_up</span>Accepté</button>
+            </form>
+            <form th:if="${quote and status == 'ISSUED' and u != null and u.can('ISSUE_INVOICE')}"
+                  th:action="@{/invoices/{id}/refuse(id=${invoice.id})}" method="post" data-confirm="Marquer ce devis comme refusé par le client ?">
+                <button type="submit" class="btn btn-secondary"><span class="icon">thumb_down</span>Refusé</button>
+            </form>
+            <form th:if="${convertible and u != null and u.can('CREATE_INVOICE')}" th:action="@{/invoices/{id}/convert(id=${invoice.id})}" method="post">
+                <button type="submit" class="btn btn-primary"><span class="icon">receipt_long</span>Facturer</button>
+            </form>
+            <a th:if="${(status == 'ISSUED' or status == 'PAID' or status == 'ACCEPTED') and u != null and u.can('ISSUE_INVOICE')}"
                th:href="@{/invoices/{id}/email(id=${invoice.id})}" class="btn btn-secondary"><span class="icon">mail</span>Envoyer par email</a>
-            <form th:if="${!cn and status == 'ISSUED' and !fullyCredited and u != null and u.can('ISSUE_INVOICE')}" th:action="@{/invoices/{id}/pay(id=${invoice.id})}" method="post"
+            <form th:if="${!cn and !offer and status == 'ISSUED' and !fullyCredited and u != null and u.can('ISSUE_INVOICE')}" th:action="@{/invoices/{id}/pay(id=${invoice.id})}" method="post"
                   data-confirm="Marquer cette facture comme payée ?">
                 <button type="submit" class="btn btn-success"><span class="icon">price_check</span>Marquer payée</button>
             </form>
@@ -49,9 +69,11 @@
                   th:action="@{/invoices/{id}/credit-note(id=${invoice.id})}" method="post">
                 <button type="submit" class="btn btn-secondary"><span class="icon">undo</span>Créer un avoir</button>
             </form>
-            <form th:if="${status != 'CANCELLED' and !(cn and status != 'DRAFT') and !credited and u != null and u.can('ISSUE_INVOICE')}"
+            <form th:if="${status != 'CANCELLED' and status != 'REFUSED' and !(cn and status != 'DRAFT') and !credited and invoiceOf == null
+                          and u != null and u.can('ISSUE_INVOICE')}"
                   th:action="@{/invoices/{id}/cancel(id=${invoice.id})}" method="post"
-                  data-confirm="Annuler cette facture ? Son numéro reste attribué et ne sera jamais réutilisé.">
+                  th:attr="data-confirm=${offer ? 'Annuler ce document ? Son numéro reste attribué.'
+                                                : 'Annuler cette facture ? Son numéro reste attribué et ne sera jamais réutilisé.'}">
                 <button type="submit" class="btn btn-danger"><span class="icon">block</span>Annuler</button>
             </form>
             <form th:if="${status == 'DRAFT' and u != null and u.can('DELETE_INVOICE')}" th:action="@{/invoices/{id}/delete(id=${invoice.id})}" method="post"
@@ -59,6 +81,18 @@
                 <button type="submit" class="btn btn-danger"><span class="icon">delete</span>Supprimer</button>
             </form>
         </div>
+    </div>
+
+    <div th:if="${offer}" class="alert alert-info mb-6">
+        <span class="icon">request_quote</span>
+        <span th:text="${quote ? 'Devis : ce document n''est pas une facture et ne compte pas dans le chiffre d''affaires.'
+            : 'Facture pro forma : ce document n''est pas une facture et ne compte pas dans le chiffre d''affaires.'}">Devis</span>
+    </div>
+    <div th:if="${invoice.sourceDocument != null}" class="alert alert-info mb-6">
+        <span class="icon">request_quote</span>
+        <span>Établie à partir du <th:block th:text="${invoice.sourceDocument.quote} ? 'devis' : 'document pro forma'">devis</th:block>
+            <a th:href="@{/invoices/{id}(id=${invoice.sourceDocument.id})}" class="font-semibold hover:underline"
+               th:text="${invoice.sourceDocument.invoiceNumber}">DV-2026-0001</a>.</span>
     </div>
 
     <div th:if="${cn}" class="alert alert-info mb-6">
@@ -97,7 +131,7 @@
             <div class="card-header"><h2 class="card-title"><span class="icon">calendar_today</span>Dates</h2></div>
             <div class="card-body flex flex-col gap-1">
                 <p>Émission : <strong th:text="${#temporals.format(invoice.issueDate, 'dd/MM/yyyy')}">01/01/2026</strong></p>
-                <p>Échéance : <strong th:text="${invoice.dueDate != null ? #temporals.format(invoice.dueDate, 'dd/MM/yyyy') : '—'}">—</strong></p>
+                <p><th:block th:text="${quote ? 'Valable jusqu''au :' : 'Échéance :'}">Échéance :</th:block> <strong th:text="${invoice.dueDate != null ? #temporals.format(invoice.dueDate, 'dd/MM/yyyy') : '—'}">—</strong></p>
             </div>
         </section>
         <section class="card">
@@ -155,10 +189,11 @@
                 <div class="flex justify-between gap-6"><dt class="text-on-surface-variant">Droit de timbre</dt>
                     <dd class="tabular-nums" th:text="${amountUtils.format(invoice.stampDutyAmount)}">0,00 DA</dd></div>
             </dl>
-            <p class="text-body-md"><th:block th:text="${cn ? (issuer.company ? 'Montant TTC de l''avoir :' : 'Montant de l''avoir :')
+            <p class="text-body-md"><th:block th:text="${offer ? (issuer.company ? 'Total TTC :' : 'Total :') : cn ? (issuer.company ? 'Montant TTC de l''avoir :' : 'Montant de l''avoir :')
                 : (invoice.stampDutyAmount.signum() > 0 ? 'Net à payer :' : (issuer.company ? 'Total TTC à payer :' : 'Total à payer :'))}">Total à payer :</th:block>
                 <strong class="text-headline-md tabular-nums text-primary" th:text="${amountUtils.format(invoice.amountDue)}">0,00 DA</strong></p>
-            <p class="text-body-sm italic text-on-surface-variant" th:text="${cn ? amountInWords.convertCreditNote(invoice.totalAmount) : amountInWords.convert(invoice.amountDue)}">Montant en lettres</p>
+            <p class="text-body-sm italic text-on-surface-variant" th:text="${cn ? amountInWords.convertCreditNote(invoice.totalAmount) : quote ? amountInWords.convertQuote(invoice.totalAmount)
+                   : offer ? amountInWords.convertProforma(invoice.totalAmount) : amountInWords.convert(invoice.amountDue)}">Montant en lettres</p>
             <p th:unless="${issuer.company}" class="text-body-sm text-on-surface-variant" th:text="${vatMention}">TVA non applicable</p>
         </div>
     </section>

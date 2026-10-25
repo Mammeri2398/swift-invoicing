@@ -30,6 +30,16 @@ public final class AmountInWords {
         return convert(amount, "Arrêté le présent avoir");
     }
 
+    /** "Arrêté le présent devis à la somme de : ...". */
+    public static String convertQuote(BigDecimal amount) {
+        return convert(amount, "Arrêté le présent devis");
+    }
+
+    /** "Arrêtée la présente facture pro forma à la somme de : ...". */
+    public static String convertProforma(BigDecimal amount) {
+        return convert(amount, "Arrêtée la présente facture pro forma");
+    }
+
     private static String convert(BigDecimal amount, String opening) {
         if (amount == null) {
             amount = BigDecimal.ZERO;

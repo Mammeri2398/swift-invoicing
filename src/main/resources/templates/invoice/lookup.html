@@ -30,7 +30,7 @@
         <section th:if="${verification != null}" class="card">
             <div class="card-header">
                 <h2 class="card-title"><span class="icon icon-fill text-tertiary">verified</span>
-                    <th:block th:text="${verification.creditNote} ? 'Avoir authentique' : 'Facture authentique'">Facture authentique</th:block></h2>
+                    <th:block th:text="${verification.label + ' authentique'}">Facture authentique</th:block></h2>
                 <span th:replace="~{layout/fragments :: statusBadge(${verification.status})}"></span>
             </div>
             <dl class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2">

@@ -23,7 +23,11 @@ public class InvoiceEvent {
     public enum Action {
         CREATED, ISSUED, PAID, CANCELLED, SENT,
         /** An issued credit note cancelled all or part of the invoice. */
-        CREDITED
+        CREDITED,
+        /** Quotes: the client's answer. */
+        ACCEPTED, REFUSED,
+        /** A quote or a pro forma turned into an invoice. */
+        CONVERTED
     }
 
     @Id

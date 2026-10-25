@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.issuer;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
 import com.swiftlabs.invoicing.dashboard.DashboardService;
+import com.swiftlabs.invoicing.setup.NetworkAddresses;
 
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
@@ -29,10 +30,12 @@ public class IssuerController {
 
     private final IssuerService issuerService;
     private final DashboardService dashboardService;
+    private final NetworkAddresses networkAddresses;
 
-    public IssuerController(IssuerService issuerService, DashboardService dashboardService) {
+    public IssuerController(IssuerService issuerService, DashboardService dashboardService, NetworkAddresses networkAddresses) {
         this.issuerService = issuerService;
         this.dashboardService = dashboardService;
+        this.networkAddresses = networkAddresses;
     }
 
     @GetMapping
@@ -99,6 +102,7 @@ public class IssuerController {
         Issuer issuer = issuerService.getIssuer();
         model.addAttribute("hasLogo", issuer.hasLogo());
         model.addAttribute("stats", dashboardService.stats(null));
+        model.addAttribute("networkAddresses", networkAddresses.urls());
         model.addAttribute("canEdit", authentication.getAuthorities().stream()
             .anyMatch(a -> "EDIT_ISSUER".equals(a.getAuthority())));
         return "issuer/form";

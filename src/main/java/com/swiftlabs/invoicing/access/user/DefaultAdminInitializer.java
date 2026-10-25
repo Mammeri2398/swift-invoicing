@@ -6,6 +6,7 @@ import com.swiftlabs.invoicing.config.SecurityProperties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
  * Creates the "admin" account on first start, with the password from
  * {@code app.security.initial-admin-password} or a random one written once to the log.
  * Either way it must be changed at the first login. An existing account is never touched.
+ * Not used on-premise (app.setup.wizard): the setup wizard creates the first account.
  */
 @Component
 public class DefaultAdminInitializer implements CommandLineRunner {
@@ -32,22 +34,25 @@ public class DefaultAdminInitializer implements CommandLineRunner {
     private final PasswordPolicy passwordPolicy;
     private final SecurityProperties properties;
     private final Clock clock;
+    private final boolean setupWizard;
 
     public DefaultAdminInitializer(UserRepository userRepository, ProfileRepository profileRepository,
                                    PasswordEncoder passwordEncoder, PasswordPolicy passwordPolicy,
-                                   SecurityProperties properties, Clock clock) {
+                                   SecurityProperties properties, Clock clock,
+                                   @Value("${app.setup.wizard:false}") boolean setupWizard) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicy = passwordPolicy;
         this.properties = properties;
         this.clock = clock;
+        this.setupWizard = setupWizard;
     }
 
     @Override
     @Transactional
     public void run(String... args) {
-        if (userRepository.findByUsername(ADMIN_USERNAME).isPresent()) {
+        if (setupWizard || userRepository.findByUsername(ADMIN_USERNAME).isPresent()) {
             return;
         }
         Profile adminProfile = profileRepository.findByName(ADMIN_PROFILE);

@@ -4,15 +4,15 @@ import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.access.user.UserService;
 import com.swiftlabs.invoicing.config.SecurityProperties;
+import com.swiftlabs.invoicing.mail.MailGateway;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -36,8 +36,7 @@ public class PasswordResetService {
     private final UserRepository userRepository;
     private final UserService userService;
     private final SessionService sessionService;
-    private final JavaMailSender mailSender;
-    private final boolean mailEnabled;
+    private final MailGateway mailGateway;
     private final String baseUrl;
     private final Duration validity;
     private final Clock clock;
@@ -49,17 +48,15 @@ public class PasswordResetService {
                                 SessionService sessionService,
                                 SecurityProperties properties,
                                 Clock clock,
-                                @Autowired(required = false) JavaMailSender mailSender,
-                                @Value("${mail.enabled:false}") boolean mailEnabled,
-                                @Value("${app.base-url:http://localhost:7070}") String baseUrl) {
+                                MailGateway mailGateway,
+                                @Value("${app.base-url:}") String baseUrl) {
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
         this.userService = userService;
         this.sessionService = sessionService;
         this.validity = properties.resetTokenValidity();
         this.clock = clock;
-        this.mailSender = mailSender;
-        this.mailEnabled = mailEnabled;
+        this.mailGateway = mailGateway;
         this.baseUrl = baseUrl;
     }
 
@@ -107,7 +104,15 @@ public class PasswordResetService {
         random.nextBytes(bytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         tokenRepository.save(new PasswordResetToken(hash(token), user, LocalDateTime.now(clock).plus(validity)));
-        sendLink(user, baseUrl + "/reset-password?token=" + token);
+        sendLink(user, baseUrl() + "/reset-password?token=" + token);
+    }
+
+    /**
+     * The application's address for the link: app.base-url when set (a public server), otherwise the
+     * address the user typed to reach it (on-premise: the PC's name on the local network).
+     */
+    private String baseUrl() {
+        return !baseUrl.isBlank() ? baseUrl : ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
     }
 
     static String hash(String token) {
@@ -120,12 +125,15 @@ public class PasswordResetService {
     }
 
     private void sendLink(User user, String resetUrl) {
-        if (!mailEnabled) {
+        if (!mailGateway.isServerConfigured()) {
             // Development only: the link gives access to the account, never enable this in production
             log.warn("Mail disabled - password reset link for '{}': {}", user.getUsername(), resetUrl);
             return;
         }
         SimpleMailMessage message = new SimpleMailMessage();
+        if (!mailGateway.fromAddress().isBlank()) {
+            message.setFrom(mailGateway.fromAddress());
+        }
         message.setTo(user.getEmail());
         message.setSubject("Réinitialisation de votre mot de passe - Swift Invoicing");
         message.setText("Bonjour " + user.getUsername() + ",\n\n"
@@ -135,7 +143,7 @@ public class PasswordResetService {
             + "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\n"
             + "Cordialement,\nSwift Invoicing");
         try {
-            mailSender.send(message);
+            mailGateway.sender().send(message);
         } catch (Exception ex) {
             log.error("Could not send the password reset email to user '{}'", user.getUsername(), ex);
         }

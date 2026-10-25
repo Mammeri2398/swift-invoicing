@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout/fragments :: head('Installation')}"></head>
+<body class="flex min-h-screen flex-col bg-surface-container-low"
+      th:with="AE=${setup.companyType == null or setup.companyType.name() != 'COMPANY'}, CO=${setup.companyType != null and setup.companyType.name() == 'COMPANY'}">
+<main class="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
+    <div class="mb-8 flex items-center gap-3">
+        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-on-primary shadow-sm"><span class="icon">receipt_long</span></span>
+        <div>
+            <h1 class="text-headline-md text-on-surface">Bienvenue dans Swift Invoicing</h1>
+            <p class="text-body-md text-on-surface-variant">Deux minutes pour préparer l'application : le compte administrateur, puis votre entreprise.</p>
+        </div>
+    </div>
+
+    <form th:action="@{/setup}" method="post" th:object="${setup}" id="issuer-form" class="flex flex-col gap-6">
+        <div th:replace="~{layout/fragments :: formErrors}"></div>
+
+        <section class="card">
+            <div class="card-header"><h2 class="card-title"><span class="icon">admin_panel_settings</span>1. Compte administrateur</h2></div>
+            <div class="card-body form-grid">
+                <div class="field">
+                    <label class="label" for="adminUsername">Nom d'utilisateur <span class="required">*</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{adminUsername}" type="text" required maxlength="100" autocomplete="username"/>
+                    <p th:replace="~{layout/fragments :: fieldError('adminUsername')}"></p>
+                </div>
+                <div class="field">
+                    <label class="label" for="adminFirstName">Prénom <span class="optional">Optionnel</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{adminFirstName}" type="text" maxlength="100" autocomplete="given-name"/>
+                </div>
+                <div class="field md:col-span-2">
+                    <label class="label" for="adminEmail">Email <span class="required">*</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{adminEmail}" type="email" required maxlength="255" autocomplete="email"/>
+                    <p th:replace="~{layout/fragments :: fieldError('adminEmail')}"></p>
+                </div>
+                <div class="field">
+                    <label class="label" for="password">Mot de passe <span class="required">*</span></label>
+                    <input class="input" th:errorclass="input-invalid" id="password" name="password" type="password" required autocomplete="new-password"/>
+                    <p th:replace="~{layout/fragments :: fieldError('password')}"></p>
+                </div>
+                <div class="field">
+                    <label class="label" for="confirmPassword">Confirmer le mot de passe <span class="required">*</span></label>
+                    <input class="input" th:errorclass="input-invalid" id="confirmPassword" name="confirmPassword" type="password" required autocomplete="new-password"/>
+                    <p th:replace="~{layout/fragments :: fieldError('confirmPassword')}"></p>
+                </div>
+                <p class="hint md:col-span-2">Au moins 8 caractères, dont une majuscule, une minuscule et un chiffre. Vous créerez les comptes
+                    de vos collègues ensuite, dans Réglages &gt; Utilisateurs.</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header"><h2 class="card-title"><span class="icon">domain</span>2. Type d'entreprise</h2></div>
+            <div class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg p-4 ring-1 ring-surface-variant has-[:checked]:bg-primary-fixed/30 has-[:checked]:ring-2 has-[:checked]:ring-primary">
+                    <input type="radio" th:field="*{companyType}" value="AUTO_ENTREPRENEUR" class="mt-1" data-company-type/>
+                    <span><span class="block font-semibold">Auto-entrepreneur</span>
+                        <span class="hint">Carte ANAE, TVA non applicable.</span></span>
+                </label>
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg p-4 ring-1 ring-surface-variant has-[:checked]:bg-primary-fixed/30 has-[:checked]:ring-2 has-[:checked]:ring-primary">
+                    <input type="radio" th:field="*{companyType}" value="COMPANY" class="mt-1" data-company-type/>
+                    <span><span class="block font-semibold">Société</span>
+                        <span class="hint">SARL, EURL, SPA… : TVA sur chaque ligne.</span></span>
+                </label>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header"><h2 class="card-title"><span class="icon">badge</span>3. Votre entreprise</h2></div>
+            <div class="card-body form-grid">
+                <div class="field">
+                    <label class="label" for="fullName">
+                        <span data-show="AUTO_ENTREPRENEUR" th:classappend="${CO} ? 'hidden'">Nom complet du titulaire</span>
+                        <span data-show="COMPANY" th:classappend="${AE} ? 'hidden'">Raison sociale</span>
+                        <span class="required">*</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{fullName}" type="text" required maxlength="255"/>
+                    <p th:replace="~{layout/fragments :: fieldError('fullName')}"></p>
+                </div>
+                <div class="field">
+                    <label class="label" for="tradeName">Nom commercial <span class="optional">Optionnel</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{tradeName}" type="text" maxlength="255"/>
+                </div>
+                <div class="field">
+                    <label class="label" for="nif">NIF <span class="required">*</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" required maxlength="50" inputmode="numeric"/>
+                    <p th:replace="~{layout/fragments :: fieldError('nif')}"></p>
+                </div>
+                <div class="field">
+                    <label class="label" for="nis">NIS <span class="optional">Optionnel</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="50" inputmode="numeric"/>
+                    <p th:replace="~{layout/fragments :: fieldError('nis')}"></p>
+                </div>
+                <div class="field" data-show="AUTO_ENTREPRENEUR" th:classappend="${CO} ? 'hidden'">
+                    <label class="label" for="aeCardNumber">N° carte auto-entrepreneur <span class="required">*</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{aeCardNumber}" type="text" maxlength="50"/>
+                    <p th:replace="~{layout/fragments :: fieldError('aeCardNumber')}"></p>
+                </div>
+                <div class="field" data-show="COMPANY" th:classappend="${AE} ? 'hidden'">
+                    <label class="label" for="legalForm">Forme juridique <span class="required">*</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{legalForm}" type="text" maxlength="50" list="legal-forms" placeholder="SARL"/>
+                    <datalist id="legal-forms"><option value="SARL"></option><option value="EURL"></option><option value="SPA"></option>
+                        <option value="SNC"></option><option value="SCS"></option></datalist>
+                    <p th:replace="~{layout/fragments :: fieldError('legalForm')}"></p>
+                </div>
+                <div class="field" data-show="COMPANY" th:classappend="${AE} ? 'hidden'">
+                    <label class="label" for="shareCapital">Capital social (DA) <span class="required">*</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{shareCapital}" type="number" min="0" step="0.01"/>
+                    <p th:replace="~{layout/fragments :: fieldError('shareCapital')}"></p>
+                </div>
+                <div class="field" data-show="COMPANY" th:classappend="${AE} ? 'hidden'">
+                    <label class="label" for="rcNumber">N° registre du commerce (RC) <span class="required">*</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{rcNumber}" type="text" maxlength="50"/>
+                    <p th:replace="~{layout/fragments :: fieldError('rcNumber')}"></p>
+                </div>
+                <div class="field" data-show="COMPANY" th:classappend="${AE} ? 'hidden'">
+                    <label class="label" for="taxArticle">Article d'imposition (AI) <span class="required">*</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{taxArticle}" type="text" maxlength="50"/>
+                    <p th:replace="~{layout/fragments :: fieldError('taxArticle')}"></p>
+                </div>
+                <div class="field md:col-span-2">
+                    <label class="label" for="address">Adresse</label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{address}" type="text" maxlength="255"/>
+                </div>
+                <div class="field">
+                    <label class="label" for="city">Ville</label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{city}" type="text" maxlength="255"/>
+                </div>
+                <div class="field">
+                    <label class="label" for="phone">Téléphone</label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{phone}" type="tel" maxlength="50"/>
+                    <p th:replace="~{layout/fragments :: fieldError('phone')}"></p>
+                </div>
+                <div class="field">
+                    <label class="label" for="email">Email de l'entreprise</label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{email}" type="email" maxlength="255"/>
+                    <p th:replace="~{layout/fragments :: fieldError('email')}"></p>
+                </div>
+                <div class="field">
+                    <label class="label" for="bankOrCcpAccount">Compte bancaire (RIB) ou CCP</label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{bankOrCcpAccount}" type="text" maxlength="100"/>
+                </div>
+                <p class="hint md:col-span-2">Le logo, l'envoi d'emails et le reste se règlent ensuite dans Réglages &gt; Paramètres.</p>
+            </div>
+        </section>
+
+        <div class="flex justify-end">
+            <button type="submit" class="btn btn-primary py-2.5"><span class="icon">check</span>Terminer l'installation</button>
+        </div>
+    </form>
+</main>
+<footer th:replace="~{layout/fragments :: footer}"></footer>
+<script th:src="@{/js/app.js}" defer></script>
+<script th:src="@{/js/issuer-form.js}" defer></script>
+</body>
+</html>

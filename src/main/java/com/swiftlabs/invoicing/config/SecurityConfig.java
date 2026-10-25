@@ -5,6 +5,8 @@ import com.swiftlabs.invoicing.access.auth.RateLimitFilter;
 import com.swiftlabs.invoicing.access.auth.RateLimiter;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorFilter;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorLoginSuccessHandler;
+import com.swiftlabs.invoicing.setup.SetupFilter;
+import com.swiftlabs.invoicing.setup.SetupService;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -42,6 +44,8 @@ public class SecurityConfig {
         "/css/**", "/js/**", "/fonts/**", "/images/**", "/favicon.ico", "/error",
         "/login", "/forgot-password", "/forgot-password/send", "/reset-password", "/reset-password/save",
         "/invoices/lookup",
+        // First-run setup of an on-premise install: open only while no user exists (SetupFilter)
+        "/setup",
         // Status only (UP/DOWN), no details: see management.* in application.properties
         "/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness",
     };
@@ -66,7 +70,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, SessionRegistry sessionRegistry, RateLimiter rateLimiter,
                                            SecurityProperties properties,
-                                           TwoFactorLoginSuccessHandler loginSuccessHandler) throws Exception {
+                                           TwoFactorLoginSuccessHandler loginSuccessHandler,
+                                           SetupService setupService) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_URLS).permitAll()
@@ -100,6 +105,8 @@ public class SecurityConfig {
                     "camera=(), microphone=(), geolocation=(), payment=(), usb=()")))
             // Per-IP limits on login, password reset and the public lookup (HTTP 429 beyond)
             .addFilterBefore(new RateLimitFilter(rateLimiter, properties), UsernamePasswordAuthenticationFilter.class)
+            // First-run setup (on-premise): every page leads to it until the administrator exists
+            .addFilterBefore(new SetupFilter(setupService), RateLimitFilter.class)
             // Code still to type, or two-factor login to set up, before the forced password change check
             .addFilterAfter(new TwoFactorFilter(properties.twoFactor().requiredFor()), AuthorizationFilter.class)
             .addFilterAfter(new ForcePasswordChangeFilter(), TwoFactorFilter.class);

@@ -2,14 +2,13 @@ package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.common.AmountUtils;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.mail.MailGateway;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -35,33 +34,24 @@ public class InvoiceMailService {
     private final InvoicePdfService pdfService;
     private final InvoiceAudit audit;
     private final PaymentService paymentService;
-    private final JavaMailSender mailSender;
-    private final boolean mailEnabled;
-    private final String fromAddress;
+    private final MailGateway mailGateway;
 
     public InvoiceMailService(InvoiceService invoiceService, InvoicePdfService pdfService, InvoiceAudit audit,
-                              PaymentService paymentService,
-                              @Autowired(required = false) JavaMailSender mailSender,
-                              @Value("${mail.enabled:false}") boolean mailEnabled,
-                              @Value("${mail.from:}") String mailFrom,
-                              @Value("${spring.mail.username:}") String mailUsername) {
+                              PaymentService paymentService, MailGateway mailGateway) {
         this.invoiceService = invoiceService;
         this.pdfService = pdfService;
         this.audit = audit;
         this.paymentService = paymentService;
-        this.mailSender = mailSender;
-        this.mailEnabled = mailEnabled && mailSender != null;
-        // Most SMTP servers only accept their own account as sender
-        this.fromAddress = !mailFrom.isBlank() ? mailFrom.trim() : mailUsername.trim();
+        this.mailGateway = mailGateway;
     }
 
-    /** False when no mail server is configured (development): the page then explains how to set one up. */
+    /** False when no mail server is configured: the page then explains how to set one up. */
     public boolean isEnabled() {
-        return mailEnabled && !fromAddress.isEmpty();
+        return mailGateway.isEnabled();
     }
 
     public String getFromAddress() {
-        return fromAddress;
+        return mailGateway.fromAddress();
     }
 
     /** The email proposed for an invoice: the client's address and a ready-to-send message. */
@@ -105,12 +95,13 @@ public class InvoiceMailService {
     public void send(Long invoiceId, InvoiceEmailForm form) {
         Invoice invoice = sendable(invoiceId);
         if (!isEnabled()) {
-            throw new BusinessException("L'envoi d'emails n'est pas configuré sur ce serveur (variables MAIL_ENABLED, MAIL_HOST, MAIL_FROM).");
+            throw new BusinessException("L'envoi d'emails n'est pas configuré : réglez le serveur d'envoi dans Réglages > Paramètres > Email.");
         }
         try {
+            JavaMailSender mailSender = mailGateway.sender();
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
-            helper.setFrom(new InternetAddress(fromAddress, senderName(invoice), StandardCharsets.UTF_8.name()));
+            helper.setFrom(new InternetAddress(mailGateway.fromAddress(), senderName(invoice), StandardCharsets.UTF_8.name()));
             // Replies go to the auto-entrepreneur, not to the sending account
             if (invoice.getIssuerEmail() != null && !invoice.getIssuerEmail().isBlank()) {
                 helper.setReplyTo(invoice.getIssuerEmail());

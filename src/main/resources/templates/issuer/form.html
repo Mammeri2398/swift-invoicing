@@ -160,6 +160,18 @@
             </div>
 
             <aside class="flex flex-col gap-6">
+                <!-- On-premise install: how the other PCs of the office reach the application -->
+                <section th:unless="${networkAddresses.isEmpty()}" class="card">
+                    <div class="card-header"><h2 class="card-title"><span class="icon">lan</span>Accès depuis les autres postes</h2></div>
+                    <div class="card-body flex flex-col gap-2">
+                        <p class="text-body-sm">Sur les autres ordinateurs du bureau, ouvrez le navigateur à l'une de ces adresses :</p>
+                        <ul class="flex flex-col gap-1 font-mono text-body-sm">
+                            <li th:each="url : ${networkAddresses}" th:text="${url}">http://BUREAU-PC:7070</li>
+                        </ul>
+                        <p class="hint">Cet ordinateur doit rester allumé pendant que les autres travaillent.</p>
+                    </div>
+                </section>
+
                 <!-- Logo: its controls belong to the separate forms declared after the main form -->
                 <section class="card">
                     <div class="card-header"><h2 class="card-title"><span class="icon">image</span>Logo</h2></div>

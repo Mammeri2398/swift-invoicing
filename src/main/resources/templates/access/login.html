@@ -12,6 +12,10 @@
         <div th:if="${logout}" class="alert alert-info">
             <span class="icon">info</span><span th:text="${logout}">Vous avez été déconnecté.</span>
         </div>
+        <div th:if="${networkAddresses != null and !networkAddresses.isEmpty()}" class="rounded-lg bg-surface-container-low p-3 text-body-sm">
+            <p class="font-medium">Depuis les autres ordinateurs du bureau :</p>
+            <p th:each="url : ${networkAddresses}" class="font-mono" th:text="${url}">http://BUREAU-PC:7070</p>
+        </div>
 
         <form th:action="@{/perform-login}" method="post" class="flex flex-col gap-4">
             <div class="field">

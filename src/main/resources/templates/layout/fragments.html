@@ -91,7 +91,9 @@
 <!--/* Settings and administration links: the "Réglages" dropdown on wide screens, part of the list in the mobile menu */-->
 <th:block th:fragment="adminLinks" th:with="u=${currentUser}, p=${currentPath}">
     <a th:if="${u.can('VIEW_ISSUER')}" th:href="@{/settings/issuer}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/settings')} ? 'active'">Paramètres</a>
+       th:classappend="${#strings.startsWith(p, '/settings/issuer')} ? 'active'">Paramètres</a>
+    <a th:if="${u.can('VIEW_ISSUER')}" th:href="@{/settings/mail}" class="nav-link"
+       th:classappend="${#strings.startsWith(p, '/settings/mail')} ? 'active'">Email</a>
     <a th:if="${u.can('MANAGE_USERS')}" th:href="@{/users}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/users')} ? 'active'">Utilisateurs</a>
     <a th:if="${u.can('MANAGE_PROFILES')}" th:href="@{/profiles}" class="nav-link"

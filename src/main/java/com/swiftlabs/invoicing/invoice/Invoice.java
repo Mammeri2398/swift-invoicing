@@ -134,6 +134,15 @@ public class Invoice {
     @Column(name = "client_nif")
     private String clientNif;
 
+    @Column(name = "client_rc_number", length = 50)
+    private String clientRcNumber;
+
+    @Column(name = "client_nis", length = 50)
+    private String clientNis;
+
+    @Column(name = "client_tax_article", length = 50)
+    private String clientTaxArticle;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -347,6 +356,30 @@ public class Invoice {
 
     public void setClientNif(String clientNif) {
         this.clientNif = clientNif;
+    }
+
+    public String getClientRcNumber() {
+        return clientRcNumber;
+    }
+
+    public void setClientRcNumber(String clientRcNumber) {
+        this.clientRcNumber = clientRcNumber;
+    }
+
+    public String getClientNis() {
+        return clientNis;
+    }
+
+    public void setClientNis(String clientNis) {
+        this.clientNis = clientNis;
+    }
+
+    public String getClientTaxArticle() {
+        return clientTaxArticle;
+    }
+
+    public void setClientTaxArticle(String clientTaxArticle) {
+        this.clientTaxArticle = clientTaxArticle;
     }
 
     public LocalDateTime getCreatedAt() {

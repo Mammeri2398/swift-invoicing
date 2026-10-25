@@ -48,6 +48,11 @@ public class ClientService {
         client.setPhone(form.getPhone());
         client.setEmail(form.getEmail());
         client.setNif(form.getNif());
+        // Only meaningful for a professional client: not kept for a private person
+        boolean professional = form.getType() == ClientType.PROFESSIONNEL;
+        client.setRcNumber(professional ? form.getRcNumber() : null);
+        client.setNis(professional ? form.getNis() : null);
+        client.setTaxArticle(professional ? form.getTaxArticle() : null);
         validate(client);
         return clientRepository.save(client);
     }

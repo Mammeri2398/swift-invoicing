@@ -43,6 +43,25 @@
                     <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" maxlength="50" inputmode="numeric"/>
                     <p th:replace="~{layout/fragments :: fieldError('nif')}"></p>
                 </div>
+                <!-- Professional clients only (client-form.js hides them for a private person) -->
+                <div class="field" data-professional>
+                    <label class="label" for="rcNumber">N° registre du commerce (RC)</label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{rcNumber}" type="text" maxlength="50"/>
+                    <p th:replace="~{layout/fragments :: fieldError('rcNumber')}"></p>
+                </div>
+                <div class="field" data-professional>
+                    <label class="label" for="taxArticle">Article d'imposition (AI)</label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{taxArticle}" type="text" maxlength="50"/>
+                    <p th:replace="~{layout/fragments :: fieldError('taxArticle')}"></p>
+                </div>
+                <div class="field" data-professional>
+                    <label class="label" for="nis">NIS <span class="optional">Optionnel</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="50" inputmode="numeric"/>
+                    <p th:replace="~{layout/fragments :: fieldError('nis')}"></p>
+                </div>
+                <p class="hint md:col-span-2" data-professional th:if="${companyType?.company}">
+                    Votre profil est une société : le RC et l'article d'imposition d'un client professionnel sont obligatoires pour émettre une facture.
+                </p>
                 <div class="field md:col-span-2">
                     <label class="label" for="address">Adresse</label>
                     <input class="input" th:errorclass="input-invalid" th:field="*{address}" type="text" maxlength="255"/>

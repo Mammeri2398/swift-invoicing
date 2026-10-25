@@ -62,6 +62,14 @@
                 <p class="text-on-surface-variant" th:text="${invoice.clientAddress ?: invoice.client.address}">Adresse</p>
                 <p class="text-body-sm text-on-surface-variant" th:with="nif=${invoice.clientNif ?: invoice.client.nif}"
                    th:text="${nif != null and !nif.isBlank() ? 'NIF ' + nif : 'NIF non renseigné'}">NIF</p>
+                <!--/* Draft: the client's current details; issued: the copy made at issue time */-->
+                <th:block th:with="rc=${invoice.draft ? invoice.client.rcNumber : invoice.clientRcNumber},
+                                   nis=${invoice.draft ? invoice.client.nis : invoice.clientNis},
+                                   ai=${invoice.draft ? invoice.client.taxArticle : invoice.clientTaxArticle}">
+                    <p th:unless="${#strings.isEmpty(rc)}" class="text-body-sm text-on-surface-variant" th:text="${'RC ' + rc}">RC</p>
+                    <p th:unless="${#strings.isEmpty(nis)}" class="text-body-sm text-on-surface-variant" th:text="${'NIS ' + nis}">NIS</p>
+                    <p th:unless="${#strings.isEmpty(ai)}" class="text-body-sm text-on-surface-variant" th:text="${'AI ' + ai}">AI</p>
+                </th:block>
             </div>
         </section>
         <section class="card">

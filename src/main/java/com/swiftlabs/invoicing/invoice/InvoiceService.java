@@ -137,6 +137,20 @@ public class InvoiceService {
             throw new BusinessException("Une facture doit contenir au moins une ligne pour être émise.");
         }
         Issuer issuer = issuerService.getIssuer();
+        // A company's invoice to a business carries the buyer's identifiers too (décret exécutif 05-468)
+        if (issuer.isCompany() && client.getType() == ClientType.PROFESSIONNEL) {
+            List<String> missing = new ArrayList<>();
+            if (isBlank(client.getRcNumber())) {
+                missing.add("le registre du commerce (RC)");
+            }
+            if (isBlank(client.getTaxArticle())) {
+                missing.add("l'article d'imposition (AI)");
+            }
+            if (!missing.isEmpty()) {
+                throw new BusinessException("Complétez la fiche du client avant d'émettre la facture : "
+                    + String.join(" et ", missing) + (missing.size() > 1 ? " manquent." : " manque."));
+            }
+        }
         // The type may have changed since the draft was saved
         if (!issuer.isCompany() && invoice.getLines().stream().anyMatch(line -> line.getVatRate().signum() > 0)) {
             throw new BusinessException("Cette facture contient de la TVA alors que le profil émetteur est auto-entrepreneur : "
@@ -267,5 +281,12 @@ public class InvoiceService {
         invoice.setClientName(client.getName());
         invoice.setClientAddress(client.getAddress());
         invoice.setClientNif(client.getNif());
+        invoice.setClientRcNumber(client.getRcNumber());
+        invoice.setClientNis(client.getNis());
+        invoice.setClientTaxArticle(client.getTaxArticle());
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

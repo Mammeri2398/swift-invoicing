@@ -41,6 +41,17 @@ public class Client {
     @Column(name = "nif")
     private String nif;
 
+    /** Professional clients: registre du commerce. */
+    @Column(name = "rc_number", length = 50)
+    private String rcNumber;
+
+    @Column(name = "nis", length = 50)
+    private String nis;
+
+    /** Professional clients: article d'imposition (AI). */
+    @Column(name = "tax_article", length = 50)
+    private String taxArticle;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -118,5 +129,29 @@ public class Client {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getRcNumber() {
+        return rcNumber;
+    }
+
+    public void setRcNumber(String rcNumber) {
+        this.rcNumber = rcNumber;
+    }
+
+    public String getNis() {
+        return nis;
+    }
+
+    public void setNis(String nis) {
+        this.nis = nis;
+    }
+
+    public String getTaxArticle() {
+        return taxArticle;
+    }
+
+    public void setTaxArticle(String taxArticle) {
+        this.taxArticle = taxArticle;
     }
 }

@@ -37,6 +37,17 @@ public class ClientForm {
     @Pattern(regexp = "[0-9]*")
     private String nif;
 
+    // Professional clients; required at issue time when the issuer is a company (see InvoiceService)
+    @Size(max = 50)
+    private String rcNumber;
+
+    @Size(max = 50)
+    @Pattern(regexp = "[0-9]*")
+    private String nis;
+
+    @Size(max = 50)
+    private String taxArticle;
+
     public ClientForm() {
     }
 
@@ -56,6 +67,12 @@ public class ClientForm {
     public void setEmail(String email) { this.email = email; }
     public String getNif() { return nif; }
     public void setNif(String nif) { this.nif = nif; }
+    public String getRcNumber() { return rcNumber; }
+    public void setRcNumber(String rcNumber) { this.rcNumber = rcNumber; }
+    public String getNis() { return nis; }
+    public void setNis(String nis) { this.nis = nis; }
+    public String getTaxArticle() { return taxArticle; }
+    public void setTaxArticle(String taxArticle) { this.taxArticle = taxArticle; }
 
     public static ClientForm from(Client client) {
         ClientForm form = new ClientForm();
@@ -67,6 +84,9 @@ public class ClientForm {
         form.setPhone(client.getPhone());
         form.setEmail(client.getEmail());
         form.setNif(client.getNif());
+        form.setRcNumber(client.getRcNumber());
+        form.setNis(client.getNis());
+        form.setTaxArticle(client.getTaxArticle());
         return form;
     }
 }

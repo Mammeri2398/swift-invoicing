@@ -90,8 +90,14 @@
         <h3>Client</h3>
         <div th:text="${invoice.clientName != null ? invoice.clientName : (invoice.client != null ? invoice.client.name : '-')}">Nom client</div>
         <div th:text="${invoice.clientAddress != null ? invoice.clientAddress : (invoice.client != null ? invoice.client.address : '-')}">Adresse</div>
-        <th:block th:with="clientNif=${invoice.draft ? invoice.client.nif : invoice.clientNif}">
+        <th:block th:with="clientNif=${invoice.draft ? invoice.client.nif : invoice.clientNif},
+                           clientRc=${invoice.draft ? invoice.client.rcNumber : invoice.clientRcNumber},
+                           clientNis=${invoice.draft ? invoice.client.nis : invoice.clientNis},
+                           clientAi=${invoice.draft ? invoice.client.taxArticle : invoice.clientTaxArticle}">
+            <div th:unless="${#strings.isEmpty(clientRc)}" th:text="${'RC : ' + clientRc}">RC</div>
             <div th:unless="${#strings.isEmpty(clientNif)}" th:text="${'NIF : ' + clientNif}">NIF</div>
+            <div th:unless="${#strings.isEmpty(clientNis)}" th:text="${'NIS : ' + clientNis}">NIS</div>
+            <div th:unless="${#strings.isEmpty(clientAi)}" th:text="${'AI : ' + clientAi}">AI</div>
         </th:block>
     </div>
 </div>

@@ -22,6 +22,8 @@
                    th:text="${'Facturé : ' + (invoiceOf.invoiceNumber ?: 'facture brouillon')}">Facturé</a>
                 <span th:if="${fullyCredited}" class="badge badge-neutral"><span class="icon icon-sm">undo</span>Annulée par avoir</span>
                 <span th:if="${credited and !fullyCredited}" class="badge badge-info"><span class="icon icon-sm">undo</span>Avoir partiel</span>
+                <span th:if="${payment != null and payment.partiallyPaid}" class="badge badge-info"><span class="icon icon-sm">payments</span>Partiellement payée</span>
+                <span th:if="${overdue}" class="badge badge-danger"><span class="icon icon-sm">schedule</span>En retard</span>
             </div>
             <p class="page-subtitle">
                 Créée le <span th:text="${#temporals.format(invoice.createdAt, 'dd/MM/yyyy à HH:mm')}"></span>
@@ -60,10 +62,14 @@
             </form>
             <a th:if="${(status == 'ISSUED' or status == 'PAID' or status == 'ACCEPTED') and u != null and u.can('ISSUE_INVOICE')}"
                th:href="@{/invoices/{id}/email(id=${invoice.id})}" class="btn btn-secondary"><span class="icon">mail</span>Envoyer par email</a>
-            <form th:if="${!cn and !offer and status == 'ISSUED' and !fullyCredited and u != null and u.can('ISSUE_INVOICE')}" th:action="@{/invoices/{id}/pay(id=${invoice.id})}" method="post"
-                  data-confirm="Marquer cette facture comme payée ?">
-                <button type="submit" class="btn btn-success"><span class="icon">price_check</span>Marquer payée</button>
+            <form th:if="${payment != null and status == 'ISSUED' and payment.balance.signum() > 0 and u != null and u.can('ISSUE_INVOICE')}"
+                  th:action="@{/invoices/{id}/pay(id=${invoice.id})}" method="post"
+                  th:attr="data-confirm=${'Enregistrer le paiement du solde (' + amountUtils.format(payment.balance) + ') à la date du jour ?'}">
+                <button type="submit" class="btn btn-success"><span class="icon">price_check</span>Payer le solde</button>
             </form>
+            <a th:if="${payment != null and status == 'ISSUED' and payment.balance.signum() > 0 and u != null and u.can('ISSUE_INVOICE')}"
+               th:href="@{/invoices/{id}/email(id=${invoice.id},reminder=true)}" class="btn btn-secondary"
+               th:classappend="${overdue} ? 'ring-2 ring-error'"><span class="icon">notifications</span>Relancer</a>
             <!-- An issued credit note is final; an invoice with a credit note is cancelled by another credit note -->
             <form th:if="${remainingToCredit != null and !fullyCredited and u != null and u.can('CREATE_INVOICE')}"
                   th:action="@{/invoices/{id}/credit-note(id=${invoice.id})}" method="post">
@@ -198,6 +204,74 @@
         </div>
     </section>
 
+    <!-- Payments: what was received and what is left -->
+    <section th:if="${payment != null}" class="card mt-6">
+        <div class="card-header">
+            <h2 class="card-title"><span class="icon">payments</span>Paiements</h2>
+            <span class="text-body-sm font-semibold"
+                  th:classappend="${payment.balance.signum() > 0} ? (${overdue} ? 'text-error' : 'text-on-surface') : 'text-tertiary'"
+                  th:text="${payment.balance.signum() > 0 ? 'Reste à payer : ' + amountUtils.format(payment.balance)
+                      : (payment.balance.signum() < 0 ? 'À rembourser au client : ' + amountUtils.format(payment.balance.negate()) : 'Soldée')}">Reste</span>
+        </div>
+        <div class="card-body flex flex-col gap-4">
+            <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-body-sm sm:grid-cols-4">
+                <div><dt class="hint">Net à payer</dt><dd class="font-semibold tabular-nums" th:text="${amountUtils.format(payment.due)}">0,00 DA</dd></div>
+                <div th:if="${payment.credited.signum() > 0}"><dt class="hint">Avoirs</dt>
+                    <dd class="font-semibold tabular-nums" th:text="${'- ' + amountUtils.format(payment.credited)}">0,00 DA</dd></div>
+                <div><dt class="hint">Payé</dt><dd class="font-semibold tabular-nums" th:text="${amountUtils.format(payment.paid)}">0,00 DA</dd></div>
+                <div><dt class="hint">Solde</dt><dd class="font-semibold tabular-nums" th:text="${amountUtils.format(payment.balance)}">0,00 DA</dd></div>
+            </dl>
+
+            <div th:unless="${payments.isEmpty()}" class="table-wrap">
+                <table class="table">
+                    <tbody>
+                    <tr th:each="p : ${payments}">
+                        <td class="text-on-surface-variant" th:text="${#temporals.format(p.paidOn, 'dd/MM/yyyy')}">01/01/2026</td>
+                        <td><th:block th:if="${p.method}"><th:block th:replace="~{layout/fragments :: paymentMethod(${p.method.name()})}"></th:block></th:block>
+                            <span th:unless="${p.method}" class="text-on-surface-variant">—</span></td>
+                        <td class="text-on-surface-variant" th:text="${p.reference ?: ''}">Réf.</td>
+                        <td class="num font-semibold" th:text="${amountUtils.format(p.amount)}">0,00 DA</td>
+                        <td class="w-12">
+                            <form th:if="${u != null and u.can('ISSUE_INVOICE')}" th:action="@{/invoices/{id}/payments/{pid}/delete(id=${invoice.id},pid=${p.id})}"
+                                  method="post" data-confirm="Supprimer ce paiement (saisi par erreur) ?">
+                                <button type="submit" class="btn-icon danger" title="Supprimer le paiement" aria-label="Supprimer le paiement"><span class="icon">delete</span></button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- New payment: the whole balance or part of it -->
+            <form th:if="${status == 'ISSUED' and payment.balance.signum() > 0 and u != null and u.can('ISSUE_INVOICE')}"
+                  th:action="@{/invoices/{id}/payments(id=${invoice.id})}" th:object="${paymentForm}" method="post"
+                  class="grid grid-cols-1 items-end gap-3 rounded-lg bg-surface-container-low p-4 sm:grid-cols-[9rem_10rem_11rem_1fr_auto]">
+                <div class="field">
+                    <label class="label" for="amount">Montant (DA)</label>
+                    <input class="input input-mono" th:field="*{amount}" type="number" min="0.01" step="0.01" required/>
+                </div>
+                <div class="field">
+                    <label class="label" for="paidOn">Date</label>
+                    <input class="input" th:field="*{paidOn}" type="date" required/>
+                </div>
+                <div class="field">
+                    <label class="label" for="method">Mode</label>
+                    <select class="input" th:field="*{method}">
+                        <option value="">—</option>
+                        <option th:each="pm : ${paymentMethods}" th:value="${pm.name()}">
+                            <th:block th:replace="~{layout/fragments :: paymentMethod(${pm.name()})}"></th:block>
+                        </option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label class="label" for="reference">Référence <span class="optional">Optionnel</span></label>
+                    <input class="input" th:field="*{reference}" type="text" maxlength="100" placeholder="N° de chèque, de virement…"/>
+                </div>
+                <button type="submit" class="btn btn-primary"><span class="icon">add</span>Enregistrer</button>
+            </form>
+        </div>
+    </section>
+
     <!-- Credit notes of this invoice -->
     <section th:if="${creditNotes != null and !creditNotes.isEmpty()}" class="card mt-6">
         <div class="card-header">
@@ -232,6 +306,12 @@
                     <span th:case="'CANCELLED'" class="icon icon-sm">block</span>
                     <span th:case="'SENT'" class="icon icon-sm">mail</span>
                     <span th:case="'CREDITED'" class="icon icon-sm">undo</span>
+                    <span th:case="'PAYMENT'" class="icon icon-sm">payments</span>
+                    <span th:case="'REMINDED'" class="icon icon-sm">notifications</span>
+                    <span th:case="'PAYMENT_DELETED'" class="icon icon-sm">money_off</span>
+                    <span th:case="'ACCEPTED'" class="icon icon-sm">thumb_up</span>
+                    <span th:case="'REFUSED'" class="icon icon-sm">thumb_down</span>
+                    <span th:case="'CONVERTED'" class="icon icon-sm">receipt_long</span>
                 </span>
                 <div>
                     <p class="font-medium" th:switch="${event.action.name()}">
@@ -241,8 +321,14 @@
                         <th:block th:case="'CANCELLED'">Annulée</th:block>
                         <th:block th:case="'SENT'">Envoyée par email</th:block>
                         <th:block th:case="'CREDITED'">Avoir émis</th:block>
+                        <th:block th:case="'PAYMENT'">Paiement reçu</th:block>
+                        <th:block th:case="'REMINDED'">Relance envoyée</th:block>
+                        <th:block th:case="'PAYMENT_DELETED'">Paiement supprimé</th:block>
+                        <th:block th:case="'ACCEPTED'">Devis accepté</th:block>
+                        <th:block th:case="'REFUSED'">Devis refusé</th:block>
+                        <th:block th:case="'CONVERTED'">Facturé</th:block>
                     </p>
-                    <p th:if="${event.detail}" class="break-all text-body-sm" th:text="${event.action.name() == 'SENT' ? 'à ' + event.detail : event.detail}">à client@example.dz</p>
+                    <p th:if="${event.detail}" class="break-all text-body-sm" th:text="${event.action.name() == 'SENT' or event.action.name() == 'REMINDED' ? 'à ' + event.detail : event.detail}">à client@example.dz</p>
                     <p class="text-body-sm text-on-surface-variant">
                         <span th:text="${#temporals.format(event.occurredAt, 'dd/MM/yyyy à HH:mm')}">01/01/2026 à 10:00</span>
                         · <span th:if="${event.username}" th:text="${event.username}">admin</span>

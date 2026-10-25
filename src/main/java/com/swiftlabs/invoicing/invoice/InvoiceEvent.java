@@ -27,7 +27,11 @@ public class InvoiceEvent {
         /** Quotes: the client's answer. */
         ACCEPTED, REFUSED,
         /** A quote or a pro forma turned into an invoice. */
-        CONVERTED
+        CONVERTED,
+        /** A payment received, or removed after a typing mistake. */
+        PAYMENT, PAYMENT_DELETED,
+        /** A payment reminder sent by email. */
+        REMINDED
     }
 
     @Id

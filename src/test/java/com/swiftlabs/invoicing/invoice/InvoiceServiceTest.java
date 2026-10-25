@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 // Same database as the other tests (H2 in PostgreSQL mode): numbering uses PostgreSQL SQL
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({InvoiceService.class, IssuerService.class, ClientService.class, InvoiceAudit.class, DocumentSequenceRepository.class, ClockConfig.class})
+@Import({InvoiceService.class, IssuerService.class, ClientService.class, InvoiceAudit.class, DocumentSequenceRepository.class, PaymentService.class, ClockConfig.class})
 @EnableConfigurationProperties(InvoiceProperties.class)
 class InvoiceServiceTest {
 

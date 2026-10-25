@@ -24,6 +24,9 @@ public class InvoiceEmailForm {
     @Size(max = 5000)
     private String message;
 
+    /** A payment reminder (relance) rather than the first sending. */
+    private boolean reminder;
+
     public String getTo() { return to; }
     public void setTo(String to) { this.to = trim(to); }
     public String getCc() { return cc; }
@@ -32,6 +35,9 @@ public class InvoiceEmailForm {
     public void setSubject(String subject) { this.subject = subject; }
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
+
+    public boolean isReminder() { return reminder; }
+    public void setReminder(boolean reminder) { this.reminder = reminder; }
 
     public boolean hasCc() {
         return cc != null && !cc.isEmpty();

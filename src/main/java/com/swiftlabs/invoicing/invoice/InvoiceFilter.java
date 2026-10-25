@@ -6,12 +6,22 @@ import java.util.List;
 public class InvoiceFilter {
 
     private DocumentKind kind;
+    /** Issued invoices past their due date with something left to pay. */
+    private boolean overdue;
     /** The kinds a page shows (set by the controller: the register or the "Devis" page). */
     private List<DocumentKind> kinds;
     private InvoiceStatus status;
     private Integer year;
     private Long client;
     private String search;
+
+    public boolean isOverdue() {
+        return overdue;
+    }
+
+    public void setOverdue(boolean overdue) {
+        this.overdue = overdue;
+    }
 
     public List<DocumentKind> getKinds() {
         return kinds;

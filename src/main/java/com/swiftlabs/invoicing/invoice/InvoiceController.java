@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.client.ClientService;
+import com.swiftlabs.invoicing.common.AmountUtils;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
 import com.swiftlabs.invoicing.common.PageLinks;
@@ -29,6 +30,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Controller
@@ -43,16 +45,18 @@ public class InvoiceController {
     private final InvoicePdfService pdfService;
     private final InvoiceAudit audit;
     private final IssuerService issuerService;
+    private final PaymentService paymentService;
     private final InvoiceProperties properties;
 
     public InvoiceController(InvoiceService invoiceService, ClientService clientService,
                              InvoicePdfService pdfService, InvoiceAudit audit, IssuerService issuerService,
-                             InvoiceProperties properties) {
+                             PaymentService paymentService, InvoiceProperties properties) {
         this.invoiceService = invoiceService;
         this.clientService = clientService;
         this.pdfService = pdfService;
         this.audit = audit;
         this.issuerService = issuerService;
+        this.paymentService = paymentService;
         this.properties = properties;
     }
 
@@ -145,6 +149,15 @@ public class InvoiceController {
                 BigDecimal remaining = invoiceService.remainingToCredit(invoice);
                 model.addAttribute("remainingToCredit", remaining);
                 model.addAttribute("fullyCredited", remaining.signum() <= 0);
+                PaymentService.Summary payment = paymentService.summary(invoice);
+                model.addAttribute("payment", payment);
+                model.addAttribute("payments", paymentService.paymentsOf(id));
+                model.addAttribute("overdue", invoice.getStatus() == InvoiceStatus.ISSUED && invoice.getDueDate() != null
+                    && invoice.getDueDate().isBefore(LocalDate.now()) && payment.balance().signum() > 0);
+                // The form proposes the whole balance, today, with the invoice's payment method
+                model.addAttribute("paymentForm", new PaymentForm(payment.balance().max(BigDecimal.ZERO), LocalDate.now(),
+                    invoice.getPaymentMethod(), null));
+                model.addAttribute("paymentMethods", PaymentMethod.values());
             }
         }
         model.addAttribute("history", audit.history(id));
@@ -165,6 +178,36 @@ public class InvoiceController {
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
+        return "redirect:/invoices/" + id;
+    }
+
+    /** A payment typed on the invoice page (all or part of the balance). */
+    @PostMapping("/{id}/payments")
+    @PreAuthorize("hasAuthority('ISSUE_INVOICE')")
+    public String recordPayment(@PathVariable Long id, @Valid @ModelAttribute("paymentForm") PaymentForm form, BindingResult result,
+                                RedirectAttributes redirectAttributes) {
+        if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("error", "Paiement non enregistré : vérifiez le montant et la date.");
+            return "redirect:/invoices/" + id;
+        }
+        try {
+            InvoicePayment payment = paymentService.record(id, form);
+            Invoice invoice = payment.getInvoice();
+            redirectAttributes.addFlashAttribute("success", invoice.getStatus() == InvoiceStatus.PAID
+                ? "Paiement enregistré : la facture est entièrement payée."
+                : "Paiement de " + AmountUtils.format(payment.getAmount()) + " enregistré.");
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+        }
+        return "redirect:/invoices/" + id;
+    }
+
+    /** Removes a payment typed by mistake. */
+    @PostMapping("/{id}/payments/{paymentId}/delete")
+    @PreAuthorize("hasAuthority('ISSUE_INVOICE')")
+    public String deletePayment(@PathVariable Long id, @PathVariable Long paymentId, RedirectAttributes redirectAttributes) {
+        paymentService.delete(id, paymentId);
+        redirectAttributes.addFlashAttribute("success", "Paiement supprimé.");
         return "redirect:/invoices/" + id;
     }
 

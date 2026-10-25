@@ -77,6 +77,8 @@ class InvoiceAuditTest {
             .containsExactly(
                 tuple(InvoiceEvent.Action.CREATED, "karim"),
                 tuple(InvoiceEvent.Action.ISSUED, "karim"),
+                // "Payer le solde" records one payment of the whole balance, then the invoice is paid
+                tuple(InvoiceEvent.Action.PAYMENT, "karim"),
                 tuple(InvoiceEvent.Action.PAID, "karim"),
                 tuple(InvoiceEvent.Action.CANCELLED, "karim"));
         assertThat(audit.history(invoice.getId())).allMatch(event -> event.getOccurredAt() != null);

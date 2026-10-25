@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.client;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.invoice.PaymentService;
 
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,8 +21,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class ClientController {
 
     private final ClientService clientService;
+    private final PaymentService paymentService;
 
-    public ClientController(ClientService clientService) {
+    public ClientController(ClientService clientService, PaymentService paymentService) {
+        this.paymentService = paymentService;
         this.clientService = clientService;
     }
 
@@ -29,6 +32,8 @@ public class ClientController {
     @PreAuthorize("hasAuthority('VIEW_CLIENTS')")
     public String list(Model model) {
         model.addAttribute("clients", clientService.findAll());
+        // What each client still owes on issued invoices
+        model.addAttribute("balances", paymentService.balancesByClient());
         return "client/list";
     }
 

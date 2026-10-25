@@ -22,6 +22,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -34,40 +35,54 @@ public class InvoiceExport {
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    /** The columns, in order: header and how to read the value from an invoice. */
-    private record Column(String header, int width, Function<Invoice, Object> value) {
+    /** One exported document, with its payment summary (invoices only). */
+    private record ExportRow(Invoice invoice, PaymentService.Summary payment) {
+    }
+
+    /** The columns, in order: header and how to read the value from a row. */
+    private record Column(String header, int width, Function<ExportRow, Object> value) {
+    }
+
+    /** A column read from the document alone. */
+    private static Column col(String header, int width, Function<Invoice, Object> value) {
+        return new Column(header, width, row -> value.apply(row.invoice()));
     }
 
     private static final List<Column> COLUMNS = List.of(
-        new Column("N° facture", 14, i -> i.getInvoiceNumber() != null ? i.getInvoiceNumber() : "Brouillon"),
-        new Column("Statut", 11, i -> statusLabel(i.getStatus())),
-        new Column("Date d'émission", 14, Invoice::getIssueDate),
-        new Column("Échéance", 12, Invoice::getDueDate),
+        col("N° facture", 14, i -> i.getInvoiceNumber() != null ? i.getInvoiceNumber() : "Brouillon"),
+        col("Statut", 11, i -> statusLabel(i.getStatus())),
+        col("Date d'émission", 14, Invoice::getIssueDate),
+        col("Échéance", 12, Invoice::getDueDate),
         // Issued invoices: the client as frozen on the invoice; drafts: the current client
-        new Column("Client", 32, i -> i.getClientName() != null ? i.getClientName() : i.getClient().getName()),
-        new Column("NIF client", 22, i -> i.isDraft() ? i.getClient().getNif() : i.getClientNif()),
-        new Column("Mode de paiement", 18, i -> paymentLabel(i.getPaymentMethod())),
+        col("Client", 32, i -> i.getClientName() != null ? i.getClientName() : i.getClient().getName()),
+        col("NIF client", 22, i -> i.isDraft() ? i.getClient().getNif() : i.getClientNif()),
+        col("Mode de paiement", 18, i -> paymentLabel(i.getPaymentMethod())),
         // Credit notes negative, so that a column sum is the net amount
-        new Column("Total HT (DA)", 16, i -> signed(i, i.getSubtotalAmount())),
-        new Column("TVA (DA)", 14, i -> signed(i, i.getVatAmount())),
-        new Column("Total TTC (DA)", 16, i -> signed(i, i.getTotalAmount())),
-        new Column("Émise le", 17, Invoice::getIssuedAt),
-        new Column("Payée le", 17, Invoice::getPaidAt),
-        new Column("Annulée le", 17, Invoice::getCancelledAt),
-        new Column("Type", 10, i -> i.getKind().getLabel()),
-        new Column("Facture d'origine", 16, i -> i.getOriginalInvoice() != null ? i.getOriginalInvoice().getInvoiceNumber() : null),
-        new Column("Droit de timbre (DA)", 16, Invoice::getStampDutyAmount));
+        col("Total HT (DA)", 16, i -> signed(i, i.getSubtotalAmount())),
+        col("TVA (DA)", 14, i -> signed(i, i.getVatAmount())),
+        col("Total TTC (DA)", 16, i -> signed(i, i.getTotalAmount())),
+        col("Émise le", 17, Invoice::getIssuedAt),
+        col("Payée le", 17, Invoice::getPaidAt),
+        col("Annulée le", 17, Invoice::getCancelledAt),
+        col("Type", 10, i -> i.getKind().getLabel()),
+        col("Facture d'origine", 16, i -> i.getOriginalInvoice() != null ? i.getOriginalInvoice().getInvoiceNumber() : null),
+        col("Droit de timbre (DA)", 16, Invoice::getStampDutyAmount),
+        // Invoices only: what was received and what is left (credit notes: blank)
+        new Column("Payé (DA)", 14, row -> row.payment() != null ? row.payment().paid() : null),
+        new Column("Solde (DA)", 14, row -> row.payment() != null ? row.payment().balance() : null));
 
-    public byte[] toCsv(List<Invoice> invoices) {
+    /** {@code payments}: summary of each invoice by id (see PaymentService#summaries). */
+    public byte[] toCsv(List<Invoice> invoices, Map<Long, PaymentService.Summary> payments) {
         StringBuilder csv = new StringBuilder("﻿");
         appendCsvRow(csv, COLUMNS.stream().map(Column::header).map(Object.class::cast).toList());
         for (Invoice invoice : invoices) {
-            appendCsvRow(csv, COLUMNS.stream().map(c -> c.value().apply(invoice)).toList());
+            ExportRow row = new ExportRow(invoice, payments.get(invoice.getId()));
+            appendCsvRow(csv, COLUMNS.stream().map(c -> c.value().apply(row)).toList());
         }
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    public byte[] toXlsx(List<Invoice> invoices) {
+    public byte[] toXlsx(List<Invoice> invoices, Map<Long, PaymentService.Summary> payments) {
         try (XSSFWorkbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Factures");
             CellStyle header = headerStyle(workbook);
@@ -86,7 +101,7 @@ public class InvoiceExport {
             for (Invoice invoice : invoices) {
                 Row row = sheet.createRow(r++);
                 for (int c = 0; c < COLUMNS.size(); c++) {
-                    Object value = COLUMNS.get(c).value().apply(invoice);
+                    Object value = COLUMNS.get(c).value().apply(new ExportRow(invoice, payments.get(invoice.getId())));
                     Cell cell = row.createCell(c);
                     // Text is always written as a string cell: never interpreted as a formula
                     if (value == null) {

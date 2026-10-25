@@ -34,6 +34,7 @@ public class InvoiceService {
     private final IssuerService issuerService;
     private final ClientService clientService;
     private final InvoiceAudit audit;
+    private final PaymentService paymentService;
     private final InvoiceProperties properties;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
@@ -43,6 +44,7 @@ public class InvoiceService {
                           IssuerService issuerService,
                           ClientService clientService,
                           InvoiceAudit audit,
+                          PaymentService paymentService,
                           InvoiceProperties properties) {
         this.invoiceRepository = invoiceRepository;
         this.sequenceRepository = sequenceRepository;
@@ -51,6 +53,7 @@ public class InvoiceService {
         this.issuerService = issuerService;
         this.clientService = clientService;
         this.audit = audit;
+        this.paymentService = paymentService;
         this.properties = properties;
     }
 
@@ -199,6 +202,8 @@ public class InvoiceService {
             audit.record(invoice, InvoiceEvent.Action.ISSUED, "sur la facture " + original.getInvoiceNumber());
             audit.record(original, InvoiceEvent.Action.CREDITED,
                 invoiceNumber + " (" + AmountUtils.format(invoice.getTotalAmount()) + ")");
+            // Partly paid then credited for the rest: nothing left to pay
+            paymentService.settleIfPaid(original);
         } else {
             audit.record(invoice, InvoiceEvent.Action.ISSUED);
         }
@@ -387,9 +392,8 @@ public class InvoiceService {
         if (remainingToCredit(invoice).signum() <= 0) {
             throw new BusinessException("Cette facture est entièrement annulée par avoir : il n'y a rien à encaisser.");
         }
-        invoice.setStatus(InvoiceStatus.PAID);
-        invoice.setPaidAt(LocalDateTime.now());
-        audit.record(invoice, InvoiceEvent.Action.PAID);
+        // "Payer le solde": one payment of everything left, today, with the invoice's payment method
+        paymentService.record(id, new PaymentForm(paymentService.balance(invoice), LocalDate.now(), invoice.getPaymentMethod(), null));
         return invoice;
     }
 
@@ -437,14 +441,14 @@ public class InvoiceService {
         return invoiceRepository.findInvoiceYears();
     }
 
-    /** Issued invoices still owed in part (credit notes deducted). */
+    /** Issued invoices with something left to pay (credit notes and payments deducted). */
     public long countUnpaid() {
-        return invoiceRepository.countUnpaid();
+        return paymentService.countUnpaid();
     }
 
-    /** What clients still owe on issued invoices, credit notes deducted (TTC). */
+    /** What clients still owe on issued invoices, credit notes and payments deducted. */
     public BigDecimal totalUnpaid() {
-        return invoiceRepository.sumUnpaidInvoices().subtract(invoiceRepository.sumCreditNotesOnUnpaidInvoices());
+        return paymentService.totalUnpaid();
     }
 
     /** Draft invoices and credit notes (quotes and pro formas apart). */

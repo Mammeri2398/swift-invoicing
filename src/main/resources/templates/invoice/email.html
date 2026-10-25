@@ -10,10 +10,11 @@
     </nav>
 
     <form th:action="@{/invoices/{id}/email/send(id=${invoice.id})}" method="post" th:object="${mail}">
+        <input type="hidden" th:field="*{reminder}"/>
         <div class="page-header">
             <div>
                 <p class="page-eyebrow" th:text="${'Facture ' + invoice.invoiceNumber}">Facture FA-2026-0001</p>
-                <h1 class="page-title">Envoyer par email</h1>
+                <h1 class="page-title" th:text="*{reminder} ? 'Relancer par email' : 'Envoyer par email'">Envoyer par email</h1>
                 <p class="page-subtitle">La facture est jointe en PDF. Les réponses du client arriveront à l'adresse email de votre profil émetteur.</p>
             </div>
             <div class="flex flex-wrap gap-2">

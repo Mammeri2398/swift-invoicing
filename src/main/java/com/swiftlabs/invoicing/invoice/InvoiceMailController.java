@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -29,9 +30,10 @@ public class InvoiceMailController {
     }
 
     @GetMapping
-    public String form(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+    public String form(@PathVariable Long id, @RequestParam(name = "reminder", defaultValue = "false") boolean reminder,
+                       Model model, RedirectAttributes redirectAttributes) {
         try {
-            model.addAttribute("mail", mailService.prepare(id));
+            model.addAttribute("mail", reminder ? mailService.prepareReminder(id) : mailService.prepare(id));
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
             return "redirect:/invoices/" + id;

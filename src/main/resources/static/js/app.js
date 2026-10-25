@@ -91,3 +91,13 @@
         target.focus();
     }
 })();
+
+// <button data-print> prints the page (the menu and the filters are hidden by print: styles)
+(function () {
+    'use strict';
+    document.addEventListener('click', function (event) {
+        if (event.target.closest('[data-print]')) {
+            window.print();
+        }
+    });
+})();

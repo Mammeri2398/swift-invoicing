@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 
@@ -33,11 +34,13 @@ public class InvoiceMailService {
     private final InvoiceService invoiceService;
     private final InvoicePdfService pdfService;
     private final InvoiceAudit audit;
+    private final PaymentService paymentService;
     private final JavaMailSender mailSender;
     private final boolean mailEnabled;
     private final String fromAddress;
 
     public InvoiceMailService(InvoiceService invoiceService, InvoicePdfService pdfService, InvoiceAudit audit,
+                              PaymentService paymentService,
                               @Autowired(required = false) JavaMailSender mailSender,
                               @Value("${mail.enabled:false}") boolean mailEnabled,
                               @Value("${mail.from:}") String mailFrom,
@@ -45,6 +48,7 @@ public class InvoiceMailService {
         this.invoiceService = invoiceService;
         this.pdfService = pdfService;
         this.audit = audit;
+        this.paymentService = paymentService;
         this.mailSender = mailSender;
         this.mailEnabled = mailEnabled && mailSender != null;
         // Most SMTP servers only accept their own account as sender
@@ -67,6 +71,33 @@ public class InvoiceMailService {
         form.setTo(invoice.getClient().getEmail());
         form.setSubject(documentName(invoice) + " " + invoice.getInvoiceNumber() + " - " + senderName(invoice));
         form.setMessage(defaultMessage(invoice));
+        return form;
+    }
+
+    /** A payment reminder: what is left to pay on an issued invoice and its due date. */
+    public InvoiceEmailForm prepareReminder(Long invoiceId) {
+        Invoice invoice = sendable(invoiceId);
+        BigDecimal balance = paymentService.balance(invoice);
+        if (invoice.getKind() != DocumentKind.INVOICE || invoice.getStatus() != InvoiceStatus.ISSUED || balance.signum() <= 0) {
+            throw new BusinessException("Cette facture ne laisse rien à payer : pas de relance à envoyer.");
+        }
+        InvoiceEmailForm form = new InvoiceEmailForm();
+        form.setReminder(true);
+        form.setTo(invoice.getClient().getEmail());
+        form.setSubject("Relance : facture " + invoice.getInvoiceNumber() + " - " + senderName(invoice));
+        StringBuilder text = new StringBuilder("Bonjour,\n\n")
+            .append("Sauf erreur de notre part, la facture ").append(invoice.getInvoiceNumber())
+            .append(" du ").append(invoice.getIssueDate().format(DATE));
+        if (invoice.getDueDate() != null) {
+            text.append(", échue le ").append(invoice.getDueDate().format(DATE)).append(",");
+        }
+        text.append(" reste à régler pour un montant de ").append(AmountUtils.format(balance)).append(".\n");
+        if (invoice.getIssuerBankAccount() != null && !invoice.getIssuerBankAccount().isBlank()) {
+            text.append("Règlement : ").append(invoice.getIssuerBankAccount()).append("\n");
+        }
+        text.append("\nSi le paiement a déjà été effectué, merci de ne pas tenir compte de ce message.\n")
+            .append("\nCordialement,\n").append(invoice.getIssuerFullName());
+        form.setMessage(text.toString());
         return form;
     }
 
@@ -99,7 +130,8 @@ public class InvoiceMailService {
             log.error("Could not send invoice {} by email", invoice.getInvoiceNumber(), ex);
             throw new BusinessException("L'email n'a pas pu être envoyé. Vérifiez la configuration du serveur mail, puis réessayez.");
         }
-        audit.record(invoice, InvoiceEvent.Action.SENT, form.hasCc() ? form.getTo() + ", cc " + form.getCc() : form.getTo());
+        audit.record(invoice, form.isReminder() ? InvoiceEvent.Action.REMINDED : InvoiceEvent.Action.SENT,
+            form.hasCc() ? form.getTo() + ", cc " + form.getCc() : form.getTo());
     }
 
     /** Only issued and paid invoices are sent: a draft has no number, a cancelled invoice is void. */

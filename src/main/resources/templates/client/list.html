@@ -28,6 +28,7 @@
                     <th scope="col">NIF</th>
                     <th scope="col">Ville</th>
                     <th scope="col">Contact</th>
+                    <th scope="col" class="num">Solde dû</th>
                     <th scope="col"><span class="sr-only">Actions</span></th>
                 </tr>
                 </thead>
@@ -48,8 +49,13 @@
                         <div th:if="${c.email}" th:text="${c.email}">contact@exemple.dz</div>
                         <div th:if="${c.phone}" class="text-on-surface-variant" th:text="${c.phone}">0555 00 00 00</div>
                     </td>
+                    <td class="num font-semibold" th:with="balance=${balances[c.id]}"
+                        th:classappend="${balance != null and balance.signum() > 0} ? 'text-on-surface' : 'text-on-surface-variant'"
+                        th:text="${balance != null and balance.signum() != 0 ? amountUtils.format(balance) : '—'}">—</td>
                     <td>
                         <div class="flex justify-end gap-1">
+                            <a th:if="${currentUser != null and currentUser.can('VIEW_INVOICES')}" th:href="@{/clients/{id}/statement(id=${c.id})}"
+                               class="btn-icon" title="Relevé de compte" aria-label="Relevé de compte"><span class="icon">account_balance_wallet</span></a>
                             <a th:if="${canEdit}" th:href="@{/clients/{id}/edit(id=${c.id})}" class="btn-icon" title="Modifier" aria-label="Modifier">
                                 <span class="icon">edit</span>
                             </a>
@@ -61,7 +67,7 @@
                     </td>
                 </tr>
                 <tr th:if="${clients.isEmpty()}">
-                    <td colspan="6" class="table-empty">Aucun client. Commencez par en créer un.</td>
+                    <td colspan="7" class="table-empty">Aucun client. Commencez par en créer un.</td>
                 </tr>
                 </tbody>
             </table>

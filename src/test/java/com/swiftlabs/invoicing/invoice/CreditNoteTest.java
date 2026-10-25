@@ -246,6 +246,6 @@ class CreditNoteTest {
 
         MvcResult csv = mockMvc.perform(get("/invoices/export/csv").param("kind", "CREDIT_NOTE")).andReturn();
         String row = new String(csv.getResponse().getContentAsByteArray(), StandardCharsets.UTF_8).split("\r\n")[1];
-        assertThat(row).startsWith("AV-2026-0001;Émise;").contains(";-1000,00;0,00;-1000,00;").endsWith(";Avoir;FA-2026-0001;0,00");
+        assertThat(row).startsWith("AV-2026-0001;Émise;").contains(";-1000,00;0,00;-1000,00;").endsWith(";Avoir;FA-2026-0001;0,00;;");
     }
 }

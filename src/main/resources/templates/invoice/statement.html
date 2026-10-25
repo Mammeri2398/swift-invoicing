@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(${'Relevé ' + statement.client.name}, ~{::main}, ~{})}">
+<body>
+<main class="page" th:with="s=${statement}">
+    <nav class="breadcrumb print:hidden" aria-label="Fil d'Ariane">
+        <a th:href="@{/clients}">Clients</a><span class="icon icon-xs">chevron_right</span>
+        <span class="text-primary" th:text="${s.client.name}">Client</span>
+    </nav>
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Relevé de compte</p>
+            <h1 class="page-title" th:text="${s.client.name}">Client</h1>
+            <p class="page-subtitle" th:text="${'Du ' + #temporals.format(s.from, 'dd/MM/yyyy') + ' au ' + #temporals.format(s.to, 'dd/MM/yyyy')}">Période</p>
+        </div>
+        <div class="flex flex-wrap items-end gap-2 print:hidden">
+            <form th:action="@{/clients/{id}/statement(id=${s.client.id})}" method="get" class="flex flex-wrap items-end gap-2">
+                <div class="field">
+                    <label class="label" for="from">Du</label>
+                    <input class="input" id="from" name="from" type="date" th:value="${s.from}"/>
+                </div>
+                <div class="field">
+                    <label class="label" for="to">Au</label>
+                    <input class="input" id="to" name="to" type="date" th:value="${s.to}"/>
+                </div>
+                <button type="submit" class="btn btn-secondary"><span class="icon">filter_alt</span>Afficher</button>
+            </form>
+            <button type="button" class="btn btn-primary" data-print><span class="icon">print</span>Imprimer</button>
+        </div>
+    </div>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Pièce</th>
+                    <th scope="col">Libellé</th>
+                    <th scope="col" class="num">Débit</th>
+                    <th scope="col" class="num">Crédit</th>
+                    <th scope="col" class="num">Solde</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr class="text-on-surface-variant">
+                    <td th:text="${#temporals.format(s.from, 'dd/MM/yyyy')}">01/01/2026</td>
+                    <td></td>
+                    <td>Solde au début de la période</td>
+                    <td class="num"></td>
+                    <td class="num"></td>
+                    <td class="num font-semibold" th:text="${amountUtils.format(s.openingBalance)}">0,00 DA</td>
+                </tr>
+                <tr th:each="e : ${s.entries}">
+                    <td th:text="${#temporals.format(e.date, 'dd/MM/yyyy')}">01/01/2026</td>
+                    <td class="whitespace-nowrap font-semibold">
+                        <a th:href="@{/invoices/{id}(id=${e.document.id})}" class="hover:text-primary" th:text="${e.document.invoiceNumber}">FA-2026-0001</a>
+                    </td>
+                    <td th:text="${e.label}">Facture</td>
+                    <td class="num" th:text="${e.debit.signum() > 0 ? amountUtils.format(e.debit) : ''}">0,00 DA</td>
+                    <td class="num" th:text="${e.credit.signum() > 0 ? amountUtils.format(e.credit) : ''}">0,00 DA</td>
+                    <td class="num font-semibold" th:text="${amountUtils.format(e.balance)}">0,00 DA</td>
+                </tr>
+                <tr th:if="${s.entries.isEmpty()}">
+                    <td colspan="6" class="table-empty">Aucun mouvement sur la période.</td>
+                </tr>
+                </tbody>
+                <tfoot>
+                <tr class="font-semibold">
+                    <td colspan="3">Totaux de la période et solde dû</td>
+                    <td class="num" th:text="${amountUtils.format(s.totalDebit)}">0,00 DA</td>
+                    <td class="num" th:text="${amountUtils.format(s.totalCredit)}">0,00 DA</td>
+                    <td class="num" th:classappend="${s.closingBalance.signum() > 0} ? 'text-error'" th:text="${amountUtils.format(s.closingBalance)}">0,00 DA</td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+    <p class="hint mt-4">Débit : factures (net à payer, droit de timbre inclus). Crédit : avoirs et paiements reçus.
+        Un solde négatif est un trop-perçu à rembourser.</p>
+</main>
+</body>
+</html>

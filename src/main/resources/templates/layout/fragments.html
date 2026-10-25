@@ -13,7 +13,7 @@
 
 <!--/* Top bar: links are shown according to the user's privileges */-->
 <header th:fragment="header" th:with="u=${currentUser}"
-        class="sticky top-0 z-50 bg-surface-container-lowest/95 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-md">
+        class="sticky top-0 z-50 bg-surface-container-lowest/95 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-md print:hidden">
     <div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-12">
         <div class="flex min-w-0 items-center gap-6">
             <a th:href="@{/}" class="flex shrink-0 items-center gap-2 whitespace-nowrap">
@@ -125,7 +125,7 @@
     </div>
 </div>
 
-<footer th:fragment="footer" class="mt-10 bg-surface-container-low">
+<footer th:fragment="footer" class="mt-10 bg-surface-container-low print:hidden">
     <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-body-sm text-on-surface-variant sm:flex-row sm:px-6 lg:px-12">
         <span th:text="${'Swift Invoicing — ' + (companyType?.company ? 'Gestion de facturation' : 'Auto-entrepreneur (ANAE)') + ' · Algérie · Montants en DZD'}">Swift Invoicing — Auto-entrepreneur (ANAE) · Algérie · Montants en DZD</span>
         <a th:href="@{/invoices/lookup}" class="inline-flex items-center gap-1 hover:text-primary">

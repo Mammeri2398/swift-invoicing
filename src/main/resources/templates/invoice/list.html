@@ -2,7 +2,7 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/base :: page('Factures', ~{::main}, ~{})}">
 <body>
-<main class="page" th:with="u=${currentUser},
+<main class="page" th:with="u=${currentUser}, today=${#temporals.createToday()},
                             currentYear=${#temporals.year(#temporals.createNow())}">
     <div class="page-header">
         <div>
@@ -64,6 +64,10 @@
                 <button type="submit" class="btn btn-primary"><span class="icon">filter_alt</span>Filtrer</button>
                 <a th:href="@{/invoices}" class="btn btn-secondary" title="Réinitialiser" aria-label="Réinitialiser"><span class="icon">restart_alt</span></a>
             </div>
+            <label class="flex items-center gap-2 text-body-sm lg:col-span-full">
+                <input type="checkbox" class="checkbox" name="overdue" value="true" th:checked="${filter.overdue}"/>
+                En retard uniquement (échéance dépassée, reste à payer)
+            </label>
         </div>
     </form>
 
@@ -95,7 +99,12 @@
                     </td>
                     <td class="text-on-surface-variant" th:text="${#temporals.format(inv.issueDate, 'dd/MM/yyyy')}">01/01/2026</td>
                     <td class="text-on-surface-variant" th:text="${inv.dueDate != null ? #temporals.format(inv.dueDate, 'dd/MM/yyyy') : '—'}">—</td>
-                    <td><span th:replace="~{layout/fragments :: statusBadge(${inv.status})}"></span></td>
+                    <td>
+                        <span th:replace="~{layout/fragments :: statusBadge(${inv.status})}"></span>
+                        <!--/* Past due and not paid (partial payments are shown on the invoice) */-->
+                        <span th:if="${inv.status.name() == 'ISSUED' and inv.kind.name() == 'INVOICE' and inv.dueDate != null and inv.dueDate.isBefore(today)}"
+                              class="badge badge-danger">En retard</span>
+                    </td>
                     <td class="num font-semibold" th:text="${(inv.creditNote ? '- ' : '') + amountUtils.format(inv.totalAmount)}">0,00 DA</td>
                     <td>
                         <div class="flex justify-end gap-1">

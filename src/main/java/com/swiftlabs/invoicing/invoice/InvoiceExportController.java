@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.List;
 
 /** Downloads of the invoice register (invoices and credit notes), with the same filters as the list page. */
 @Controller
@@ -30,9 +31,11 @@ public class InvoiceExportController {
 
     private final InvoiceService invoiceService;
     private final InvoiceExport export;
+    private final PaymentService paymentService;
     private final Clock clock;
 
-    public InvoiceExportController(InvoiceService invoiceService, InvoiceExport export, Clock clock) {
+    public InvoiceExportController(InvoiceService invoiceService, InvoiceExport export, PaymentService paymentService, Clock clock) {
+        this.paymentService = paymentService;
         this.invoiceService = invoiceService;
         this.export = export;
         this.clock = clock;
@@ -41,14 +44,16 @@ public class InvoiceExportController {
     @GetMapping("/csv")
     public ResponseEntity<byte[]> csv(@ModelAttribute("filter") InvoiceFilter filter, BindingResult ignoredFilterErrors) {
         filter.setKinds(DocumentKind.ACCOUNTING);
-        byte[] body = export.toCsv(invoiceService.searchAll(filter, EXPORT_ORDER));
+        List<Invoice> invoices = invoiceService.searchAll(filter, EXPORT_ORDER);
+        byte[] body = export.toCsv(invoices, paymentService.summaries(invoices));
         return download(body, new MediaType("text", "csv", StandardCharsets.UTF_8), fileName(filter, "csv"));
     }
 
     @GetMapping("/xlsx")
     public ResponseEntity<byte[]> xlsx(@ModelAttribute("filter") InvoiceFilter filter, BindingResult ignoredFilterErrors) {
         filter.setKinds(DocumentKind.ACCOUNTING);
-        byte[] body = export.toXlsx(invoiceService.searchAll(filter, EXPORT_ORDER));
+        List<Invoice> invoices = invoiceService.searchAll(filter, EXPORT_ORDER);
+        byte[] body = export.toXlsx(invoices, paymentService.summaries(invoices));
         return download(body, XLSX, fileName(filter, "xlsx"));
     }
 

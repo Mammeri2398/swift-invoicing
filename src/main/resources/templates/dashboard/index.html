@@ -77,6 +77,16 @@
         </div>
     </section>
 
+    <!-- Overdue invoices: past their due date with something left to pay -->
+    <a th:unless="${overdue.isEmpty()}" th:href="@{/invoices(overdue=true)}" class="alert alert-error mb-6 transition-shadow hover:shadow-md"
+>
+        <span class="icon">schedule</span>
+        <span class="flex-1"><strong th:text="${overdue.size() + ' facture(s) en retard'}">2 factures en retard</strong> :
+            <span th:text="${amountUtils.format(overdueTotal)}">0,00 DA</span> à encaisser, la plus ancienne échue depuis
+            <span th:text="${overdue[0].daysLate() + ' jour(s)'}">10 jours</span>. Voir et relancer</span>
+        <span class="icon">arrow_forward</span>
+    </a>
+
     <!-- Key figures -->
     <section class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <a th:href="@{/invoices(status='ISSUED')}" class="stat transition-shadow hover:shadow-md">

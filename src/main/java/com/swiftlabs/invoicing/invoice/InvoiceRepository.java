@@ -49,14 +49,35 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
     @Query("SELECT COALESCE(SUM(c.totalAmount), 0) FROM Invoice c WHERE c.originalInvoice.id = :id AND c.status = 'ISSUED'")
     BigDecimal sumIssuedCreditNotes(@Param("id") Long originalInvoiceId);
 
-    /** Issued invoices still owed in part: not fully cancelled by credit notes. */
-    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.kind = 'INVOICE' AND i.status = 'ISSUED' AND i.totalAmount >"
-        + " (SELECT COALESCE(SUM(c.totalAmount), 0) FROM Invoice c WHERE c.originalInvoice = i AND c.status = 'ISSUED')")
+    /** Issued invoices with something left to pay: net to pay above credit notes plus payments. */
+    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.kind = 'INVOICE' AND i.status = 'ISSUED' AND (i.totalAmount + i.stampDutyAmount) >"
+        + " (SELECT COALESCE(SUM(c.totalAmount), 0) FROM Invoice c WHERE c.originalInvoice = i AND c.status = 'ISSUED')"
+        + " + (SELECT COALESCE(SUM(p.amount), 0) FROM InvoicePayment p WHERE p.invoice = i)")
     long countUnpaid();
 
     /** What clients pay on issued invoices: TTC plus droit de timbre. */
     @Query("SELECT COALESCE(SUM(i.totalAmount + i.stampDutyAmount), 0) FROM Invoice i WHERE i.kind = 'INVOICE' AND i.status = 'ISSUED'")
     BigDecimal sumUnpaidInvoices();
+
+    /** Issued credit notes per original invoice id, for the given invoices. */
+    @Query("SELECT c.originalInvoice.id, SUM(c.totalAmount) FROM Invoice c WHERE c.originalInvoice.id IN :ids AND c.status = 'ISSUED'"
+        + " GROUP BY c.originalInvoice.id")
+    List<Object[]> sumIssuedCreditNotesByInvoices(@Param("ids") List<Long> invoiceIds);
+
+    /** Net to pay of issued invoices, per client id. */
+    @Query("SELECT i.client.id, SUM(i.totalAmount + i.stampDutyAmount) FROM Invoice i"
+        + " WHERE i.kind = 'INVOICE' AND i.status = 'ISSUED' GROUP BY i.client.id")
+    List<Object[]> sumUnpaidByClient();
+
+    /** Issued credit notes on issued invoices, per client id. */
+    @Query("SELECT c.client.id, SUM(c.totalAmount) FROM Invoice c WHERE c.kind = 'CREDIT_NOTE' AND c.status = 'ISSUED'"
+        + " AND c.originalInvoice.status = 'ISSUED' GROUP BY c.client.id")
+    List<Object[]> sumCreditNotesOnUnpaidByClient();
+
+    /** Invoices and credit notes of a client that count (issued or paid), oldest first: the client statement. */
+    @EntityGraph(attributePaths = "originalInvoice")
+    List<Invoice> findByClientIdAndKindInAndStatusInOrderByIssueDateAscIdAsc(Long clientId, List<DocumentKind> kinds,
+                                                                            List<InvoiceStatus> statuses);
 
     /** Credit notes on invoices not paid yet: they reduce what clients still owe. */
     @Query("SELECT COALESCE(SUM(c.totalAmount), 0) FROM Invoice c WHERE c.kind = 'CREDIT_NOTE' AND c.status = 'ISSUED'"

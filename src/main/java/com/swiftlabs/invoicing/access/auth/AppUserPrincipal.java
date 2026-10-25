@@ -32,11 +32,12 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
     private final boolean mustChangePassword;
     private final boolean twoFactorEnabled;
     private final String profileName;
+    private final String displayName;
     private final Set<GrantedAuthority> authorities;
 
     private AppUserPrincipal(Long id, String username, String passwordHash, boolean enabled, boolean locked,
                              boolean mustChangePassword, boolean twoFactorEnabled, String profileName,
-                             Set<GrantedAuthority> authorities) {
+                             String displayName, Set<GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
         this.passwordHash = passwordHash;
@@ -45,6 +46,7 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
         this.mustChangePassword = mustChangePassword;
         this.twoFactorEnabled = twoFactorEnabled;
         this.profileName = profileName;
+        this.displayName = displayName;
         this.authorities = Set.copyOf(authorities);
     }
 
@@ -55,17 +57,23 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
             .map(SimpleGrantedAuthority::new)
             .collect(Collectors.toSet());
         return new AppUserPrincipal(user.getId(), user.getUsername(), user.getPassword(), user.isEnabled(),
-            user.isLocked(now), user.isMustChangePassword(), user.isTotpEnabled(), user.getProfile().getName(), authorities);
+            user.isLocked(now), user.isMustChangePassword(), user.isTotpEnabled(), user.getProfile().getName(),
+            user.getDisplayName(), authorities);
     }
 
     /** Same user once the forced password change is done. */
     public AppUserPrincipal withPasswordChanged() {
-        return new AppUserPrincipal(id, username, null, enabled, locked, false, twoFactorEnabled, profileName, authorities);
+        return new AppUserPrincipal(id, username, null, enabled, locked, false, twoFactorEnabled, profileName, displayName, authorities);
     }
 
     /** Same user once two-factor login has been turned on or off. */
     public AppUserPrincipal withTwoFactorEnabled(boolean enabled) {
-        return new AppUserPrincipal(id, username, null, this.enabled, locked, mustChangePassword, enabled, profileName, authorities);
+        return new AppUserPrincipal(id, username, null, this.enabled, locked, mustChangePassword, enabled, profileName, displayName, authorities);
+    }
+
+    /** Same user after editing their personal information. */
+    public AppUserPrincipal withDisplayName(String displayName) {
+        return new AppUserPrincipal(id, username, null, enabled, locked, mustChangePassword, twoFactorEnabled, profileName, displayName, authorities);
     }
 
     public Long getId() {
@@ -74,6 +82,11 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
 
     public String getProfileName() {
         return profileName;
+    }
+
+    /** The first name, or the username when it is not filled in. */
+    public String getDisplayName() {
+        return displayName;
     }
 
     public boolean isMustChangePassword() {

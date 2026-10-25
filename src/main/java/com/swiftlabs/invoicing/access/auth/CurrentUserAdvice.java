@@ -17,7 +17,7 @@ public class CurrentUserAdvice {
         if (authentication == null || !(authentication.getPrincipal() instanceof AppUserPrincipal principal)) {
             return null;
         }
-        return new CurrentUser(principal.getUsername(), principal.getProfileName(),
+        return new CurrentUser(principal.getUsername(), principal.getDisplayName(), principal.getProfileName(),
             authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet()));
     }
 }

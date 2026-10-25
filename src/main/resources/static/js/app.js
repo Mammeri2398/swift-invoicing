@@ -62,3 +62,32 @@
         }
     });
 })();
+
+// <details data-dropdown> menus close on a click outside or on Escape
+(function () {
+    'use strict';
+    function closeAll(except) {
+        document.querySelectorAll('details[data-dropdown][open]').forEach(function (menu) {
+            if (menu !== except) {
+                menu.removeAttribute('open');
+            }
+        });
+    }
+    document.addEventListener('click', function (event) {
+        closeAll(event.target.closest('details[data-dropdown]'));
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeAll(null);
+        }
+    });
+})();
+
+// A link ending in #fieldId (e.g. the search icon of the top bar) puts the cursor in that field
+(function () {
+    'use strict';
+    var target = location.hash && document.getElementById(location.hash.substring(1));
+    if (target && target.matches('input, select, textarea')) {
+        target.focus();
+    }
+})();

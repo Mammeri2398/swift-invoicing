@@ -16,6 +16,12 @@ public class UserForm {
     @Pattern(regexp = "[A-Za-z0-9._-]*")
     private String username;
 
+    @Size(max = 100)
+    private String firstName;
+
+    @Size(max = 100)
+    private String lastName;
+
     @NotBlank
     @Email
     @Size(max = 255)
@@ -29,6 +35,8 @@ public class UserForm {
         UserForm form = new UserForm();
         form.setId(user.getId());
         form.setUsername(user.getUsername());
+        form.setFirstName(user.getFirstName());
+        form.setLastName(user.getLastName());
         form.setEmail(user.getEmail());
         form.setEnabled(user.isEnabled());
         form.setProfileId(user.getProfile() != null ? user.getProfile().getId() : null);
@@ -49,6 +57,22 @@ public class UserForm {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getEmail() {

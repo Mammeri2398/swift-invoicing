@@ -177,7 +177,8 @@ class AuthenticationSecurityTest {
                 .param("currentPassword", "not-it")
                 .param("newPassword", "MyOwnPass789")
                 .param("confirmPassword", "MyOwnPass789"))
-            .andExpect(redirectedUrl("/account/password"));
+            // Not a forced change: back to the password form of "Mon compte"
+            .andExpect(redirectedUrl("/account?password=true"));
         assertThat(passwordEncoder.matches(PASSWORD, userRepository.findByUsername("careful").orElseThrow().getPassword())).isTrue();
     }
 

@@ -347,8 +347,13 @@
 
   /* Navigation */
   .nav-link {
-    @apply rounded-lg px-3 py-1.5 text-label-md text-on-surface-variant transition-colors
+    @apply whitespace-nowrap rounded-lg px-3 py-1.5 text-label-md text-on-surface-variant transition-colors
       hover:bg-surface-container hover:text-on-surface;
+  }
+
+  /* <details> menus: no disclosure triangle */
+  summary.nav-link::-webkit-details-marker {
+    display: none;
   }
 
   .nav-link.active {

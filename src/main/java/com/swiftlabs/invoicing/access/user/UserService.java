@@ -59,6 +59,8 @@ public class UserService {
         String temporaryPassword = passwordPolicy.generateTemporary();
         User user = new User();
         user.setUsername(form.getUsername());
+        user.setFirstName(form.getFirstName());
+        user.setLastName(form.getLastName());
         user.setEmail(form.getEmail());
         user.setProfile(profile);
         user.setEnabled(true);
@@ -77,10 +79,25 @@ public class UserService {
         if (!form.isEnabled() && Objects.equals(existing.getId(), actingUserId)) {
             throw new BusinessException("enabled", "Vous ne pouvez pas désactiver votre propre compte.");
         }
+        existing.setFirstName(form.getFirstName());
+        existing.setLastName(form.getLastName());
         existing.setEmail(form.getEmail());
         existing.setEnabled(form.isEnabled());
         existing.setProfile(profile);
         return userRepository.save(existing);
+    }
+
+    /** The user's own personal information (Mon compte). The username and the profile are not editable here. */
+    @Transactional
+    public User updateOwnDetails(Long userId, String firstName, String lastName, String email) {
+        User user = require(userId);
+        if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(email)) {
+            throw new BusinessException("email", "Cet email est déjà utilisé.");
+        }
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmail(email);
+        return user;
     }
 
     /** Self-service change: the current password is required. */

@@ -3,6 +3,10 @@
       th:replace="~{layout/base :: page('Double authentification', ~{::main}, ~{})}">
 <body>
 <main class="page-narrow">
+    <nav class="breadcrumb" aria-label="Fil d'Ariane">
+        <a th:href="@{/account}">Mon compte</a><span class="icon icon-xs">chevron_right</span>
+        <span class="text-primary">Double authentification</span>
+    </nav>
     <div class="page-header">
         <div>
             <p class="page-eyebrow">Mon compte</p>

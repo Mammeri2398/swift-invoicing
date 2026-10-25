@@ -22,6 +22,18 @@
                 <p th:replace="~{layout/fragments :: fieldError('username')}"></p>
                 <p th:if="*{id != null}" class="hint">Le nom d'utilisateur ne peut pas être modifié.</p>
             </div>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="field">
+                    <label class="label" for="firstName">Prénom <span class="optional">Optionnel</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{firstName}" type="text" maxlength="100" autocomplete="off"/>
+                    <p th:replace="~{layout/fragments :: fieldError('firstName')}"></p>
+                </div>
+                <div class="field">
+                    <label class="label" for="lastName">Nom <span class="optional">Optionnel</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{lastName}" type="text" maxlength="100" autocomplete="off"/>
+                    <p th:replace="~{layout/fragments :: fieldError('lastName')}"></p>
+                </div>
+            </div>
             <div class="field">
                 <label class="label" for="email">Email <span class="required">*</span></label>
                 <input class="input" th:errorclass="input-invalid" th:field="*{email}" type="email" required maxlength="255"/>

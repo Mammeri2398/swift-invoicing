@@ -58,6 +58,12 @@ public class User {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Column(name = "first_name", length = 100)
+    private String firstName;
+
+    @Column(name = "last_name", length = 100)
+    private String lastName;
+
     /** Base32 secret shared with the authenticator app; null until two-factor login is set up. */
     @Column(name = "totp_secret", length = 64)
     private String totpSecret;
@@ -181,6 +187,37 @@ public class User {
     public void assignTemporaryPassword(String passwordHash, LocalDateTime now) {
         changePassword(passwordHash, now);
         this.mustChangePassword = true;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = blankToNull(firstName);
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = blankToNull(lastName);
+    }
+
+    /** What the application calls the user: the first name, or the username when it is not filled in. */
+    public String getDisplayName() {
+        return firstName != null ? firstName : username;
+    }
+
+    /** "First Last", or the username when neither is filled in. */
+    public String getFullName() {
+        String full = ((firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "")).trim();
+        return full.isEmpty() ? username : full;
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     public String getTotpSecret() {

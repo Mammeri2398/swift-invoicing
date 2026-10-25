@@ -37,7 +37,11 @@
                 </thead>
                 <tbody>
                 <tr th:each="user : ${users}">
-                    <td class="font-medium" th:text="${user.username}">admin</td>
+                    <td>
+                        <div class="font-medium" th:text="${user.username}">admin</div>
+                        <div th:if="${user.firstName != null or user.lastName != null}" class="text-body-sm text-on-surface-variant"
+                             th:text="${user.fullName}">Karim Benali</div>
+                    </td>
                     <td class="text-on-surface-variant" th:text="${user.email}">admin@exemple.dz</td>
                     <td><span class="badge badge-info" th:text="${user.profile.name}">Administrateur</span></td>
                     <td>

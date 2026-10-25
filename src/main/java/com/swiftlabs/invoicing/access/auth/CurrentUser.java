@@ -6,17 +6,24 @@ import java.util.Set;
 public final class CurrentUser {
 
     private final String username;
+    private final String displayName;
     private final String profileName;
     private final Set<String> privileges;
 
-    public CurrentUser(String username, String profileName, Set<String> privileges) {
+    public CurrentUser(String username, String displayName, String profileName, Set<String> privileges) {
         this.username = username;
+        this.displayName = displayName;
         this.profileName = profileName;
         this.privileges = Set.copyOf(privileges);
     }
 
     public String getUsername() {
         return username;
+    }
+
+    /** The first name, or the username when it is not filled in. */
+    public String getDisplayName() {
+        return displayName;
     }
 
     public String getProfileName() {

@@ -11,6 +11,8 @@ import com.openhtmltopdf.bidi.support.ICUBidiSplitter;
 import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.FontStyle;
 import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder.TextDirection;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import com.openhtmltopdf.slf4j.Slf4jLogger;
+import com.openhtmltopdf.util.XRLog;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -30,6 +32,11 @@ public class InvoicePdfService {
     static final String FONT_FAMILY = "DejaVu Sans";
     private static final String FONT_REGULAR = "/pdf/fonts/DejaVuSans.ttf";
     private static final String FONT_BOLD = "/pdf/fonts/DejaVuSans-Bold.ttf";
+
+    static {
+        // Through SLF4J, so logging.level.com.openhtmltopdf applies (the library otherwise prints to the console)
+        XRLog.setLoggerImpl(new Slf4jLogger());
+    }
 
     private final SpringTemplateEngine templateEngine;
     private final IssuerService issuerService;
@@ -62,10 +69,8 @@ public class InvoicePdfService {
         PdfRendererBuilder builder = new PdfRendererBuilder();
         builder.useFastMode();
         builder.useFont(() -> InvoicePdfService.class.getResourceAsStream(FONT_REGULAR), FONT_FAMILY, 400, FontStyle.NORMAL, true);
-        // The template also asks for 800 (titles): without a face for it the renderer fakes a heavier bold
-        for (int weight : new int[] {700, 800}) {
-            builder.useFont(() -> InvoicePdfService.class.getResourceAsStream(FONT_BOLD), FONT_FAMILY, weight, FontStyle.NORMAL, true);
-        }
+        // The template only uses normal and bold: a weight without its own face would be faked
+        builder.useFont(() -> InvoicePdfService.class.getResourceAsStream(FONT_BOLD), FONT_FAMILY, 700, FontStyle.NORMAL, true);
         // Arabic: split the text into left-to-right and right-to-left runs, reorder and join the letters
         builder.useUnicodeBidiSplitter(new ICUBidiSplitter.ICUBidiSplitterFactory());
         builder.useUnicodeBidiReorderer(new ICUBidiReorderer());

@@ -8,18 +8,19 @@
         @page { size: A4; margin: 18mm 16mm 20mm 16mm;
             @bottom-center { content: "Page " counter(page) " sur " counter(pages); font-size: 8pt; color: #666; font-family: 'DejaVu Sans', sans-serif; } }
         body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; color: #222; margin: 0; }
-        .watermark { position: fixed; top: 40%; left: 15%; width: 70%; font-size: 72pt; color: rgba(200,0,0,0.10); font-weight: 800; letter-spacing: 4px; transform: rotate(-30deg); z-index: 9; opacity: 0.15; }
+        /* Pale red behind the content: the PDF renderer supports neither rgba() nor opacity */
+        .watermark { position: fixed; top: 42%; left: 0; width: 100%; text-align: center; font-size: 60pt; color: #f6d5d5; font-weight: bold; letter-spacing: 4px; transform: rotate(-30deg); z-index: -1; }
         .header { width: 100%; border-collapse: collapse; border-bottom: 2.5px solid #1d6f9c; margin-bottom: 18px; }
         .header td { vertical-align: top; padding: 0 0 10px 0; }
         .header td.logo { text-align: right; width: 35%; }
         .header td.logo img { max-width: 55mm; max-height: 25mm; }
-        .issuer-name { font-size: 15pt; font-weight: 800; color: #1d6f9c; letter-spacing: 0.5px; }
+        .issuer-name { font-size: 15pt; font-weight: bold; color: #1d6f9c; letter-spacing: 0.5px; }
         .issuer-trade { font-size: 9.5pt; font-weight: 600; }
         .issuer-kind { font-size: 8pt; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
         .issuer-meta { font-size: 8pt; color: #444; margin-top: 4px; }
         .issuer-meta b { color: #1d6f9c; }
         .title-block { margin-bottom: 16px; }
-        .title-block .fa-title { font-size: 19pt; font-weight: 800; letter-spacing: 2px; }
+        .title-block .fa-title { font-size: 19pt; font-weight: bold; letter-spacing: 2px; }
         .title-block .fa-number { font-size: 12pt; font-weight: 700; color: #1d6f9c; }
         .title-block .meta { font-size: 8pt; color: #555; margin-top: 4px; }
         .blocks { margin-bottom: 18px; }
@@ -30,7 +31,7 @@
         table.lines th { background: #eef2f5; color: #1d6f9c; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #999; padding: 5px 6px; text-align: left; }
         table.lines th.num, table.lines td.num { text-align: right; }
         table.lines td { border: 1px solid #999; padding: 5px 6px; }
-        table.lines tr.total td { font-weight: 800; background: #eef2f5; border-top: 2px solid #1d6f9c; }
+        table.lines tr.total td { font-weight: bold; background: #eef2f5; border-top: 2px solid #1d6f9c; }
         .total-in-words { font-size: 8.5pt; margin: 10px 0; }
         .vat-mention { font-size: 8pt; color: #666; margin: 6px 0; font-style: italic; }
         .footer-note { font-size: 7pt; color: #777; margin-top: 20px; border-top: 1px solid #ccc; padding-top: 6px; }

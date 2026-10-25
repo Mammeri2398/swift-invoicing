@@ -32,7 +32,7 @@ public class DashboardService {
         Issuer issuer = issuerService.getIssuer();
         return new DashboardStats(y, invoiceService.totalBilled(y), issuer.getAnnualCeiling(), !issuer.isCompany(),
             invoiceService.findRecent(),
-            invoiceService.countByStatus(InvoiceStatus.ISSUED), invoiceService.totalByStatus(InvoiceStatus.ISSUED),
+            invoiceService.countUnpaid(), invoiceService.totalUnpaid(),
             invoiceService.countByStatus(InvoiceStatus.DRAFT), clientService.count());
     }
 }

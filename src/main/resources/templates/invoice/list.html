@@ -12,9 +12,9 @@
         </div>
         <div class="flex flex-wrap gap-2">
             <!-- Exports follow the filters currently applied -->
-            <a th:href="@{/invoices/export/csv(search=${filter.search},status=${filter.status},year=${filter.year},client=${filter.client})}"
+            <a th:href="@{/invoices/export/csv(search=${filter.search},kind=${filter.kind},status=${filter.status},year=${filter.year},client=${filter.client})}"
                class="btn btn-secondary" title="Exporter les factures filtrées en CSV"><span class="icon">download</span>CSV</a>
-            <a th:href="@{/invoices/export/xlsx(search=${filter.search},status=${filter.status},year=${filter.year},client=${filter.client})}"
+            <a th:href="@{/invoices/export/xlsx(search=${filter.search},kind=${filter.kind},status=${filter.status},year=${filter.year},client=${filter.client})}"
                class="btn btn-secondary" title="Exporter les factures filtrées vers Excel"><span class="icon">table_view</span>Excel</a>
             <a th:if="${u != null and u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="btn btn-primary">
                 <span class="icon">add_circle</span>Nouvelle facture
@@ -24,10 +24,18 @@
 
     <!-- Filters -->
     <form th:action="@{/invoices}" method="get" class="card mb-6">
-        <div class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_10rem_8rem_14rem_auto] lg:items-end">
+        <div class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_9rem_10rem_8rem_14rem_auto] lg:items-end">
             <div class="field">
                 <label class="label" for="search">Recherche</label>
                 <input class="input" id="search" name="search" type="search" th:value="${filter.search}" placeholder="N° de facture ou client"/>
+            </div>
+            <div class="field">
+                <label class="label" for="kind">Type</label>
+                <select class="input" id="kind" name="kind">
+                    <option value="">Tous</option>
+                    <option value="INVOICE" th:selected="${filter.kind != null and filter.kind.name() == 'INVOICE'}">Factures</option>
+                    <option value="CREDIT_NOTE" th:selected="${filter.kind != null and filter.kind.name() == 'CREDIT_NOTE'}">Avoirs</option>
+                </select>
             </div>
             <div class="field">
                 <label class="label" for="status">Statut</label>
@@ -77,6 +85,7 @@
                 <tr th:each="inv : ${page.content}">
                     <td class="whitespace-nowrap font-semibold">
                         <a th:href="@{/invoices/{id}(id=${inv.id})}" class="hover:text-primary" th:text="${inv.invoiceNumber ?: 'Brouillon'}">FA-2026-0001</a>
+                        <span th:if="${inv.creditNote}" class="badge badge-info ml-1">Avoir</span>
                     </td>
                     <td>
                         <div class="font-medium" th:text="${inv.clientName ?: inv.client.name}">Client</div>
@@ -87,7 +96,7 @@
                     <td class="text-on-surface-variant" th:text="${#temporals.format(inv.issueDate, 'dd/MM/yyyy')}">01/01/2026</td>
                     <td class="text-on-surface-variant" th:text="${inv.dueDate != null ? #temporals.format(inv.dueDate, 'dd/MM/yyyy') : '—'}">—</td>
                     <td><span th:replace="~{layout/fragments :: statusBadge(${inv.status})}"></span></td>
-                    <td class="num font-semibold" th:text="${amountUtils.format(inv.totalAmount)}">0,00 DA</td>
+                    <td class="num font-semibold" th:text="${(inv.creditNote ? '- ' : '') + amountUtils.format(inv.totalAmount)}">0,00 DA</td>
                     <td>
                         <div class="flex justify-end gap-1">
                             <a th:href="@{/invoices/{id}(id=${inv.id})}" class="btn-icon" title="Voir" aria-label="Voir"><span class="icon">visibility</span></a>
@@ -98,7 +107,7 @@
                                   method="post" data-confirm="Émettre cette facture ? Elle recevra son numéro et ne sera plus modifiable.">
                                 <button type="submit" class="btn-icon" title="Émettre" aria-label="Émettre"><span class="icon">send</span></button>
                             </form>
-                            <form th:if="${inv.status.name() == 'ISSUED' and u != null and u.can('ISSUE_INVOICE')}"
+                            <form th:if="${!inv.creditNote and inv.status.name() == 'ISSUED' and u != null and u.can('ISSUE_INVOICE')}"
                                   th:action="@{/invoices/{id}/pay(id=${inv.id})}" method="post" data-confirm="Marquer cette facture comme payée ?">
                                 <button type="submit" class="btn-icon" title="Marquer payée" aria-label="Marquer payée"><span class="icon">price_check</span></button>
                             </form>

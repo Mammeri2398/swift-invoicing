@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.dashboard;
 
+import com.swiftlabs.invoicing.invoice.DocumentKind;
 import com.swiftlabs.invoicing.invoice.InvoiceService;
 import com.swiftlabs.invoicing.invoice.InvoiceStatus;
 import com.swiftlabs.invoicing.invoice.MonthlyTotal;
@@ -39,13 +40,17 @@ public class TurnoverService {
             BigDecimal pending = BigDecimal.ZERO;
             BigDecimal cancelled = BigDecimal.ZERO;
             BigDecimal vat = BigDecimal.ZERO;
+            BigDecimal credited = BigDecimal.ZERO;
             long count = 0;
             long cancelledCount = 0;
             for (MonthlyTotal total : totals) {
                 if (total.month() != m) {
                     continue;
                 }
-                if (total.status() == InvoiceStatus.CANCELLED) {
+                if (total.kind() == DocumentKind.CREDIT_NOTE) {
+                    credited = credited.add(total.amount());
+                    vat = vat.subtract(total.vat());
+                } else if (total.status() == InvoiceStatus.CANCELLED) {
                     cancelledCount += total.count();
                     cancelled = cancelled.add(total.amount());
                 } else {
@@ -58,10 +63,10 @@ public class TurnoverService {
                     }
                 }
             }
-            BigDecimal billed = paid.add(pending);
+            BigDecimal billed = paid.add(pending).subtract(credited);
             cumulative = cumulative.add(billed);
             boolean overCeiling = !issuer.isCompany() && cumulative.compareTo(ceiling) >= 0 && billed.signum() > 0;
-            months.add(new TurnoverReport.Month(m, monthName(m), count, billed, paid, pending, vat,
+            months.add(new TurnoverReport.Month(m, monthName(m), count, billed, paid, pending, credited, vat,
                 cancelledCount, cancelled, cumulative, overCeiling));
         }
         return new TurnoverReport(year, months, ceiling, issuer.isCompany());

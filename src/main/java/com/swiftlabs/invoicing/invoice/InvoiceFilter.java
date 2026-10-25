@@ -1,12 +1,21 @@
 package com.swiftlabs.invoicing.invoice;
 
-/** Criteria of the invoice list, bound from the query string (?status=&year=&client=&search=). */
+/** Criteria of the invoice list, bound from the query string (?kind=&status=&year=&client=&search=). */
 public class InvoiceFilter {
 
+    private DocumentKind kind;
     private InvoiceStatus status;
     private Integer year;
     private Long client;
     private String search;
+
+    public DocumentKind getKind() {
+        return kind;
+    }
+
+    public void setKind(DocumentKind kind) {
+        this.kind = kind;
+    }
 
     public InvoiceStatus getStatus() {
         return status;

@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.invoice;
 import com.swiftlabs.invoicing.client.Client;
 import com.swiftlabs.invoicing.client.ClientService;
 import com.swiftlabs.invoicing.client.ClientType;
+import com.swiftlabs.invoicing.common.AmountUtils;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 import com.swiftlabs.invoicing.config.InvoiceProperties;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +29,7 @@ public class InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final InvoiceSequenceRepository sequenceRepository;
+    private final CreditNoteSequenceRepository creditNoteSequenceRepository;
     private final IssuerService issuerService;
     private final ClientService clientService;
     private final InvoiceAudit audit;
@@ -34,12 +37,14 @@ public class InvoiceService {
 
     public InvoiceService(InvoiceRepository invoiceRepository,
                           InvoiceSequenceRepository sequenceRepository,
+                          CreditNoteSequenceRepository creditNoteSequenceRepository,
                           IssuerService issuerService,
                           ClientService clientService,
                           InvoiceAudit audit,
                           InvoiceProperties properties) {
         this.invoiceRepository = invoiceRepository;
         this.sequenceRepository = sequenceRepository;
+        this.creditNoteSequenceRepository = creditNoteSequenceRepository;
         this.issuerService = issuerService;
         this.clientService = clientService;
         this.audit = audit;
@@ -95,13 +100,16 @@ public class InvoiceService {
         if (!invoice.isDraft()) {
             throw new BusinessException("Seules les factures brouillon peuvent être modifiées.");
         }
-        if (form.getClientId() == null) {
+        if (form.getClientId() == null && !invoice.isCreditNote()) {
             throw new BusinessException("clientId", "Un client doit être sélectionné.");
         }
         if (form.getLines() == null || form.getLines().isEmpty()) {
             throw new BusinessException("lines", "Une facture doit contenir au moins une ligne.");
         }
-        invoice.setClient(clientService.findById(form.getClientId()));
+        // A credit note is always for the client of its invoice
+        if (!invoice.isCreditNote()) {
+            invoice.setClient(clientService.findById(form.getClientId()));
+        }
         invoice.setIssueDate(form.getIssueDate() != null ? form.getIssueDate() : LocalDate.now());
         invoice.setDueDate(form.getDueDate());
         invoice.setPaymentMethod(form.getPaymentMethod());
@@ -128,6 +136,9 @@ public class InvoiceService {
         Invoice invoice = findById(id);
         if (!invoice.isDraft()) {
             throw new BusinessException("Cette facture est déjà émise et ne peut plus être modifiée.");
+        }
+        if (invoice.isCreditNote()) {
+            checkCreditNote(invoice);
         }
         Client client = invoice.getClient();
         if (client.getType() == ClientType.PROFESSIONNEL && (client.getNif() == null || client.getNif().isBlank())) {
@@ -157,17 +168,11 @@ public class InvoiceService {
                 + "modifiez le brouillon pour la retirer.");
         }
         int year = invoice.getIssueDate().getYear();
-
-        // Concurrent issues of the same year queue on the counter's row lock: numbers stay
-        // unique and gap-free, and the first invoice of a year cannot fail on the row creation.
-        sequenceRepository.createIfAbsent(year);
-        InvoiceSequence sequence = sequenceRepository.lockByYear(year);
-        int number = sequence.getLastValue() + 1;
-        sequence.setLastValue(number);
-
-        String invoiceNumber = properties.numberPrefix() + "-" + year + "-" + String.format("%04d", number);
+        int number = nextNumber(invoice.getKind(), year);
+        String prefix = invoice.isCreditNote() ? properties.creditNotePrefix() : properties.numberPrefix();
+        String invoiceNumber = prefix + "-" + year + "-" + String.format("%04d", number);
         if (invoiceRepository.existsByInvoiceNumber(invoiceNumber)) {
-            throw new BusinessException("Le numéro de facture " + invoiceNumber + " existe déjà.");
+            throw new BusinessException("Le numéro " + invoiceNumber + " existe déjà.");
         }
 
         invoice.setInvoiceNumber(invoiceNumber);
@@ -178,15 +183,110 @@ public class InvoiceService {
         invoice.recalculateTotal();
         snapshotIssuer(invoice, issuer);
         snapshotClient(invoice, client);
-        audit.record(invoice, InvoiceEvent.Action.ISSUED);
+        if (invoice.isCreditNote()) {
+            Invoice original = invoice.getOriginalInvoice();
+            audit.record(invoice, InvoiceEvent.Action.ISSUED, "sur la facture " + original.getInvoiceNumber());
+            audit.record(original, InvoiceEvent.Action.CREDITED,
+                invoiceNumber + " (" + AmountUtils.format(invoice.getTotalAmount()) + ")");
+        } else {
+            audit.record(invoice, InvoiceEvent.Action.ISSUED);
+        }
         return invoice;
+    }
+
+    /**
+     * Next number of the year for this kind of document. Concurrent issues of the same year queue
+     * on the counter's row lock: numbers stay unique and gap-free, and the first document of a
+     * year cannot fail on the row creation.
+     */
+    private int nextNumber(DocumentKind kind, int year) {
+        if (kind == DocumentKind.CREDIT_NOTE) {
+            creditNoteSequenceRepository.createIfAbsent(year);
+            CreditNoteSequence sequence = creditNoteSequenceRepository.lockByYear(year);
+            sequence.setLastValue(sequence.getLastValue() + 1);
+            return sequence.getLastValue();
+        }
+        sequenceRepository.createIfAbsent(year);
+        InvoiceSequence sequence = sequenceRepository.lockByYear(year);
+        sequence.setLastValue(sequence.getLastValue() + 1);
+        return sequence.getLastValue();
+    }
+
+    /**
+     * New credit note for an issued or paid invoice: a draft with a copy of its lines (full credit),
+     * which the user can reduce for a partial credit before issuing. An existing draft credit note
+     * of the invoice is returned instead of creating a second one.
+     */
+    @Transactional
+    public Invoice createCreditNote(Long invoiceId) {
+        Invoice original = findWithLines(invoiceId);
+        if (original.isCreditNote() || !original.isIssuedOrPaid()) {
+            throw new BusinessException("Un avoir ne peut être établi que sur une facture émise ou payée.");
+        }
+        List<Invoice> existing = invoiceRepository.findByOriginalInvoiceIdOrderByIdAsc(invoiceId);
+        for (Invoice creditNote : existing) {
+            if (creditNote.isDraft()) {
+                return creditNote;
+            }
+        }
+        if (remainingToCredit(original).signum() <= 0) {
+            throw new BusinessException("Cette facture est déjà entièrement annulée par avoir.");
+        }
+        Invoice creditNote = newDraft();
+        creditNote.setKind(DocumentKind.CREDIT_NOTE);
+        creditNote.setOriginalInvoice(original);
+        creditNote.setClient(original.getClient());
+        creditNote.setPaymentMethod(original.getPaymentMethod());
+        creditNote.setNotes("Avoir sur la facture " + original.getInvoiceNumber() + " du "
+            + original.getIssueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ".");
+        creditNote.replaceLines(original.getLines().stream()
+            .map(line -> InvoiceLine.of(line.getDescription(), line.getUnit(), line.getQuantity(), line.getUnitPrice(),
+                line.getVatRate()))
+            .toList());
+        Invoice saved = invoiceRepository.save(creditNote);
+        audit.record(saved, InvoiceEvent.Action.CREATED, "sur la facture " + original.getInvoiceNumber());
+        return saved;
+    }
+
+    /** Credit notes of an invoice (drafts included), oldest first. */
+    public List<Invoice> creditNotesOf(Long invoiceId) {
+        return invoiceRepository.findByOriginalInvoiceIdOrderByIdAsc(invoiceId);
+    }
+
+    /** TTC of the invoice not cancelled yet by issued credit notes. */
+    public BigDecimal remainingToCredit(Invoice invoice) {
+        return invoice.getTotalAmount().subtract(invoiceRepository.sumIssuedCreditNotes(invoice.getId()));
+    }
+
+    /** A credit note never cancels more than what remains of its invoice, nor predates it. */
+    private void checkCreditNote(Invoice creditNote) {
+        Invoice original = creditNote.getOriginalInvoice();
+        if (!original.isIssuedOrPaid()) {
+            throw new BusinessException("La facture " + original.getInvoiceNumber() + " n'est plus émise : l'avoir ne peut pas être émis.");
+        }
+        if (creditNote.getIssueDate().isBefore(original.getIssueDate())) {
+            throw new BusinessException("issueDate", "L'avoir ne peut pas être daté avant la facture qu'il annule.");
+        }
+        creditNote.recalculateTotal();
+        BigDecimal remaining = remainingToCredit(original);
+        if (creditNote.getTotalAmount().compareTo(remaining) > 0) {
+            throw new BusinessException("Le montant de l'avoir (" + AmountUtils.format(creditNote.getTotalAmount())
+                + ") dépasse le reste à annuler sur la facture " + original.getInvoiceNumber()
+                + " (" + AmountUtils.format(remaining) + ") : réduisez les lignes.");
+        }
     }
 
     @Transactional
     public Invoice pay(Long id) {
         Invoice invoice = findById(id);
+        if (invoice.isCreditNote()) {
+            throw new BusinessException("Un avoir ne se marque pas payé.");
+        }
         if (invoice.getStatus() != InvoiceStatus.ISSUED) {
             throw new BusinessException("Seule une facture émise peut être marquée payée.");
+        }
+        if (remainingToCredit(invoice).signum() <= 0) {
+            throw new BusinessException("Cette facture est entièrement annulée par avoir : il n'y a rien à encaisser.");
         }
         invoice.setStatus(InvoiceStatus.PAID);
         invoice.setPaidAt(LocalDateTime.now());
@@ -197,8 +297,15 @@ public class InvoiceService {
     @Transactional
     public Invoice cancel(Long id) {
         Invoice invoice = findById(id);
+        if (invoice.isCreditNote() && !invoice.isDraft()) {
+            throw new BusinessException("Un avoir émis ne peut pas être annulé.");
+        }
         if (invoice.getStatus() == InvoiceStatus.CANCELLED) {
             throw new BusinessException("Cette facture est déjà annulée.");
+        }
+        // Cancelling on top of a credit note would cancel the same amount twice
+        if (invoiceRepository.sumIssuedCreditNotes(invoice.getId()).signum() > 0) {
+            throw new BusinessException("Cette facture a déjà un avoir : établissez un nouvel avoir pour annuler le reste.");
         }
         invoice.setStatus(InvoiceStatus.CANCELLED);
         invoice.setCancelledAt(LocalDateTime.now());
@@ -231,14 +338,20 @@ public class InvoiceService {
         return invoiceRepository.findInvoiceYears();
     }
 
+    /** Issued invoices still owed in part (credit notes deducted). */
+    public long countUnpaid() {
+        return invoiceRepository.countUnpaid();
+    }
+
+    /** What clients still owe on issued invoices, credit notes deducted (TTC). */
+    public BigDecimal totalUnpaid() {
+        return invoiceRepository.sumUnpaidInvoices().subtract(invoiceRepository.sumCreditNotesOnUnpaidInvoices());
+    }
+
     public long countByStatus(InvoiceStatus status) {
         return invoiceRepository.countByStatus(status);
     }
 
-    public BigDecimal totalByStatus(InvoiceStatus status) {
-        BigDecimal total = invoiceRepository.sumByStatus(status);
-        return total != null ? total : BigDecimal.ZERO;
-    }
 
     public List<Invoice> findRecent() {
         return invoiceRepository.findTop10ByOrderByCreatedAtDescIdDesc();

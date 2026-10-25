@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.invoice;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import org.springframework.data.jpa.domain.Specification;
@@ -22,7 +23,11 @@ class InvoiceRepositoryCustomImpl implements InvoiceRepositoryCustom {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<BigDecimal> query = cb.createQuery(BigDecimal.class);
         Root<Invoice> root = query.from(Invoice.class);
-        query.select(cb.coalesce(cb.sum(root.<BigDecimal>get("totalAmount")), BigDecimal.ZERO));
+        // Credit notes count negatively
+        Expression<BigDecimal> signed = cb.<BigDecimal>selectCase()
+            .when(cb.equal(root.get("kind"), DocumentKind.CREDIT_NOTE), cb.neg(root.<BigDecimal>get("totalAmount")))
+            .otherwise(root.<BigDecimal>get("totalAmount"));
+        query.select(cb.coalesce(cb.sum(signed), BigDecimal.ZERO));
         Predicate predicate = specification.toPredicate(root, query, cb);
         if (predicate != null) {
             query.where(predicate);

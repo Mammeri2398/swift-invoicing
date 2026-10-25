@@ -21,7 +21,9 @@ public class InvoiceEvent {
 
     /** What happened to the invoice. */
     public enum Action {
-        CREATED, ISSUED, PAID, CANCELLED, SENT
+        CREATED, ISSUED, PAID, CANCELLED, SENT,
+        /** An issued credit note cancelled all or part of the invoice. */
+        CREDITED
     }
 
     @Id

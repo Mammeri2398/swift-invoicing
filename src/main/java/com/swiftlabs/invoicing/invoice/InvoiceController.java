@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 
 @Controller
 @RequestMapping("/invoices")
@@ -77,7 +78,7 @@ public class InvoiceController {
         InvoiceForm form = new InvoiceForm();
         form.addEmptyLine();
         model.addAttribute("invoice", form);
-        return formView(model);
+        return formView(form, model);
     }
 
     @GetMapping("/{id}/edit")
@@ -89,7 +90,7 @@ public class InvoiceController {
             return "redirect:/invoices/" + id;
         }
         model.addAttribute("invoice", InvoiceForm.from(invoice));
-        return formView(model);
+        return formView(InvoiceForm.from(invoice), model);
     }
 
     /** Invalid input is shown again with the errors next to each field (no redirect, nothing lost). */
@@ -100,7 +101,7 @@ public class InvoiceController {
         if (!result.hasErrors()) {
             try {
                 Invoice saved = invoiceService.saveDraft(form);
-                redirectAttributes.addFlashAttribute("success", "Facture brouillon enregistrée.");
+                redirectAttributes.addFlashAttribute("success", saved.isCreditNote() ? "Avoir brouillon enregistré." : "Facture brouillon enregistrée.");
                 return "redirect:/invoices/" + saved.getId();
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
@@ -109,7 +110,7 @@ public class InvoiceController {
         if (form.getLines().isEmpty()) {
             form.addEmptyLine();
         }
-        return formView(model);
+        return formView(form, model);
     }
 
     @GetMapping("/{id}")
@@ -118,6 +119,14 @@ public class InvoiceController {
         Invoice invoice = invoiceService.findWithLines(id);
         model.addAttribute("invoice", invoice);
         model.addAttribute("issuer", IssuerDetails.of(invoice, issuerService.getIssuer()));
+        if (!invoice.isCreditNote()) {
+            model.addAttribute("creditNotes", invoiceService.creditNotesOf(id));
+            if (invoice.isIssuedOrPaid()) {
+                BigDecimal remaining = invoiceService.remainingToCredit(invoice);
+                model.addAttribute("remainingToCredit", remaining);
+                model.addAttribute("fullyCredited", remaining.signum() <= 0);
+            }
+        }
         model.addAttribute("history", audit.history(id));
         return "invoice/view";
     }
@@ -127,11 +136,27 @@ public class InvoiceController {
     public String issue(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             Invoice issued = invoiceService.issue(id);
-            redirectAttributes.addFlashAttribute("success", "Facture émise : " + issued.getInvoiceNumber());
+            redirectAttributes.addFlashAttribute("success", (issued.isCreditNote() ? "Avoir émis : " : "Facture émise : ")
+                + issued.getInvoiceNumber());
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
         }
         return "redirect:/invoices/" + id;
+    }
+
+    /** Opens the credit note of an issued invoice: a draft with its lines, to reduce for a partial credit. */
+    @PostMapping("/{id}/credit-note")
+    @PreAuthorize("hasAuthority('CREATE_INVOICE')")
+    public String creditNote(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            Invoice creditNote = invoiceService.createCreditNote(id);
+            redirectAttributes.addFlashAttribute("message",
+                "Avoir brouillon : il reprend les lignes de la facture. Réduisez-les pour un avoir partiel, puis émettez-le.");
+            return "redirect:/invoices/" + creditNote.getId() + "/edit";
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            return "redirect:/invoices/" + id;
+        }
     }
 
     @PostMapping("/{id}/pay")
@@ -183,7 +208,10 @@ public class InvoiceController {
         response.getOutputStream().write(bytes);
     }
 
-    private String formView(Model model) {
+    private String formView(InvoiceForm form, Model model) {
+        // Editing a draft credit note: its invoice is shown and the client cannot change
+        Invoice existing = form.getId() != null ? invoiceService.findById(form.getId()) : null;
+        model.addAttribute("creditNoteOf", existing != null && existing.isCreditNote() ? existing.getOriginalInvoice() : null);
         model.addAttribute("clients", clientService.findAll());
         model.addAttribute("paymentMethods", PaymentMethod.values());
         // TVA per line for a company only (a draft follows the current issuer type)

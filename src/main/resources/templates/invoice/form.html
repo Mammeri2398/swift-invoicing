@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page(${invoice.id == null ? 'Nouvelle facture' : 'Modifier le brouillon'}, ~{::main}, ~{::script})}">
+      th:replace="~{layout/base :: page(${creditNoteOf != null ? 'Avoir sur ' + creditNoteOf.invoiceNumber : (invoice.id == null ? 'Nouvelle facture' : 'Modifier le brouillon')}, ~{::main}, ~{::script})}">
 <body>
 <main class="page">
     <nav class="breadcrumb" aria-label="Fil d'Ariane">
@@ -9,8 +9,11 @@
     </nav>
     <div class="page-header">
         <div>
-            <h1 class="page-title" th:text="${invoice.id == null ? 'Nouvelle facture' : 'Modifier le brouillon'}">Nouvelle facture</h1>
-            <p class="page-subtitle">Le numéro est attribué à l'émission. Un brouillon reste modifiable.</p>
+            <h1 class="page-title" th:text="${creditNoteOf != null ? 'Avoir sur la facture ' + creditNoteOf.invoiceNumber
+                : (invoice.id == null ? 'Nouvelle facture' : 'Modifier le brouillon')}">Nouvelle facture</h1>
+            <p th:if="${creditNoteOf == null}" class="page-subtitle">Le numéro est attribué à l'émission. Un brouillon reste modifiable.</p>
+            <p th:if="${creditNoteOf != null}" class="page-subtitle">Gardez toutes les lignes pour un avoir total, ou réduisez-les
+                (quantités, prix, lignes supprimées) pour un avoir partiel. Le numéro AV est attribué à l'émission.</p>
         </div>
     </div>
 
@@ -22,7 +25,15 @@
             <section class="card lg:col-span-2">
                 <div class="card-header"><h2 class="card-title"><span class="icon">badge</span>Informations</h2></div>
                 <div class="card-body form-grid">
-                    <div class="field md:col-span-2">
+                    <!-- A credit note keeps the client of its invoice -->
+                    <div th:if="${creditNoteOf != null}" class="field md:col-span-2">
+                        <span class="label">Client</span>
+                        <input type="hidden" th:field="*{clientId}"/>
+                        <p class="input bg-surface-container-low" th:text="${creditNoteOf.clientName ?: creditNoteOf.client.name}">Client</p>
+                        <p class="hint">Celui de la facture <a th:href="@{/invoices/{id}(id=${creditNoteOf.id})}" class="text-primary hover:underline"
+                                                               th:text="${creditNoteOf.invoiceNumber}">FA-2026-0001</a>.</p>
+                    </div>
+                    <div th:if="${creditNoteOf == null}" class="field md:col-span-2">
                         <label class="label" for="clientId">Client <span class="required">*</span></label>
                         <select class="input" th:errorclass="input-invalid" th:field="*{clientId}" required>
                             <option value="">Sélectionner un client…</option>
@@ -140,7 +151,8 @@
 
         <div class="form-actions">
             <a th:href="${invoice.id == null} ? @{/invoices} : @{/invoices/{id}(id=${invoice.id})}" class="btn btn-secondary">Annuler</a>
-            <button type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer le brouillon</button>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span>
+                <th:block th:text="${creditNoteOf != null ? 'Enregistrer l''avoir' : 'Enregistrer le brouillon'}">Enregistrer le brouillon</th:block></button>
         </div>
 
         <datalist id="units">

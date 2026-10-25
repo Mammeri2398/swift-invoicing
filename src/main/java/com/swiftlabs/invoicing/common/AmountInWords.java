@@ -22,6 +22,15 @@ public final class AmountInWords {
     }
 
     public static String convert(BigDecimal amount) {
+        return convert(amount, "Arrêtée la présente facture");
+    }
+
+    /** Same sentence for a credit note: "Arrêté le présent avoir à la somme de : ...". */
+    public static String convertCreditNote(BigDecimal amount) {
+        return convert(amount, "Arrêté le présent avoir");
+    }
+
+    private static String convert(BigDecimal amount, String opening) {
         if (amount == null) {
             amount = BigDecimal.ZERO;
         }
@@ -32,7 +41,7 @@ public final class AmountInWords {
         int centimes = remainder.abs().multiply(new BigDecimal(100)).setScale(0, RoundingMode.HALF_UP).intValue();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Arrêtée la présente facture à la somme de : ");
+        sb.append(opening).append(" à la somme de : ");
         sb.append(convertInteger(dinars));
         if (dinars == 1) {
             sb.append(" dinar algérien");

@@ -9,6 +9,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,6 +39,15 @@ public class Invoice {
 
     @Column(name = "invoice_number", unique = true)
     private String invoiceNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kind", nullable = false, length = 20)
+    private DocumentKind kind = DocumentKind.INVOICE;
+
+    /** Credit notes only: the invoice it cancels, in full or in part. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "original_invoice_id")
+    private Invoice originalInvoice;
 
     @Column(name = "invoice_year", nullable = false)
     private Integer invoiceYear;
@@ -412,6 +422,26 @@ public class Invoice {
 
     public void setCancelledAt(LocalDateTime cancelledAt) {
         this.cancelledAt = cancelledAt;
+    }
+
+    public DocumentKind getKind() {
+        return kind;
+    }
+
+    public void setKind(DocumentKind kind) {
+        this.kind = kind;
+    }
+
+    public boolean isCreditNote() {
+        return kind == DocumentKind.CREDIT_NOTE;
+    }
+
+    public Invoice getOriginalInvoice() {
+        return originalInvoice;
+    }
+
+    public void setOriginalInvoice(Invoice originalInvoice) {
+        this.originalInvoice = originalInvoice;
     }
 
     public boolean isDraft() {

@@ -65,7 +65,7 @@ public class InvoiceMailService {
         Invoice invoice = sendable(invoiceId);
         InvoiceEmailForm form = new InvoiceEmailForm();
         form.setTo(invoice.getClient().getEmail());
-        form.setSubject("Facture " + invoice.getInvoiceNumber() + " - " + senderName(invoice));
+        form.setSubject((invoice.isCreditNote() ? "Avoir " : "Facture ") + invoice.getInvoiceNumber() + " - " + senderName(invoice));
         form.setMessage(defaultMessage(invoice));
         return form;
     }
@@ -117,6 +117,14 @@ public class InvoiceMailService {
     }
 
     private static String defaultMessage(Invoice invoice) {
+        if (invoice.isCreditNote()) {
+            Invoice original = invoice.getOriginalInvoice();
+            return "Bonjour,\n\n"
+                + "Veuillez trouver ci-joint l'avoir " + invoice.getInvoiceNumber() + " du " + invoice.getIssueDate().format(DATE)
+                + ", d'un montant de " + AmountUtils.format(invoice.getTotalAmount()) + ", sur la facture "
+                + original.getInvoiceNumber() + " du " + original.getIssueDate().format(DATE) + ".\n"
+                + "\nCordialement,\n" + invoice.getIssuerFullName();
+        }
         StringBuilder text = new StringBuilder("Bonjour,\n\n")
             .append("Veuillez trouver ci-joint la facture ").append(invoice.getInvoiceNumber())
             .append(" du ").append(invoice.getIssueDate().format(DATE))

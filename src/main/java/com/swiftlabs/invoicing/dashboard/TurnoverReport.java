@@ -5,15 +5,19 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * Turnover of one year, month by month: issued and paid invoices, before TVA (HT), by month of
- * issue; cancelled invoices are shown apart and never counted. For a company, the TVA collected too.
+ * Turnover of one year, month by month: issued and paid invoices minus issued credit notes, before
+ * TVA (HT), by month of issue; cancelled invoices are shown apart and never counted. For a company,
+ * the TVA collected too (credit notes deducted).
  */
 public final class TurnoverReport {
 
-    /** One month: {@code billed} = {@code paid} + {@code pending}, all HT; {@code vat} on the billed invoices. */
+    /**
+     * One month, all HT: {@code paid} and {@code pending} are invoices by status, {@code credited} the
+     * credit notes issued that month, {@code billed} = paid + pending - credited; {@code vat} net of credit notes.
+     */
     public record Month(int number, String name, long invoiceCount, BigDecimal billed, BigDecimal paid,
-                        BigDecimal pending, BigDecimal vat, long cancelledCount, BigDecimal cancelledAmount,
-                        BigDecimal cumulative, boolean overCeiling) {
+                        BigDecimal pending, BigDecimal credited, BigDecimal vat, long cancelledCount,
+                        BigDecimal cancelledAmount, BigDecimal cumulative, boolean overCeiling) {
     }
 
     private final int year;
@@ -31,6 +35,10 @@ public final class TurnoverReport {
     /** A company: TVA collected shown, no annual ceiling (auto-entrepreneur only). */
     public boolean isCompany() {
         return company;
+    }
+
+    public BigDecimal getCredited() {
+        return sum(months, Month::credited);
     }
 
     public BigDecimal getVat() {

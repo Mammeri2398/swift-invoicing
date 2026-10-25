@@ -20,6 +20,9 @@ final class InvoiceSpecifications {
     static Specification<Invoice> matching(InvoiceFilter filter) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if (filter.getKind() != null) {
+                predicates.add(cb.equal(root.get("kind"), filter.getKind()));
+            }
             if (filter.getStatus() != null) {
                 predicates.add(cb.equal(root.get("status"), filter.getStatus()));
             }

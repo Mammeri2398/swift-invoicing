@@ -22,9 +22,9 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
     @EntityGraph(attributePaths = "client")
     Page<Invoice> findAll(Specification<Invoice> specification, Pageable pageable);
 
-    /** Every matching invoice (exports), with its client loaded in the same query. */
+    /** Every matching document (exports), with its client and original invoice loaded in the same query. */
     @Override
-    @EntityGraph(attributePaths = "client")
+    @EntityGraph(attributePaths = {"client", "originalInvoice"})
     List<Invoice> findAll(Specification<Invoice> specification, Sort sort);
 
     /** An invoice ready to display or print: client and lines loaded. */
@@ -39,22 +39,42 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
 
     long countByStatus(InvoiceStatus status);
 
+    /** Credit notes of an invoice, oldest first. */
+    List<Invoice> findByOriginalInvoiceIdOrderByIdAsc(Long originalInvoiceId);
+
+    /** TTC already credited on an invoice: its issued credit notes. */
+    @Query("SELECT COALESCE(SUM(c.totalAmount), 0) FROM Invoice c WHERE c.originalInvoice.id = :id AND c.status = 'ISSUED'")
+    BigDecimal sumIssuedCreditNotes(@Param("id") Long originalInvoiceId);
+
+    /** Issued invoices still owed in part: not fully cancelled by credit notes. */
+    @Query("SELECT COUNT(i) FROM Invoice i WHERE i.kind = 'INVOICE' AND i.status = 'ISSUED' AND i.totalAmount >"
+        + " (SELECT COALESCE(SUM(c.totalAmount), 0) FROM Invoice c WHERE c.originalInvoice = i AND c.status = 'ISSUED')")
+    long countUnpaid();
+
+    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.kind = 'INVOICE' AND i.status = 'ISSUED'")
+    BigDecimal sumUnpaidInvoices();
+
+    /** Credit notes on invoices not paid yet: they reduce what clients still owe. */
+    @Query("SELECT COALESCE(SUM(c.totalAmount), 0) FROM Invoice c WHERE c.kind = 'CREDIT_NOTE' AND c.status = 'ISSUED'"
+        + " AND c.originalInvoice.status = 'ISSUED'")
+    BigDecimal sumCreditNotesOnUnpaidInvoices();
+
     @EntityGraph(attributePaths = "client")
     List<Invoice> findTop10ByOrderByCreatedAtDescIdDesc();
 
-    /** Turnover: totals before TVA (HT). */
-    @Query("SELECT COALESCE(SUM(i.subtotalAmount), 0) FROM Invoice i WHERE i.invoiceYear = :year AND i.status IN ('ISSUED', 'PAID')")
+    /** Turnover: totals before TVA (HT), issued credit notes subtracted. */
+    @Query("SELECT COALESCE(SUM(CASE WHEN i.kind = 'CREDIT_NOTE' THEN -i.subtotalAmount ELSE i.subtotalAmount END), 0)"
+        + " FROM Invoice i WHERE i.invoiceYear = :year AND i.status IN ('ISSUED', 'PAID')")
     BigDecimal sumIssuedPaidByYear(@Param("year") Integer year);
 
     /** Issued, paid and cancelled invoices of the year, by month of issue and status. */
-    @Query("SELECT new com.swiftlabs.invoicing.invoice.MonthlyTotal(MONTH(i.issueDate), i.status, COUNT(i), SUM(i.subtotalAmount), SUM(i.vatAmount))"
-        + " FROM Invoice i WHERE i.invoiceYear = :year AND i.status <> 'DRAFT' GROUP BY MONTH(i.issueDate), i.status")
+    @Query("SELECT new com.swiftlabs.invoicing.invoice.MonthlyTotal(MONTH(i.issueDate), i.kind, i.status, COUNT(i),"
+        + " SUM(i.subtotalAmount), SUM(i.vatAmount))"
+        + " FROM Invoice i WHERE i.invoiceYear = :year AND i.status <> 'DRAFT' GROUP BY MONTH(i.issueDate), i.kind, i.status")
     List<MonthlyTotal> monthlyTotals(@Param("year") Integer year);
 
     /** The years that have issued invoices, most recent first. */
     @Query("SELECT DISTINCT i.invoiceYear FROM Invoice i WHERE i.invoiceYear IS NOT NULL ORDER BY i.invoiceYear DESC")
     List<Integer> findInvoiceYears();
 
-    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.status = :status")
-    BigDecimal sumByStatus(@Param("status") InvoiceStatus status);
 }

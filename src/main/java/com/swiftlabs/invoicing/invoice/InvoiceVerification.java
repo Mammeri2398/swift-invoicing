@@ -8,18 +8,24 @@ import java.time.LocalDate;
  */
 public final class InvoiceVerification {
 
+    private final DocumentKind kind;
     private final String number;
     private final InvoiceStatus status;
     private final LocalDate issueDate;
 
-    private InvoiceVerification(String number, InvoiceStatus status, LocalDate issueDate) {
+    private InvoiceVerification(DocumentKind kind, String number, InvoiceStatus status, LocalDate issueDate) {
+        this.kind = kind;
         this.number = number;
         this.status = status;
         this.issueDate = issueDate;
     }
 
     public static InvoiceVerification of(Invoice invoice) {
-        return new InvoiceVerification(invoice.getInvoiceNumber(), invoice.getStatus(), invoice.getIssueDate());
+        return new InvoiceVerification(invoice.getKind(), invoice.getInvoiceNumber(), invoice.getStatus(), invoice.getIssueDate());
+    }
+
+    public boolean isCreditNote() {
+        return kind == DocumentKind.CREDIT_NOTE;
     }
 
     public String getNumber() {

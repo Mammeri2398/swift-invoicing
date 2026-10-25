@@ -47,12 +47,15 @@ public class InvoiceExport {
         new Column("Client", 32, i -> i.getClientName() != null ? i.getClientName() : i.getClient().getName()),
         new Column("NIF client", 22, i -> i.isDraft() ? i.getClient().getNif() : i.getClientNif()),
         new Column("Mode de paiement", 18, i -> paymentLabel(i.getPaymentMethod())),
-        new Column("Total HT (DA)", 16, Invoice::getSubtotalAmount),
-        new Column("TVA (DA)", 14, Invoice::getVatAmount),
-        new Column("Total TTC (DA)", 16, Invoice::getTotalAmount),
+        // Credit notes negative, so that a column sum is the net amount
+        new Column("Total HT (DA)", 16, i -> signed(i, i.getSubtotalAmount())),
+        new Column("TVA (DA)", 14, i -> signed(i, i.getVatAmount())),
+        new Column("Total TTC (DA)", 16, i -> signed(i, i.getTotalAmount())),
         new Column("Émise le", 17, Invoice::getIssuedAt),
         new Column("Payée le", 17, Invoice::getPaidAt),
-        new Column("Annulée le", 17, Invoice::getCancelledAt));
+        new Column("Annulée le", 17, Invoice::getCancelledAt),
+        new Column("Type", 10, i -> i.getKind().getLabel()),
+        new Column("Facture d'origine", 16, i -> i.getOriginalInvoice() != null ? i.getOriginalInvoice().getInvoiceNumber() : null));
 
     public byte[] toCsv(List<Invoice> invoices) {
         StringBuilder csv = new StringBuilder("﻿");
@@ -163,6 +166,10 @@ public class InvoiceExport {
         CellStyle style = workbook.createCellStyle();
         style.setDataFormat(workbook.createDataFormat().getFormat(format));
         return style;
+    }
+
+    private static BigDecimal signed(Invoice invoice, BigDecimal amount) {
+        return invoice.isCreditNote() ? amount.negate() : amount;
     }
 
     static String statusLabel(InvoiceStatus status) {

@@ -40,6 +40,11 @@ public final class AmountUtils {
     }
 
     /** Quantity without currency: up to 3 decimals, French separators ("1 234,5"). */
+    /** A TVA rate for display: 19 -> "19", 9.5 -> "9,5". */
+    public static String formatRate(BigDecimal rate) {
+        return rate == null ? "0" : rate.stripTrailingZeros().toPlainString().replace('.', ',');
+    }
+
     public static String formatQuantity(BigDecimal quantity) {
         if (quantity == null) {
             quantity = BigDecimal.ZERO;

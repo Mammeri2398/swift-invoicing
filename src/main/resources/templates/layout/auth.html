@@ -15,7 +15,8 @@
             </span>
             <span class="flex flex-col leading-tight">
                 <span class="text-title-sm text-primary">Swift Invoicing</span>
-                <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Auto-entrepreneur ANAE</span>
+                <span class="text-label-sm uppercase tracking-wider text-on-surface-variant"
+                      th:text="${companyType?.company} ? 'Gestion de facturation' : 'Auto-entrepreneur ANAE'">Auto-entrepreneur ANAE</span>
             </span>
         </a>
         <div th:replace="~{layout/fragments :: alerts}"></div>

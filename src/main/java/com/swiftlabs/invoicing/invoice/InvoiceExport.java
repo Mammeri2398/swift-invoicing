@@ -47,7 +47,9 @@ public class InvoiceExport {
         new Column("Client", 32, i -> i.getClientName() != null ? i.getClientName() : i.getClient().getName()),
         new Column("NIF client", 22, i -> i.isDraft() ? i.getClient().getNif() : i.getClientNif()),
         new Column("Mode de paiement", 18, i -> paymentLabel(i.getPaymentMethod())),
-        new Column("Montant (DA)", 16, Invoice::getTotalAmount),
+        new Column("Total HT (DA)", 16, Invoice::getSubtotalAmount),
+        new Column("TVA (DA)", 14, Invoice::getVatAmount),
+        new Column("Total TTC (DA)", 16, Invoice::getTotalAmount),
         new Column("Émise le", 17, Invoice::getIssuedAt),
         new Column("Payée le", 17, Invoice::getPaidAt),
         new Column("Annulée le", 17, Invoice::getCancelledAt));

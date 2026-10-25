@@ -86,7 +86,7 @@ class InvoiceExportTest {
 
         assertThat(csv).startsWith("﻿N° facture;Statut;Date d'émission;");
         assertThat(rows).hasSize(3);
-        assertThat(rows[1]).startsWith(issued.getInvoiceNumber() + ";Payée;10/03/2026;;\"Atlas; \"\"Services\"\"\";;Virement CCP;1500,50;");
+        assertThat(rows[1]).startsWith(issued.getInvoiceNumber() + ";Payée;10/03/2026;;\"Atlas; \"\"Services\"\"\";;Virement CCP;1500,50;0,00;1500,50;");
         // The formula is turned into text, and the 2025 invoice is filtered out
         assertThat(rows[2]).startsWith("Brouillon;Brouillon;02/04/2026;;\"'=HYPERLINK(\"\"http://evil.example\"\")\";");
         assertThat(csv).doesNotContain("Client 2025");
@@ -101,14 +101,20 @@ class InvoiceExportTest {
         try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(result.getResponse().getContentAsByteArray()))) {
             Sheet sheet = workbook.getSheet("Factures");
             assertThat(sheet.getLastRowNum()).isEqualTo(1);
-            assertThat(sheet.getRow(0).getCell(7).getStringCellValue()).isEqualTo("Montant (DA)");
+            assertThat(sheet.getRow(0).getCell(7).getStringCellValue()).isEqualTo("Total HT (DA)");
+            assertThat(sheet.getRow(0).getCell(8).getStringCellValue()).isEqualTo("TVA (DA)");
+            assertThat(sheet.getRow(0).getCell(9).getStringCellValue()).isEqualTo("Total TTC (DA)");
             Row row = sheet.getRow(1);
             assertThat(row.getCell(0).getStringCellValue()).isEqualTo(issued.getInvoiceNumber());
             assertThat(DateUtil.isCellDateFormatted(row.getCell(2))).isTrue();
             assertThat(row.getCell(2).getLocalDateTimeCellValue().toLocalDate()).isEqualTo(LocalDate.of(2026, 3, 10));
             assertThat(row.getCell(7).getCellType()).isEqualTo(CellType.NUMERIC);
             assertThat(row.getCell(7).getNumericCellValue()).isEqualTo(1500.50);
-            assertThat(row.getCell(9).getCellType()).isEqualTo(CellType.NUMERIC);
+            // Auto-entrepreneur: no TVA, TTC = HT
+            assertThat(row.getCell(8).getNumericCellValue()).isZero();
+            assertThat(row.getCell(9).getNumericCellValue()).isEqualTo(1500.50);
+            // Paid on: a real date
+            assertThat(row.getCell(11).getCellType()).isEqualTo(CellType.NUMERIC);
         }
     }
 

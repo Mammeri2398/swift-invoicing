@@ -91,7 +91,8 @@
                     <th scope="col">Unité</th>
                     <th scope="col" class="num">Quantité</th>
                     <th scope="col" class="num">Prix unitaire</th>
-                    <th scope="col" class="num">Total</th>
+                    <th th:if="${issuer.company}" scope="col" class="num">TVA</th>
+                    <th scope="col" class="num" th:text="${issuer.company} ? 'Total HT' : 'Total'">Total</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -101,15 +102,27 @@
                     <td class="text-on-surface-variant" th:text="${line.unit ?: '—'}">jour</td>
                     <td class="num" th:text="${amountUtils.formatQuantity(line.quantity)}">1</td>
                     <td class="num" th:text="${amountUtils.format(line.unitPrice)}">0,00 DA</td>
+                    <td th:if="${issuer.company}" class="num"
+                        th:text="${line.vatRate.signum() == 0 ? 'Exonéré' : amountUtils.formatRate(line.vatRate) + ' %'}">19 %</td>
                     <td class="num font-semibold" th:text="${amountUtils.format(line.lineTotal)}">0,00 DA</td>
                 </tr>
                 </tbody>
             </table>
         </div>
         <div class="flex flex-col items-end gap-1 bg-surface-container-low px-5 py-4">
-            <p class="text-body-md">Total à payer : <strong class="text-headline-md tabular-nums text-primary" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</strong></p>
+            <dl th:if="${issuer.company}" class="flex w-full max-w-xs flex-col gap-1 text-body-md">
+                <div class="flex justify-between gap-6"><dt class="text-on-surface-variant">Total HT</dt>
+                    <dd class="tabular-nums" th:text="${amountUtils.format(invoice.subtotalAmount)}">0,00 DA</dd></div>
+                <div th:each="v : ${invoice.vatBreakdown}" class="flex justify-between gap-6">
+                    <dt class="text-on-surface-variant" th:text="${'TVA ' + amountUtils.formatRate(v.rate) + ' %'}">TVA 19 %</dt>
+                    <dd class="tabular-nums" th:text="${amountUtils.format(v.amount)}">0,00 DA</dd></div>
+                <div th:if="${invoice.vatBreakdown.isEmpty()}" class="flex justify-between gap-6"><dt class="text-on-surface-variant">TVA</dt>
+                    <dd class="tabular-nums" th:text="${amountUtils.format(invoice.vatAmount)}">0,00 DA</dd></div>
+            </dl>
+            <p class="text-body-md"><th:block th:text="${issuer.company} ? 'Total TTC à payer :' : 'Total à payer :'">Total à payer :</th:block>
+                <strong class="text-headline-md tabular-nums text-primary" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</strong></p>
             <p class="text-body-sm italic text-on-surface-variant" th:text="${amountInWords.convert(invoice.totalAmount)}">Montant en lettres</p>
-            <p class="text-body-sm text-on-surface-variant" th:text="${vatMention}">TVA non applicable</p>
+            <p th:unless="${issuer.company}" class="text-body-sm text-on-surface-variant" th:text="${vatMention}">TVA non applicable</p>
         </div>
     </section>
 

@@ -21,11 +21,32 @@
         <!-- The fieldset disables every input for users without EDIT_ISSUER -->
         <fieldset th:disabled="${!canEdit}" class="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-3">
             <div class="flex flex-col gap-6 lg:col-span-2">
+                <!-- Legal status: shows the matching fields (see issuer-form.js) and decides whether TVA applies -->
+                <section class="card">
+                    <div class="card-header"><h2 class="card-title"><span class="icon">domain</span>Type d'entreprise</h2></div>
+                    <div class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <label class="flex cursor-pointer items-start gap-3 rounded-lg p-4 ring-1 ring-surface-variant has-[:checked]:bg-primary-fixed/30 has-[:checked]:ring-2 has-[:checked]:ring-primary">
+                            <input type="radio" th:field="*{companyType}" value="AUTO_ENTREPRENEUR" class="mt-1" data-company-type/>
+                            <span><span class="block font-semibold">Auto-entrepreneur</span>
+                                <span class="hint">Carte ANAE, TVA non applicable, plafond annuel de chiffre d'affaires.</span></span>
+                        </label>
+                        <label class="flex cursor-pointer items-start gap-3 rounded-lg p-4 ring-1 ring-surface-variant has-[:checked]:bg-primary-fixed/30 has-[:checked]:ring-2 has-[:checked]:ring-primary">
+                            <input type="radio" th:field="*{companyType}" value="COMPANY" class="mt-1" data-company-type/>
+                            <span><span class="block font-semibold">Société</span>
+                                <span class="hint">SARL, EURL, SPA… : registre du commerce, article d'imposition, TVA sur chaque ligne.</span></span>
+                        </label>
+                        <p class="hint sm:col-span-2">Les factures déjà émises ne changent pas : elles gardent les informations de leur date d'émission.</p>
+                    </div>
+                </section>
+
                 <section class="card">
                     <div class="card-header"><h2 class="card-title"><span class="icon">badge</span>Identité</h2></div>
                     <div class="card-body form-grid">
                         <div class="field">
-                            <label class="label" for="fullName">Nom complet du titulaire <span class="required">*</span></label>
+                            <label class="label" for="fullName">
+                                <span data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">Nom complet du titulaire</span>
+                                <span data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">Raison sociale</span>
+                                <span class="required">*</span></label>
                             <input class="input" th:errorclass="input-invalid" th:field="*{fullName}" type="text" required maxlength="255"/>
                             <p th:replace="~{layout/fragments :: fieldError('fullName')}"></p>
                         </div>
@@ -34,7 +55,7 @@
                             <input class="input" th:errorclass="input-invalid" th:field="*{tradeName}" type="text" maxlength="255"/>
                             <p th:replace="~{layout/fragments :: fieldError('tradeName')}"></p>
                         </div>
-                        <div class="field md:col-span-2">
+                        <div class="field md:col-span-2" data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">
                             <label class="label" for="legal-quality">Qualité légale</label>
                             <input class="input" id="legal-quality" type="text" readonly value="Entrepreneur individuel / Auto-entrepreneur"/>
                             <p class="hint">Mention imprimée sous votre nom sur chaque facture.</p>
@@ -50,10 +71,34 @@
                 <section class="card">
                     <div class="card-header"><h2 class="card-title"><span class="icon">account_balance</span>Identifiants légaux et fiscaux</h2></div>
                     <div class="card-body form-grid">
-                        <div class="field">
+                        <div class="field" data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">
                             <label class="label" for="aeCardNumber">N° carte auto-entrepreneur <span class="required">*</span></label>
                             <input class="input input-mono" th:errorclass="input-invalid" th:field="*{aeCardNumber}" type="text" required maxlength="50"/>
                             <p th:replace="~{layout/fragments :: fieldError('aeCardNumber')}"></p>
+                        </div>
+                        <div class="field" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
+                            <label class="label" for="legalForm">Forme juridique <span class="required">*</span></label>
+                            <input class="input" th:errorclass="input-invalid" th:field="*{legalForm}" type="text" maxlength="50" list="legal-forms" placeholder="SARL"/>
+                            <datalist id="legal-forms">
+                                <option value="SARL"></option><option value="EURL"></option><option value="SPA"></option>
+                                <option value="SNC"></option><option value="SCS"></option>
+                            </datalist>
+                            <p th:replace="~{layout/fragments :: fieldError('legalForm')}"></p>
+                        </div>
+                        <div class="field" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
+                            <label class="label" for="shareCapital">Capital social (DA) <span class="required">*</span></label>
+                            <input class="input input-mono" th:errorclass="input-invalid" th:field="*{shareCapital}" type="number" min="0" step="0.01"/>
+                            <p th:replace="~{layout/fragments :: fieldError('shareCapital')}"></p>
+                        </div>
+                        <div class="field" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
+                            <label class="label" for="rcNumber">N° registre du commerce (RC) <span class="required">*</span></label>
+                            <input class="input input-mono" th:errorclass="input-invalid" th:field="*{rcNumber}" type="text" maxlength="50"/>
+                            <p th:replace="~{layout/fragments :: fieldError('rcNumber')}"></p>
+                        </div>
+                        <div class="field" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
+                            <label class="label" for="taxArticle">Article d'imposition (AI) <span class="required">*</span></label>
+                            <input class="input input-mono" th:errorclass="input-invalid" th:field="*{taxArticle}" type="text" maxlength="50"/>
+                            <p th:replace="~{layout/fragments :: fieldError('taxArticle')}"></p>
                         </div>
                         <div class="field">
                             <label class="label" for="nif">NIF <span class="required">*</span></label>
@@ -65,9 +110,13 @@
                             <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="50"/>
                             <p th:replace="~{layout/fragments :: fieldError('nis')}"></p>
                         </div>
-                        <div class="alert alert-info md:col-span-2">
+                        <div class="alert alert-info md:col-span-2" data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">
                             <span class="icon">receipt_long</span>
                             <span>Mention TVA imprimée sur les factures : <strong th:text="${vatMention}">TVA non applicable</strong></span>
+                        </div>
+                        <div class="alert alert-info md:col-span-2" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
+                            <span class="icon">receipt_long</span>
+                            <span>TVA choisie sur chaque ligne de facture ; totaux HT, TVA et TTC imprimés sur les factures.</span>
                         </div>
                     </div>
                 </section>
@@ -130,7 +179,7 @@
                     </div>
                 </section>
 
-                <section class="card">
+                <section class="card" data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">
                     <div class="card-header">
                         <h2 class="card-title"><span class="icon">trending_up</span>Plafond annuel</h2>
                         <span class="badge badge-neutral" th:text="${'Exercice ' + stats.year}">Exercice 2026</span>
@@ -171,13 +220,19 @@
                             <div>
                                 <div class="text-[12px] font-bold" data-preview="fullName" th:text="*{fullName}">Nom</div>
                                 <div class="text-on-surface-variant" data-preview="tradeName" th:text="*{tradeName}"></div>
-                                <div class="text-[10px] uppercase text-on-surface-variant">Entrepreneur individuel / Auto-entrepreneur</div>
+                                <div class="text-[10px] uppercase text-on-surface-variant" data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">Entrepreneur individuel / Auto-entrepreneur</div>
+                                <div class="text-[10px] uppercase text-on-surface-variant" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
+                                    <span data-preview="legalForm" th:text="*{legalForm}">SARL</span></div>
                             </div>
                             <div class="flex justify-between gap-2 border-t border-dashed border-outline-variant pt-2 text-[10px] text-on-surface-variant">
                                 <span>NIF <span data-preview="nif" th:text="*{nif}"></span></span>
-                                <span>AE <span data-preview="aeCardNumber" th:text="*{aeCardNumber}"></span></span>
+                                <span data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">AE <span data-preview="aeCardNumber" th:text="*{aeCardNumber}"></span></span>
+                                <span data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">RC <span data-preview="rcNumber" th:text="*{rcNumber}"></span></span>
                             </div>
-                            <div class="rounded bg-surface-container-low p-1 text-center text-[10px] italic text-primary" th:text="${vatMention}">TVA non applicable</div>
+                            <div class="rounded bg-surface-container-low p-1 text-center text-[10px] italic text-primary" data-show="AUTO_ENTREPRENEUR"
+                                 th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'" th:text="${vatMention}">TVA non applicable</div>
+                            <div class="rounded bg-surface-container-low p-1 text-center text-[10px] italic text-primary" data-show="COMPANY"
+                                 th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">Total HT · TVA · Total TTC</div>
                         </div>
                     </div>
                 </section>

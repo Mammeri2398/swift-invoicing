@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.dashboard;
 import com.swiftlabs.invoicing.invoice.InvoiceService;
 import com.swiftlabs.invoicing.invoice.InvoiceStatus;
 import com.swiftlabs.invoicing.invoice.MonthlyTotal;
+import com.swiftlabs.invoicing.issuer.Issuer;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import org.springframework.stereotype.Service;
@@ -29,13 +30,15 @@ public class TurnoverService {
 
     public TurnoverReport report(int year) {
         List<MonthlyTotal> totals = invoiceService.monthlyTotals(year);
-        BigDecimal ceiling = issuerService.getIssuer().getAnnualCeiling();
+        Issuer issuer = issuerService.getIssuer();
+        BigDecimal ceiling = issuer.getAnnualCeiling();
         List<TurnoverReport.Month> months = new ArrayList<>();
         BigDecimal cumulative = BigDecimal.ZERO;
         for (int m = 1; m <= 12; m++) {
             BigDecimal paid = BigDecimal.ZERO;
             BigDecimal pending = BigDecimal.ZERO;
             BigDecimal cancelled = BigDecimal.ZERO;
+            BigDecimal vat = BigDecimal.ZERO;
             long count = 0;
             long cancelledCount = 0;
             for (MonthlyTotal total : totals) {
@@ -47,6 +50,7 @@ public class TurnoverService {
                     cancelled = cancelled.add(total.amount());
                 } else {
                     count += total.count();
+                    vat = vat.add(total.vat());
                     if (total.status() == InvoiceStatus.PAID) {
                         paid = paid.add(total.amount());
                     } else {
@@ -56,10 +60,11 @@ public class TurnoverService {
             }
             BigDecimal billed = paid.add(pending);
             cumulative = cumulative.add(billed);
-            months.add(new TurnoverReport.Month(m, monthName(m), count, billed, paid, pending,
-                cancelledCount, cancelled, cumulative, cumulative.compareTo(ceiling) >= 0 && billed.signum() > 0));
+            boolean overCeiling = !issuer.isCompany() && cumulative.compareTo(ceiling) >= 0 && billed.signum() > 0;
+            months.add(new TurnoverReport.Month(m, monthName(m), count, billed, paid, pending, vat,
+                cancelledCount, cancelled, cumulative, overCeiling));
         }
-        return new TurnoverReport(year, months, ceiling);
+        return new TurnoverReport(year, months, ceiling, issuer.isCompany());
     }
 
     /** Years offered in the selector: the years with invoices, and always the current one. */

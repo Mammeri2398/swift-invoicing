@@ -2,6 +2,8 @@ package com.swiftlabs.invoicing.issuer;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -14,6 +16,11 @@ public class Issuer {
     @Id
     private Long id;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "company_type", nullable = false, length = 20)
+    private CompanyType companyType = CompanyType.AUTO_ENTREPRENEUR;
+
+    /** The holder's name for an auto-entrepreneur, the raison sociale for a company. */
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
@@ -32,8 +39,23 @@ public class Issuer {
     @Column(name = "email")
     private String email;
 
-    @Column(name = "ae_card_number", nullable = false)
+    /** Auto-entrepreneur only. */
+    @Column(name = "ae_card_number")
     private String aeCardNumber;
+
+    /** Company only: SARL, EURL, SPA... */
+    @Column(name = "legal_form", length = 50)
+    private String legalForm;
+
+    @Column(name = "share_capital")
+    private BigDecimal shareCapital;
+
+    @Column(name = "rc_number", length = 50)
+    private String rcNumber;
+
+    /** Article d'imposition (AI). */
+    @Column(name = "tax_article", length = 50)
+    private String taxArticle;
 
     @Column(name = "nif", nullable = false)
     private String nif;
@@ -67,6 +89,50 @@ public class Issuer {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public CompanyType getCompanyType() {
+        return companyType;
+    }
+
+    public void setCompanyType(CompanyType companyType) {
+        this.companyType = companyType;
+    }
+
+    public boolean isCompany() {
+        return companyType == CompanyType.COMPANY;
+    }
+
+    public String getLegalForm() {
+        return legalForm;
+    }
+
+    public void setLegalForm(String legalForm) {
+        this.legalForm = legalForm;
+    }
+
+    public BigDecimal getShareCapital() {
+        return shareCapital;
+    }
+
+    public void setShareCapital(BigDecimal shareCapital) {
+        this.shareCapital = shareCapital;
+    }
+
+    public String getRcNumber() {
+        return rcNumber;
+    }
+
+    public void setRcNumber(String rcNumber) {
+        this.rcNumber = rcNumber;
+    }
+
+    public String getTaxArticle() {
+        return taxArticle;
+    }
+
+    public void setTaxArticle(String taxArticle) {
+        this.taxArticle = taxArticle;
     }
 
     public String getFullName() {

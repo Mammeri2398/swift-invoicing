@@ -40,21 +40,35 @@ public class InvoiceLine {
     @Column(name = "unit_price", nullable = false, precision = 14, scale = 2)
     private BigDecimal unitPrice;
 
+    /** Total before TVA (HT). */
     @Column(name = "line_total", nullable = false, precision = 14, scale = 2)
     private BigDecimal lineTotal;
+
+    /** TVA rate in percent: 0 for an auto-entrepreneur or an exempt line. */
+    @Column(name = "vat_rate", nullable = false, precision = 5, scale = 2)
+    private BigDecimal vatRate = BigDecimal.ZERO;
 
     public InvoiceLine() {
     }
 
-    /** A line whose total is computed from quantity and unit price (rounded to the cent). */
-    public static InvoiceLine of(String description, String unit, BigDecimal quantity, BigDecimal unitPrice) {
+    /** A line whose total (HT) is computed from quantity and unit price (rounded to the cent). */
+    public static InvoiceLine of(String description, String unit, BigDecimal quantity, BigDecimal unitPrice, BigDecimal vatRate) {
         InvoiceLine line = new InvoiceLine();
+        line.setVatRate(vatRate != null ? vatRate : BigDecimal.ZERO);
         line.setDescription(description);
         line.setUnit(unit);
         line.setQuantity(quantity);
         line.setUnitPrice(unitPrice);
         line.setLineTotal(AmountUtils.lineTotal(quantity, unitPrice));
         return line;
+    }
+
+    public BigDecimal getVatRate() {
+        return vatRate;
+    }
+
+    public void setVatRate(BigDecimal vatRate) {
+        this.vatRate = vatRate;
     }
 
     public Long getId() {

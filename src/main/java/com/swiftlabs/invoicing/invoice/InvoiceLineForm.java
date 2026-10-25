@@ -30,6 +30,9 @@ public class InvoiceLineForm {
     private BigDecimal unitPrice;
     private BigDecimal lineTotal;
 
+    /** Percent; must be one of invoice.vat-rates for a company, 0 for an auto-entrepreneur (see InvoiceService). */
+    private BigDecimal vatRate;
+
     public InvoiceLineForm() {
         this.quantity = BigDecimal.ZERO;
         this.unitPrice = BigDecimal.ZERO;
@@ -76,6 +79,14 @@ public class InvoiceLineForm {
         this.unitPrice = unitPrice;
     }
 
+    public BigDecimal getVatRate() {
+        return vatRate;
+    }
+
+    public void setVatRate(BigDecimal vatRate) {
+        this.vatRate = vatRate;
+    }
+
     public BigDecimal getLineTotal() {
         return lineTotal;
     }
@@ -92,6 +103,7 @@ public class InvoiceLineForm {
         form.setQuantity(line.getQuantity());
         form.setUnitPrice(line.getUnitPrice());
         form.setLineTotal(line.getLineTotal());
+        form.setVatRate(line.getVatRate());
         return form;
     }
 }

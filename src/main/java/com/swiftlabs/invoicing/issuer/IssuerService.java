@@ -39,22 +39,39 @@ public class IssuerService {
     @Transactional
     public Issuer save(IssuerForm form) {
         // Validate before touching the managed row, so a rejected form never gets flushed
-        requireText("fullName", form.getFullName(), "Le nom complet est obligatoire.");
-        requireText("aeCardNumber", form.getAeCardNumber(), "Le numéro de carte auto-entrepreneur est obligatoire.");
+        CompanyType type = form.getCompanyType() != null ? form.getCompanyType() : CompanyType.AUTO_ENTREPRENEUR;
+        requireText("fullName", form.getFullName(), type.isCompany() ? "La raison sociale est obligatoire." : "Le nom complet est obligatoire.");
         requireText("nif", form.getNif(), "Le NIF est obligatoire.");
+        // Identifiers required on invoices, by legal status (décret exécutif 05-468)
+        if (type.isCompany()) {
+            requireText("legalForm", form.getLegalForm(), "La forme juridique est obligatoire pour une société.");
+            if (form.getShareCapital() == null) {
+                throw new BusinessException("shareCapital", "Le capital social est obligatoire pour une société.");
+            }
+            requireText("rcNumber", form.getRcNumber(), "Le numéro de registre du commerce est obligatoire pour une société.");
+            requireText("taxArticle", form.getTaxArticle(), "L'article d'imposition est obligatoire pour une société.");
+        } else {
+            requireText("aeCardNumber", form.getAeCardNumber(), "Le numéro de carte auto-entrepreneur est obligatoire.");
+        }
         if (form.getAnnualCeiling() == null || form.getAnnualCeiling().signum() <= 0) {
             throw new BusinessException("annualCeiling", "Le plafond annuel doit être supérieur à 0.");
         }
 
         // The logo is not on this form: it is kept
         Issuer issuer = getIssuer();
+        issuer.setCompanyType(type);
         issuer.setFullName(form.getFullName());
         issuer.setTradeName(form.getTradeName());
         issuer.setAddress(form.getAddress());
         issuer.setCity(form.getCity());
         issuer.setPhone(form.getPhone());
         issuer.setEmail(form.getEmail());
+        // The other status's identifiers are kept, in case the type is switched back
         issuer.setAeCardNumber(form.getAeCardNumber());
+        issuer.setLegalForm(form.getLegalForm());
+        issuer.setShareCapital(form.getShareCapital());
+        issuer.setRcNumber(form.getRcNumber());
+        issuer.setTaxArticle(form.getTaxArticle());
         issuer.setNif(form.getNif());
         issuer.setNis(form.getNis());
         issuer.setActivityDescription(form.getActivityDescription());

@@ -46,7 +46,11 @@
         <td>
             <div class="issuer-name" th:text="${issuer.fullName}">Nom émetteur</div>
             <div class="issuer-trade" th:if="${issuer.tradeName}" th:text="${issuer.tradeName}">Nom commercial</div>
-            <div class="issuer-kind">Entrepreneur individuel / Auto-entrepreneur</div>
+            <div class="issuer-kind" th:unless="${issuer.company}">Entrepreneur individuel / Auto-entrepreneur</div>
+            <div class="issuer-kind" th:if="${issuer.company}">
+                <span th:text="${issuer.legalForm}">SARL</span><th:block th:if="${issuer.shareCapital}"> au capital de
+                <span th:text="${amountUtils.format(issuer.shareCapital)}">100 000,00 DA</span></th:block>
+            </div>
             <div class="issuer-meta" th:if="${issuer.address != null or issuer.city != null}">
                 <span th:text="${issuer.address}">Adresse</span><th:block th:if="${issuer.address != null and issuer.city != null}">, </th:block><span th:text="${issuer.city}">Ville</span>
             </div>
@@ -55,10 +59,17 @@
                 <th:block th:if="${issuer.phone != null and issuer.email != null}"> | </th:block>
                 <th:block th:if="${issuer.email}"><b>Email :</b> <span th:text="${issuer.email}">email</span></th:block>
             </div>
-            <div class="issuer-meta">
+            <!-- Identifiers required on invoices (décret exécutif 05-468), by legal status -->
+            <div class="issuer-meta" th:unless="${issuer.company}">
                 <b>N° carte auto-entrepreneur :</b> <span th:text="${issuer.aeCardNumber}">-</span>
                 | <b>NIF :</b> <span th:text="${issuer.nif}">-</span>
                 <th:block th:if="${issuer.nis}"> | <b>NIS :</b> <span th:text="${issuer.nis}">-</span></th:block>
+            </div>
+            <div class="issuer-meta" th:if="${issuer.company}">
+                <b>RC :</b> <span th:text="${issuer.rcNumber}">-</span>
+                | <b>NIF :</b> <span th:text="${issuer.nif}">-</span>
+                <th:block th:if="${issuer.nis}"> | <b>NIS :</b> <span th:text="${issuer.nis}">-</span></th:block>
+                | <b>AI :</b> <span th:text="${issuer.taxArticle}">-</span>
             </div>
         </td>
         <td class="logo" th:if="${logoDataUri}"><img th:src="${logoDataUri}" alt=""/></td>
@@ -90,10 +101,11 @@
     <tr>
         <th style="width:6%">N°</th>
         <th>Désignation</th>
-        <th style="width:12%" class="num">Unité</th>
-        <th style="width:14%" class="num">Quantité</th>
-        <th style="width:18%" class="num">Prix unitaire (DA)</th>
-        <th style="width:18%" class="num">Total (DA)</th>
+        <th style="width:10%" class="num">Unité</th>
+        <th style="width:12%" class="num">Quantité</th>
+        <th style="width:17%" class="num">Prix unitaire (DA)</th>
+        <th th:if="${issuer.company}" style="width:9%" class="num">TVA</th>
+        <th style="width:17%" class="num" th:text="${issuer.company} ? 'Total HT (DA)' : 'Total (DA)'">Total (DA)</th>
     </tr>
     </thead>
     <tbody>
@@ -103,11 +115,31 @@
         <td class="num" th:text="${line.unit}">jour</td>
         <td class="num" th:text="${amountUtils.formatQuantity(line.quantity)}">-</td>
         <td class="num" th:text="${amountUtils.format(line.unitPrice)}">0,00</td>
+        <td th:if="${issuer.company}" class="num"
+            th:text="${line.vatRate.signum() == 0 ? 'Exonéré' : amountUtils.formatRate(line.vatRate) + ' %'}">19 %</td>
         <td class="num" th:text="${amountUtils.format(line.lineTotal)}">0,00</td>
     </tr>
+    <th:block th:if="${issuer.company}">
+        <!-- Labels over two columns (unit price and TVA): the TVA column alone is too narrow -->
+        <tr>
+            <td colspan="4"></td>
+            <td class="num" colspan="2">Total HT</td>
+            <td class="num" th:text="${amountUtils.format(invoice.subtotalAmount)}">0,00 DA</td>
+        </tr>
+        <tr th:each="v : ${invoice.vatBreakdown}">
+            <td colspan="4"></td>
+            <td class="num" colspan="2" th:text="${'TVA ' + amountUtils.formatRate(v.rate) + ' %'}">TVA 19 %</td>
+            <td class="num" th:text="${amountUtils.format(v.amount)}">0,00 DA</td>
+        </tr>
+        <tr th:if="${invoice.vatBreakdown.isEmpty()}">
+            <td colspan="4"></td>
+            <td class="num" colspan="2">TVA</td>
+            <td class="num" th:text="${amountUtils.format(invoice.vatAmount)}">0,00 DA</td>
+        </tr>
+    </th:block>
     <tr class="total">
         <td colspan="4"></td>
-        <td class="num">Total à payer</td>
+        <td class="num" th:colspan="${issuer.company} ? 2 : 1" th:text="${issuer.company} ? 'Total TTC' : 'Total à payer'">Total à payer</td>
         <td class="num" th:text="${amountUtils.format(invoice.totalAmount)}">0,00 DA</td>
     </tr>
     </tbody>
@@ -115,7 +147,7 @@
 
 <div class="total-in-words" th:text="${amountInWords.convert(invoice.totalAmount)}">Montant en lettres</div>
 
-<div class="vat-mention" th:text="${vatMention}">TVA non applicable</div>
+<div class="vat-mention" th:unless="${issuer.company}" th:text="${vatMention}">TVA non applicable</div>
 
 <div th:if="${invoice.paymentMethod != null or issuer.bankAccount != null}">
     <div class="block" style="margin-top:10px;">
@@ -132,7 +164,7 @@
 </div>
 
 <div class="footer-note">
-    Auto-entrepreneur (ANAE) — TVA non applicable.<br/>
+    <th:block th:unless="${issuer.company}">Auto-entrepreneur (ANAE) — TVA non applicable.<br/></th:block>
     Montants exprimés en dinars algériens (DA). Facture générée par Swift Invoicing.
 </div>
 </body>

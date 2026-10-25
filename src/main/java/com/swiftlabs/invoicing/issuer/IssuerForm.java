@@ -14,6 +14,9 @@ public class IssuerForm {
 
     private Long id;
 
+    @NotNull
+    private CompanyType companyType = CompanyType.AUTO_ENTREPRENEUR;
+
     @NotBlank
     @Size(max = 255)
     private String fullName;
@@ -35,9 +38,23 @@ public class IssuerForm {
     @Size(max = 255)
     private String email;
 
-    @NotBlank
+    // Required for an auto-entrepreneur only (checked by IssuerService)
     @Size(max = 50)
     private String aeCardNumber;
+
+    // Required for a company only (checked by IssuerService)
+    @Size(max = 50)
+    private String legalForm;
+
+    @DecimalMin("0")
+    @Digits(integer = 12, fraction = 2)
+    private BigDecimal shareCapital;
+
+    @Size(max = 50)
+    private String rcNumber;
+
+    @Size(max = 50)
+    private String taxArticle;
 
     @NotBlank
     @Size(max = 50)
@@ -64,6 +81,16 @@ public class IssuerForm {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public CompanyType getCompanyType() { return companyType; }
+    public void setCompanyType(CompanyType companyType) { this.companyType = companyType; }
+    public String getLegalForm() { return legalForm; }
+    public void setLegalForm(String legalForm) { this.legalForm = legalForm; }
+    public BigDecimal getShareCapital() { return shareCapital; }
+    public void setShareCapital(BigDecimal shareCapital) { this.shareCapital = shareCapital; }
+    public String getRcNumber() { return rcNumber; }
+    public void setRcNumber(String rcNumber) { this.rcNumber = rcNumber; }
+    public String getTaxArticle() { return taxArticle; }
+    public void setTaxArticle(String taxArticle) { this.taxArticle = taxArticle; }
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
     public String getTradeName() { return tradeName; }
@@ -92,6 +119,11 @@ public class IssuerForm {
     public static IssuerForm from(Issuer issuer) {
         IssuerForm form = new IssuerForm();
         form.setId(issuer.getId());
+        form.setCompanyType(issuer.getCompanyType());
+        form.setLegalForm(issuer.getLegalForm());
+        form.setShareCapital(issuer.getShareCapital());
+        form.setRcNumber(issuer.getRcNumber());
+        form.setTaxArticle(issuer.getTaxArticle());
         form.setFullName(issuer.getFullName());
         form.setTradeName(issuer.getTradeName());
         form.setAddress(issuer.getAddress());

@@ -22,7 +22,8 @@
                 </span>
                 <span class="hidden flex-col leading-tight sm:flex">
                     <span class="text-title-sm text-primary">Swift Invoicing</span>
-                    <span class="text-label-sm uppercase tracking-wider text-on-surface-variant">Auto-entrepreneur ANAE</span>
+                    <span class="text-label-sm uppercase tracking-wider text-on-surface-variant"
+                          th:text="${companyType?.company} ? 'Gestion de facturation' : 'Auto-entrepreneur ANAE'">Auto-entrepreneur ANAE</span>
                 </span>
             </a>
             <nav class="hidden items-center gap-1 xl:flex" th:if="${u != null}">
@@ -123,7 +124,7 @@
 
 <footer th:fragment="footer" class="mt-10 bg-surface-container-low">
     <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-body-sm text-on-surface-variant sm:flex-row sm:px-6 lg:px-12">
-        <span>Swift Invoicing — Auto-entrepreneur (ANAE) · Algérie · Montants en DZD</span>
+        <span th:text="${'Swift Invoicing — ' + (companyType?.company ? 'Gestion de facturation' : 'Auto-entrepreneur (ANAE)') + ' · Algérie · Montants en DZD'}">Swift Invoicing — Auto-entrepreneur (ANAE) · Algérie · Montants en DZD</span>
         <a th:href="@{/invoices/lookup}" class="inline-flex items-center gap-1 hover:text-primary">
             <span class="icon icon-sm">verified_user</span>Vérifier une facture
         </a>

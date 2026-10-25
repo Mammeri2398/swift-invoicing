@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.client.Client;
 import com.swiftlabs.invoicing.common.AmountUtils;
+import com.swiftlabs.invoicing.issuer.CompanyType;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -22,7 +23,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 @Entity
 @Table(name = "invoice")
@@ -62,8 +66,16 @@ public class Invoice {
     @Column(name = "notes", length = 1000)
     private String notes;
 
+    /** Amount to pay: total including TVA (TTC). Equal to the subtotal when no TVA applies. */
     @Column(name = "total_amount", nullable = false, precision = 14, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
+
+    /** Total before TVA (HT): sum of the line totals. */
+    @Column(name = "subtotal_amount", nullable = false, precision = 14, scale = 2)
+    private BigDecimal subtotalAmount = BigDecimal.ZERO;
+
+    @Column(name = "vat_amount", nullable = false, precision = 14, scale = 2)
+    private BigDecimal vatAmount = BigDecimal.ZERO;
 
     // Issuer snapshot (copied at issue time)
     @Column(name = "issuer_full_name")
@@ -75,8 +87,24 @@ public class Invoice {
     @Column(name = "issuer_address")
     private String issuerAddress;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "issuer_company_type", length = 20)
+    private CompanyType issuerCompanyType;
+
     @Column(name = "issuer_ae_card_number")
     private String issuerAeCardNumber;
+
+    @Column(name = "issuer_legal_form", length = 50)
+    private String issuerLegalForm;
+
+    @Column(name = "issuer_share_capital", precision = 14, scale = 2)
+    private BigDecimal issuerShareCapital;
+
+    @Column(name = "issuer_rc_number", length = 50)
+    private String issuerRcNumber;
+
+    @Column(name = "issuer_tax_article", length = 50)
+    private String issuerTaxArticle;
 
     @Column(name = "issuer_nif")
     private String issuerNif;
@@ -377,13 +405,85 @@ public class Invoice {
         recalculateTotal();
     }
 
-    /** Total = sum of the line totals, rounded to the cent. */
+    /**
+     * Subtotal (HT) = sum of the line totals; TVA computed per rate on the total of its lines
+     * (see {@link #getVatBreakdown()}); total (TTC) = subtotal + TVA. Every amount rounded to the cent.
+     */
     public BigDecimal recalculateTotal() {
         BigDecimal sum = BigDecimal.ZERO;
         for (InvoiceLine line : lines) {
             sum = sum.add(line.getLineTotal());
         }
-        totalAmount = AmountUtils.round2(sum);
+        subtotalAmount = AmountUtils.round2(sum);
+        vatAmount = getVatBreakdown().stream().map(VatLine::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        totalAmount = subtotalAmount.add(vatAmount);
         return totalAmount;
+    }
+
+    /** TVA of one rate: the total of its lines (base HT) and the TVA on that base. */
+    public record VatLine(BigDecimal rate, BigDecimal base, BigDecimal amount) {
+    }
+
+    /** One entry per TVA rate above 0, highest rate first (empty without TVA). */
+    public List<VatLine> getVatBreakdown() {
+        Map<BigDecimal, BigDecimal> bases = new TreeMap<>(Comparator.reverseOrder());
+        for (InvoiceLine line : lines) {
+            BigDecimal rate = line.getVatRate() != null ? line.getVatRate().stripTrailingZeros() : BigDecimal.ZERO;
+            if (rate.signum() > 0) {
+                bases.merge(rate, line.getLineTotal(), BigDecimal::add);
+            }
+        }
+        List<VatLine> breakdown = new ArrayList<>();
+        bases.forEach((rate, base) -> breakdown.add(new VatLine(rate, AmountUtils.round2(base),
+            AmountUtils.round2(base.multiply(rate).divide(BigDecimal.valueOf(100))))));
+        return breakdown;
+    }
+
+    public BigDecimal getSubtotalAmount() {
+        return subtotalAmount;
+    }
+
+    public BigDecimal getVatAmount() {
+        return vatAmount;
+    }
+
+    public CompanyType getIssuerCompanyType() {
+        return issuerCompanyType;
+    }
+
+    public void setIssuerCompanyType(CompanyType issuerCompanyType) {
+        this.issuerCompanyType = issuerCompanyType;
+    }
+
+    public String getIssuerLegalForm() {
+        return issuerLegalForm;
+    }
+
+    public void setIssuerLegalForm(String issuerLegalForm) {
+        this.issuerLegalForm = issuerLegalForm;
+    }
+
+    public BigDecimal getIssuerShareCapital() {
+        return issuerShareCapital;
+    }
+
+    public void setIssuerShareCapital(BigDecimal issuerShareCapital) {
+        this.issuerShareCapital = issuerShareCapital;
+    }
+
+    public String getIssuerRcNumber() {
+        return issuerRcNumber;
+    }
+
+    public void setIssuerRcNumber(String issuerRcNumber) {
+        this.issuerRcNumber = issuerRcNumber;
+    }
+
+    public String getIssuerTaxArticle() {
+        return issuerTaxArticle;
+    }
+
+    public void setIssuerTaxArticle(String issuerTaxArticle) {
+        this.issuerTaxArticle = issuerTaxArticle;
     }
 }

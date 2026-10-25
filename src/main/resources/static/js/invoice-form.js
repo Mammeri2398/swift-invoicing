@@ -18,6 +18,8 @@
 
     function refresh() {
         var total = 0;
+        // Company: TVA per rate on the total of its lines, as InvoiceService computes it
+        var basesByRate = {};
         var rows = tbody.querySelectorAll('[data-line]');
         rows.forEach(function (row, index) {
             row.querySelector('[data-line-number]').textContent = index + 1;
@@ -31,9 +33,24 @@
             var lineTotal = roundCents(quantity * unitPrice);
             row.querySelector('[data-line-total]').textContent = formatAmount(lineTotal);
             total += lineTotal;
+            var rateSelect = row.querySelector('[data-vat-rate]');
+            var rate = rateSelect ? parseFloat(rateSelect.value) || 0 : 0;
+            basesByRate[rate] = (basesByRate[rate] || 0) + lineTotal;
+        });
+        var subtotal = roundCents(total);
+        var vat = 0;
+        Object.keys(basesByRate).forEach(function (rate) {
+            vat += roundCents(basesByRate[rate] * parseFloat(rate) / 100);
+        });
+        vat = roundCents(vat);
+        form.querySelectorAll('[data-subtotal]').forEach(function (element) {
+            element.textContent = formatAmount(subtotal);
+        });
+        form.querySelectorAll('[data-vat]').forEach(function (element) {
+            element.textContent = formatAmount(vat);
         });
         form.querySelectorAll('[data-grand-total]').forEach(function (element) {
-            element.textContent = formatAmount(roundCents(total));
+            element.textContent = formatAmount(roundCents(subtotal + vat));
         });
         // The last remaining line cannot be removed
         tbody.querySelectorAll('[data-remove-line]').forEach(function (button) {
@@ -57,6 +74,7 @@
         }
     });
     tbody.addEventListener('input', refresh);
+    tbody.addEventListener('change', refresh);
 
     if (!tbody.querySelector('[data-line]')) {
         addLine();

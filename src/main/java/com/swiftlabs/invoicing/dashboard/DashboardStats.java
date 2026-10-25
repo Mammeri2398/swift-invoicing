@@ -11,6 +11,7 @@ public final class DashboardStats {
     private final int year;
     private final BigDecimal totalAmount;
     private final BigDecimal ceiling;
+    private final boolean ceilingApplies;
     private final List<Invoice> recentInvoices;
     private final long unpaidCount;
     private final BigDecimal unpaidAmount;
@@ -18,11 +19,12 @@ public final class DashboardStats {
     private final long clientCount;
     private final CeilingUsage usage;
 
-    public DashboardStats(int year, BigDecimal totalAmount, BigDecimal ceiling, List<Invoice> recentInvoices,
+    public DashboardStats(int year, BigDecimal totalAmount, BigDecimal ceiling, boolean ceilingApplies, List<Invoice> recentInvoices,
                           long unpaidCount, BigDecimal unpaidAmount, long draftCount, long clientCount) {
         this.year = year;
         this.totalAmount = totalAmount;
         this.ceiling = ceiling;
+        this.ceilingApplies = ceilingApplies;
         this.recentInvoices = List.copyOf(recentInvoices);
         this.unpaidCount = unpaidCount;
         this.unpaidAmount = unpaidAmount;
@@ -37,6 +39,11 @@ public final class DashboardStats {
 
     public BigDecimal getTotalAmount() {
         return totalAmount;
+    }
+
+    /** The annual ceiling concerns auto-entrepreneurs only. */
+    public boolean isCeilingApplies() {
+        return ceilingApplies;
     }
 
     public BigDecimal getCeiling() {

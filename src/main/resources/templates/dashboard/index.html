@@ -23,10 +23,11 @@
         <div class="card-body relative flex flex-col gap-6 lg:p-8">
             <div class="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
                 <div class="max-w-xl">
-                    <p class="text-body-sm text-on-surface-variant">Chiffre d'affaires facturé (factures émises et payées)</p>
+                    <p class="text-body-sm text-on-surface-variant"
+                       th:text="${stats.ceilingApplies ? 'Chiffre d''affaires facturé (factures émises et payées)' : 'Chiffre d''affaires HT (factures émises et payées)'}">Chiffre d'affaires facturé (factures émises et payées)</p>
                     <p class="mt-1 text-display-lg tabular-nums text-on-surface" th:text="${amountUtils.format(stats.totalAmount)}">0,00 DA</p>
                 </div>
-                <div class="flex items-center gap-6 rounded-xl bg-surface-container-low p-4">
+                <div th:if="${stats.ceilingApplies}" class="flex items-center gap-6 rounded-xl bg-surface-container-low p-4">
                     <div>
                         <p class="text-label-sm uppercase tracking-wider text-on-surface-variant">Plafond annuel</p>
                         <p class="text-numeric-lg tabular-nums text-on-surface" th:text="${amountUtils.format(stats.ceiling)}">5 000 000,00 DA</p>
@@ -44,7 +45,8 @@
                 </div>
             </div>
 
-            <div class="flex flex-col gap-1.5">
+            <!-- Annual ceiling: auto-entrepreneurs only -->
+            <div th:if="${stats.ceilingApplies}" class="flex flex-col gap-1.5">
                 <div class="flex justify-between text-label-sm">
                     <span class="text-on-surface-variant">Progression vers le plafond</span>
                     <span class="font-semibold text-primary" th:text="${pct + ' % consommé'}">0 % consommé</span>
@@ -55,7 +57,7 @@
                 </div>
             </div>
 
-            <div th:if="${stats.alert100}" class="alert alert-error">
+            <div th:if="${stats.ceilingApplies and stats.alert100}" class="alert alert-error">
                 <span class="icon">warning</span>
                 <div>
                     <p class="font-semibold">Plafond annuel atteint</p>
@@ -64,7 +66,7 @@
                         Le régime de l'auto-entrepreneur peut ne plus s'appliquer : rapprochez-vous de l'ANAE ou d'un expert-comptable.</p>
                 </div>
             </div>
-            <div th:if="${stats.warning80}" class="alert alert-warning">
+            <div th:if="${stats.ceilingApplies and stats.warning80}" class="alert alert-warning">
                 <span class="icon">warning</span>
                 <div>
                     <p class="font-semibold">Plus de 80 % du plafond annuel</p>
@@ -97,7 +99,7 @@
                 <p class="text-body-sm text-on-surface-variant">Factures non émises</p>
             </div>
         </a>
-        <div class="stat">
+        <div th:if="${stats.ceilingApplies}" class="stat">
             <div class="flex items-center justify-between">
                 <span class="stat-label">Reste avant plafond</span>
                 <span class="stat-icon"><span class="icon">trending_up</span></span>
@@ -107,6 +109,16 @@
                 <p class="text-body-sm text-on-surface-variant" th:text="${'Alerte à ' + amountUtils.format(stats.warningThreshold)}">Alerte à 80 %</p>
             </div>
         </div>
+        <a th:unless="${stats.ceilingApplies}" th:href="@{/turnover}" class="stat transition-shadow hover:shadow-md">
+            <div class="flex items-center justify-between">
+                <span class="stat-label">Chiffre d'affaires</span>
+                <span class="stat-icon"><span class="icon">bar_chart</span></span>
+            </div>
+            <div>
+                <p class="stat-value" th:text="${amountUtils.format(stats.totalAmount)}">0,00 DA</p>
+                <p class="text-body-sm text-on-surface-variant">HT, détail par mois et TVA</p>
+            </div>
+        </a>
         <a th:href="@{/clients}" class="stat transition-shadow hover:shadow-md">
             <div class="flex items-center justify-between">
                 <span class="stat-label">Clients</span>

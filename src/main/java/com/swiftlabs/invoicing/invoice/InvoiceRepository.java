@@ -42,11 +42,12 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
     @EntityGraph(attributePaths = "client")
     List<Invoice> findTop10ByOrderByCreatedAtDescIdDesc();
 
-    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.invoiceYear = :year AND i.status IN ('ISSUED', 'PAID')")
+    /** Turnover: totals before TVA (HT). */
+    @Query("SELECT COALESCE(SUM(i.subtotalAmount), 0) FROM Invoice i WHERE i.invoiceYear = :year AND i.status IN ('ISSUED', 'PAID')")
     BigDecimal sumIssuedPaidByYear(@Param("year") Integer year);
 
     /** Issued, paid and cancelled invoices of the year, by month of issue and status. */
-    @Query("SELECT new com.swiftlabs.invoicing.invoice.MonthlyTotal(MONTH(i.issueDate), i.status, COUNT(i), SUM(i.totalAmount))"
+    @Query("SELECT new com.swiftlabs.invoicing.invoice.MonthlyTotal(MONTH(i.issueDate), i.status, COUNT(i), SUM(i.subtotalAmount), SUM(i.vatAmount))"
         + " FROM Invoice i WHERE i.invoiceYear = :year AND i.status <> 'DRAFT' GROUP BY MONTH(i.issueDate), i.status")
     List<MonthlyTotal> monthlyTotals(@Param("year") Integer year);
 

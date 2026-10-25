@@ -9,7 +9,8 @@
         <div>
             <p class="page-eyebrow" th:text="${'Exercice ' + report.year}">Exercice 2026</p>
             <h1 class="page-title">Chiffre d'affaires</h1>
-            <p class="page-subtitle">Factures émises et payées, par mois d'émission. Les factures annulées ne sont pas comptées.</p>
+            <p class="page-subtitle">Factures émises et payées, par mois d'émission<th:block th:if="${report.company}">, montants hors taxes (HT)</th:block>.
+                Les factures annulées ne sont pas comptées.</p>
         </div>
         <div class="flex flex-wrap items-end gap-2">
             <form th:action="@{/turnover}" method="get" class="flex items-end gap-2">
@@ -35,7 +36,8 @@
             </div>
             <div>
                 <p class="stat-value" th:text="${amountUtils.format(report.billed)}">0,00 DA</p>
-                <p class="text-body-sm text-on-surface-variant" th:text="${report.invoiceCount + ' facture(s) émise(s)'}">0 facture</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="${report.invoiceCount + ' facture(s) émise(s)'
+                    + (report.company ? ' · TVA collectée ' + amountUtils.format(report.vat) : '')}">0 facture</p>
             </div>
         </div>
         <div class="stat">
@@ -70,8 +72,8 @@
         </a>
     </section>
 
-    <!-- Ceiling -->
-    <section class="card mb-6">
+    <!-- Ceiling: auto-entrepreneurs only -->
+    <section th:unless="${report.company}" class="card mb-6">
         <div class="card-header">
             <h2 class="card-title"><span class="icon">trending_up</span>Plafond annuel</h2>
             <a th:if="${currentUser != null and currentUser.can('VIEW_ISSUER')}" th:href="@{/settings/issuer}" class="btn btn-secondary btn-sm">
@@ -139,6 +141,7 @@
                     <th scope="col" class="num">Chiffre d'affaires</th>
                     <th scope="col" class="num">Payé</th>
                     <th scope="col" class="num">En attente</th>
+                    <th th:if="${report.company}" scope="col" class="num">TVA collectée</th>
                     <th scope="col" class="num">Cumul</th>
                     <th scope="col" class="num">Annulées</th>
                 </tr>
@@ -150,6 +153,7 @@
                     <td class="num font-semibold" th:text="${amountUtils.format(m.billed)}">0,00 DA</td>
                     <td class="num" th:text="${amountUtils.format(m.paid)}">0,00 DA</td>
                     <td class="num" th:text="${amountUtils.format(m.pending)}">0,00 DA</td>
+                    <td th:if="${report.company}" class="num" th:text="${amountUtils.format(m.vat)}">0,00 DA</td>
                     <td class="num" th:classappend="${m.overCeiling} ? 'text-error font-semibold'">
                         <span th:text="${amountUtils.format(m.cumulative)}">0,00 DA</span>
                         <span th:if="${m.overCeiling}" class="icon icon-sm align-middle" title="Plafond dépassé">warning</span>
@@ -164,6 +168,7 @@
                     <td class="num" th:text="${amountUtils.format(report.billed)}">0,00 DA</td>
                     <td class="num" th:text="${amountUtils.format(report.paid)}">0,00 DA</td>
                     <td class="num" th:text="${amountUtils.format(report.pending)}">0,00 DA</td>
+                    <td th:if="${report.company}" class="num" th:text="${amountUtils.format(report.vat)}">0,00 DA</td>
                     <td class="num"></td>
                     <td class="num" th:text="${report.cancelledCount}">0</td>
                 </tr>

@@ -4,6 +4,8 @@ import com.swiftlabs.invoicing.client.ClientService;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
 import com.swiftlabs.invoicing.common.PageLinks;
+import com.swiftlabs.invoicing.config.InvoiceProperties;
+import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,13 +39,18 @@ public class InvoiceController {
     private final ClientService clientService;
     private final InvoicePdfService pdfService;
     private final InvoiceAudit audit;
+    private final IssuerService issuerService;
+    private final InvoiceProperties properties;
 
     public InvoiceController(InvoiceService invoiceService, ClientService clientService,
-                             InvoicePdfService pdfService, InvoiceAudit audit) {
+                             InvoicePdfService pdfService, InvoiceAudit audit, IssuerService issuerService,
+                             InvoiceProperties properties) {
         this.invoiceService = invoiceService;
         this.clientService = clientService;
         this.pdfService = pdfService;
         this.audit = audit;
+        this.issuerService = issuerService;
+        this.properties = properties;
     }
 
     /**
@@ -108,7 +115,9 @@ public class InvoiceController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('VIEW_INVOICES')")
     public String view(@PathVariable Long id, Model model) {
-        model.addAttribute("invoice", invoiceService.findWithLines(id));
+        Invoice invoice = invoiceService.findWithLines(id);
+        model.addAttribute("invoice", invoice);
+        model.addAttribute("issuer", IssuerDetails.of(invoice, issuerService.getIssuer()));
         model.addAttribute("history", audit.history(id));
         return "invoice/view";
     }
@@ -177,6 +186,9 @@ public class InvoiceController {
     private String formView(Model model) {
         model.addAttribute("clients", clientService.findAll());
         model.addAttribute("paymentMethods", PaymentMethod.values());
+        // TVA per line for a company only (a draft follows the current issuer type)
+        model.addAttribute("company", issuerService.getIssuer().isCompany());
+        model.addAttribute("vatRates", properties.vatRates());
         return "invoice/form";
     }
 }

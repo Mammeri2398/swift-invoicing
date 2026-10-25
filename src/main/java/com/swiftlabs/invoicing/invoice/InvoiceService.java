@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -105,9 +106,14 @@ public class InvoiceService {
         invoice.setDueDate(form.getDueDate());
         invoice.setPaymentMethod(form.getPaymentMethod());
         invoice.setNotes(form.getNotes());
-        invoice.replaceLines(form.getLines().stream()
-            .map(line -> InvoiceLine.of(line.getDescription(), line.getUnit(), line.getQuantity(), line.getUnitPrice()))
-            .toList());
+        Issuer issuer = issuerService.getIssuer();
+        List<InvoiceLine> lines = new ArrayList<>();
+        for (int i = 0; i < form.getLines().size(); i++) {
+            InvoiceLineForm line = form.getLines().get(i);
+            lines.add(InvoiceLine.of(line.getDescription(), line.getUnit(), line.getQuantity(), line.getUnitPrice(),
+                vatRate(issuer, line.getVatRate(), i)));
+        }
+        invoice.replaceLines(lines);
         boolean created = invoice.getId() == null;
         // Lines are saved with the invoice (cascade); removed lines are deleted (orphan removal)
         Invoice saved = invoiceRepository.save(invoice);
@@ -130,6 +136,12 @@ public class InvoiceService {
         if (invoice.getLines().isEmpty()) {
             throw new BusinessException("Une facture doit contenir au moins une ligne pour être émise.");
         }
+        Issuer issuer = issuerService.getIssuer();
+        // The type may have changed since the draft was saved
+        if (!issuer.isCompany() && invoice.getLines().stream().anyMatch(line -> line.getVatRate().signum() > 0)) {
+            throw new BusinessException("Cette facture contient de la TVA alors que le profil émetteur est auto-entrepreneur : "
+                + "modifiez le brouillon pour la retirer.");
+        }
         int year = invoice.getIssueDate().getYear();
 
         // Concurrent issues of the same year queue on the counter's row lock: numbers stay
@@ -150,7 +162,7 @@ public class InvoiceService {
         invoice.setStatus(InvoiceStatus.ISSUED);
         invoice.setIssuedAt(LocalDateTime.now());
         invoice.recalculateTotal();
-        snapshotIssuer(invoice);
+        snapshotIssuer(invoice, issuer);
         snapshotClient(invoice, client);
         audit.record(invoice, InvoiceEvent.Action.ISSUED);
         return invoice;
@@ -218,8 +230,27 @@ public class InvoiceService {
         return invoiceRepository.findTop10ByOrderByCreatedAtDescIdDesc();
     }
 
-    private void snapshotIssuer(Invoice invoice) {
-        Issuer issuer = issuerService.getIssuer();
+    /** TVA rate of a line: none for an auto-entrepreneur, one of invoice.vat-rates for a company. */
+    private BigDecimal vatRate(Issuer issuer, BigDecimal requested, int index) {
+        if (!issuer.isCompany()) {
+            return BigDecimal.ZERO;
+        }
+        String field = "lines[" + index + "].vatRate";
+        if (requested == null) {
+            throw new BusinessException(field, "Choisissez un taux de TVA.");
+        }
+        if (properties.vatRates().stream().noneMatch(rate -> rate.compareTo(requested) == 0)) {
+            throw new BusinessException(field, "Taux de TVA non autorisé.");
+        }
+        return requested;
+    }
+
+    private void snapshotIssuer(Invoice invoice, Issuer issuer) {
+        invoice.setIssuerCompanyType(issuer.getCompanyType());
+        invoice.setIssuerLegalForm(issuer.getLegalForm());
+        invoice.setIssuerShareCapital(issuer.getShareCapital());
+        invoice.setIssuerRcNumber(issuer.getRcNumber());
+        invoice.setIssuerTaxArticle(issuer.getTaxArticle());
         invoice.setIssuerFullName(issuer.getFullName());
         invoice.setIssuerTradeName(issuer.getTradeName());
         invoice.setIssuerAddress(issuer.getAddress());

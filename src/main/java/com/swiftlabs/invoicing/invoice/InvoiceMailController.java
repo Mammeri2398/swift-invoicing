@@ -58,7 +58,9 @@ public class InvoiceMailController {
     }
 
     private String formView(Long id, Model model) {
-        model.addAttribute("invoice", invoiceService.findById(id));
+        Invoice invoice = invoiceService.findById(id);
+        model.addAttribute("invoice", invoice);
+        model.addAttribute("navSection", invoice.isOffer() ? "quotes" : "invoices");
         model.addAttribute("mailEnabled", mailService.isEnabled());
         model.addAttribute("fromAddress", mailService.getFromAddress());
         return "invoice/email";

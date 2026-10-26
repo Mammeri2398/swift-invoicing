@@ -74,14 +74,15 @@
     </div>
 </header>
 
-<!--/* Navigation links, reused by the desktop bar and the mobile menu (administration links: see adminLinks) */-->
+<!--/* Navigation links, reused by the desktop bar and the mobile menu (administration links: see adminLinks).
+       Quotes are shown at /invoices/{id} like invoices: their pages set navSection = 'quotes'. */-->
 <th:block th:fragment="navLinks" th:with="u=${currentUser}, p=${currentPath}">
     <a th:if="${u.can('VIEW_DASHBOARD')}" th:href="@{/}" class="nav-link"
        th:classappend="${p == '/' or p == '/dashboard'} ? 'active'">Tableau de bord</a>
     <a th:if="${u.can('VIEW_INVOICES')}" th:href="@{/invoices}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/invoices') and p != '/invoices/lookup'} ? 'active'">Factures</a>
+       th:classappend="${#strings.startsWith(p, '/invoices') and p != '/invoices/lookup' and navSection != 'quotes'} ? 'active'">Factures</a>
     <a th:if="${u.can('VIEW_INVOICES')}" th:href="@{/quotes}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/quotes')} ? 'active'">Devis</a>
+       th:classappend="${#strings.startsWith(p, '/quotes') or navSection == 'quotes'} ? 'active'">Devis</a>
     <a th:if="${u.can('VIEW_DASHBOARD')}" th:href="@{/turnover}" class="nav-link"
        th:classappend="${p == '/turnover'} ? 'active'">Chiffre d'affaires</a>
     <a th:if="${u.can('VIEW_CLIENTS')}" th:href="@{/clients}" class="nav-link"

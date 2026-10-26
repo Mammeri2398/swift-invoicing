@@ -84,20 +84,28 @@ class QuotePagesTest {
         return session;
     }
 
+    /** The menu entry of the page: quotes are shown at /invoices/{id} too, but under "Devis". */
+    private static final String QUOTES_ACTIVE = "href=\"/quotes\" class=\"nav-link active\"";
+    private static final String INVOICES_ACTIVE = "href=\"/invoices\" class=\"nav-link active\"";
+
     @Test
     void thePagesLeadFromTheQuoteToItsInvoice() throws Exception {
         MockHttpSession session = login();
         mockMvc.perform(get("/invoices/new").session(session).param("kind", "QUOTE"))
             .andExpect(content().string(containsString("Nouveau devis")))
             .andExpect(content().string(containsString("name=\"kind\" value=\"QUOTE\"")))
-            .andExpect(content().string(containsString("Valable jusqu&#39;au")));
+            .andExpect(content().string(containsString("Valable jusqu&#39;au")))
+            .andExpect(content().string(containsString(QUOTES_ACTIVE)))
+            .andExpect(content().string(not(containsString(INVOICES_ACTIVE))));
 
         Invoice quote = issuedQuote();
         mockMvc.perform(get("/invoices/" + quote.getId()).session(session))
             .andExpect(content().string(containsString("Devis DV-2026-0001")))
             .andExpect(content().string(containsString("/accept")))
             .andExpect(content().string(containsString("Facturer")))
-            .andExpect(content().string(not(containsString("Marquer payée"))));
+            .andExpect(content().string(not(containsString("Marquer payée"))))
+            .andExpect(content().string(containsString(QUOTES_ACTIVE)))
+            .andExpect(content().string(not(containsString(INVOICES_ACTIVE))));
         mockMvc.perform(get("/invoices/" + quote.getId() + "/email").session(session))
             .andExpect(content().string(containsString("value=\"Devis DV-2026-0001 - ")));
 
@@ -109,6 +117,8 @@ class QuotePagesTest {
         Invoice invoice = invoiceService.invoiceOf(quote.getId());
         mockMvc.perform(get("/invoices/" + invoice.getId()).session(session))
             .andExpect(content().string(containsString("Établie à partir du")))
-            .andExpect(content().string(containsString("DV-2026-0001")));
+            .andExpect(content().string(containsString("DV-2026-0001")))
+            .andExpect(content().string(containsString(INVOICES_ACTIVE)))
+            .andExpect(content().string(not(containsString(QUOTES_ACTIVE))));
     }
 }

@@ -161,6 +161,7 @@ public class InvoiceController {
             }
         }
         model.addAttribute("history", audit.history(id));
+        model.addAttribute("navSection", invoice.isOffer() ? "quotes" : "invoices");
         return "invoice/view";
     }
 
@@ -355,6 +356,7 @@ public class InvoiceController {
         // TVA per line for a company only (a draft follows the current issuer type)
         model.addAttribute("company", issuerService.getIssuer().isCompany());
         model.addAttribute("vatRates", properties.vatRates());
+        model.addAttribute("navSection", DocumentKind.OFFERS.contains(kind) ? "quotes" : "invoices");
         return "invoice/form";
     }
 }

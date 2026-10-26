@@ -38,7 +38,7 @@
                 <div class="field md:col-span-2">
                     <label class="label" for="nif">
                         <span>NIF <span class="required" data-nif-required>*</span></span>
-                        <span class="optional">15 chiffres</span>
+                        <span class="optional">15 ou 20 chiffres</span>
                     </label>
                     <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" maxlength="50" inputmode="numeric"/>
                     <p th:replace="~{layout/fragments :: fieldError('nif')}"></p>

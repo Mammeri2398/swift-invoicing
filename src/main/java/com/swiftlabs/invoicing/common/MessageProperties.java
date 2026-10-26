@@ -68,6 +68,13 @@ public final class MessageProperties {
     public static final String BACKUP_WARNING_NONE = "backup.warning.none";
     public static final String BACKUP_WARNING_STALE = "backup.warning.stale";
 
+    // ---- catalog -------------------------------------------------------------------------------------------------
+    public static final String CATALOG_DELETED = "catalog.deleted";
+    public static final String CATALOG_ERROR_NAME_USED = "catalog.error.nameUsed";
+    public static final String CATALOG_ERROR_NOT_FOUND = "catalog.error.notFound";
+    public static final String CATALOG_ERROR_VAT_RATE = "catalog.error.vatRate";
+    public static final String CATALOG_SAVED = "catalog.saved";
+
     // ---- client ----------------------------------------------------------------------------------------------
     public static final String CLIENT_DELETED = "client.deleted";
     public static final String CLIENT_ERROR_HAS_INVOICES = "client.error.hasInvoices";

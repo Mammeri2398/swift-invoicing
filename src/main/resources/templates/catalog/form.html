@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page((${item.id == null} ? #{catalog.form.newTitle} : #{catalog.form.editTitle}), ~{::main}, ~{})}">
+<body>
+<main class="page-narrow">
+    <nav class="breadcrumb" th:aria-label="#{catalog.form.breadcrumb}">
+        <a th:href="@{/catalog}" th:text="#{nav.catalog}">Catalogue</a><span class="icon icon-xs rtl-flip">chevron_right</span>
+        <span class="text-primary" th:text="${item.id == null} ? #{catalog.form.breadcrumbNew} : ${item.name}">Nouveau</span>
+    </nav>
+    <div class="page-header">
+        <h1 class="page-title" th:text="${item.id == null} ? #{catalog.form.newTitle} : #{catalog.form.editTitle}">Nouvel article</h1>
+    </div>
+
+    <form th:action="@{/catalog/save}" method="post" th:object="${item}" class="card">
+        <input type="hidden" th:field="*{id}"/>
+        <div class="card-body flex flex-col gap-5">
+            <div th:replace="~{layout/fragments :: formErrors}"></div>
+            <div class="field">
+                <label class="label" for="name"><span><th:block th:text="#{catalog.col.name}">Désignation</th:block> <span class="required">*</span></span></label>
+                <input class="input" th:errorclass="input-invalid" th:field="*{name}" type="text" required maxlength="255" autofocus
+                       th:placeholder="#{catalog.form.name.placeholder}"/>
+                <p th:replace="~{layout/fragments :: fieldError('name')}"></p>
+                <p class="hint" th:text="#{catalog.form.name.hint}">Imprimée telle quelle sur les factures.</p>
+            </div>
+            <div class="form-grid">
+                <div class="field">
+                    <label class="label" for="unit"><span th:text="#{catalog.col.unit}">Unité</span> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{unit}" type="text" maxlength="50" list="units" placeholder="jour"/>
+                    <p th:replace="~{layout/fragments :: fieldError('unit')}"></p>
+                </div>
+                <div class="field">
+                    <label class="label" for="unitPrice"><span><th:block th:text="#{catalog.form.unitPrice}">Prix unitaire (DA)</th:block> <span class="required">*</span></span></label>
+                    <input class="input text-end" th:errorclass="input-invalid" th:field="*{unitPrice}" type="number" required min="0" step="0.01"/>
+                    <p th:replace="~{layout/fragments :: fieldError('unitPrice')}"></p>
+                    <p class="hint" th:text="${company} ? #{catalog.form.unitPrice.hintCompany} : #{catalog.form.unitPrice.hint}">Hors taxes.</p>
+                </div>
+                <div class="field" th:if="${company}">
+                    <label class="label" for="vatRate" th:text="#{catalog.col.vat}">TVA</label>
+                    <!--/* Compared as numbers: the stored rate is 19.00, the configured one 19 */-->
+                    <select class="input" id="vatRate" name="vatRate" th:classappend="${#fields.hasErrors('vatRate')} ? 'input-invalid'">
+                        <option th:each="rate : ${vatRates}" th:value="${rate}"
+                                th:selected="${item.vatRate != null and item.vatRate.compareTo(rate) == 0}"
+                                th:text="${rate.signum() == 0} ? #{catalog.vatExempt} : ${amountUtils.formatRate(rate) + ' %'}">19 %</option>
+                    </select>
+                    <p th:replace="~{layout/fragments :: fieldError('vatRate')}"></p>
+                </div>
+                <!--/* An auto-entrepreneur charges no TVA: the rate is kept as it is (0 for a new article) */-->
+                <input th:unless="${company}" type="hidden" th:field="*{vatRate}"/>
+            </div>
+            <p class="hint" th:text="#{catalog.form.copyHint}">Une ligne de facture recopie ces valeurs.</p>
+        </div>
+        <div class="card-footer justify-end gap-2">
+            <a th:href="@{/catalog}" class="btn btn-secondary" th:text="#{action.cancel}">Annuler</a>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span><th:block th:text="#{action.save}">Enregistrer</th:block></button>
+        </div>
+
+        <!--/* Units are printed on the documents, which stay in French */-->
+        <datalist id="units">
+            <option value="jour"></option>
+            <option value="heure"></option>
+            <option value="forfait"></option>
+            <option value="pièce"></option>
+            <option value="mois"></option>
+        </datalist>
+    </form>
+</main>
+</body>
+</html>

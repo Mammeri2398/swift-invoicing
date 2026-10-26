@@ -94,6 +94,13 @@ public final class Endpoints {
     /** Full path. */
     public static final String CLIENT_STATEMENT = "/clients/{id}/statement";
 
+    // ---- Catalogue of products and services ------------------------------------------------------------------------
+    public static final String CATALOG = "/catalog";
+    public static final String CATALOG_NEW = "/new";
+    public static final String CATALOG_SAVE = "/save";
+    public static final String CATALOG_EDIT = "/{id}/edit";
+    public static final String CATALOG_DELETE = "/{id}/delete";
+
     // ---- Invoices, credit notes, quotes ---------------------------------------------------------------------------
     public static final String INVOICES = "/invoices";
     public static final String INVOICE_NEW = "/new";

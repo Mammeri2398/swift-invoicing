@@ -28,6 +28,7 @@ public class Messages {
         "i18n/invoice",
         "i18n/invoice-pages",
         "i18n/client",
+        "i18n/catalog",
         "i18n/dashboard",
         "i18n/settings",
     };

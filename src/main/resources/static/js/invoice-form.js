@@ -110,6 +110,38 @@
             refresh();
         }
     });
+    // Picking an article of the catalogue (datalist "catalog") fills the rest of its line
+    function fillFromCatalog(input) {
+        var options = document.querySelectorAll('#catalog option');
+        for (var i = 0; i < options.length; i++) {
+            if (options[i].value === input.value) {
+                var option = options[i];
+                var row = input.closest('[data-line]');
+                row.querySelector('[name$=".unit"]').value = option.getAttribute('data-unit') || '';
+                row.querySelector('[data-unit-price]').value = option.getAttribute('data-price');
+                var quantity = row.querySelector('[data-quantity]');
+                if (!(parseFloat(quantity.value) > 0)) {
+                    quantity.value = 1;
+                }
+                var rateSelect = row.querySelector('[data-vat-rate]');
+                if (rateSelect) {
+                    var rate = parseFloat(option.getAttribute('data-vat'));
+                    for (var j = 0; j < rateSelect.options.length; j++) {
+                        if (parseFloat(rateSelect.options[j].value) === rate) {
+                            rateSelect.selectedIndex = j;
+                        }
+                    }
+                }
+                return;
+            }
+        }
+    }
+
+    tbody.addEventListener('change', function (event) {
+        if (event.target.matches('[data-description]')) {
+            fillFromCatalog(event.target);
+        }
+    });
     tbody.addEventListener('input', refresh);
     tbody.addEventListener('change', refresh);
     if (paymentMethod) {

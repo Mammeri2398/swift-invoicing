@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.invoice;
 
+import com.swiftlabs.invoicing.catalog.CatalogService;
 import com.swiftlabs.invoicing.client.ClientService;
 import com.swiftlabs.invoicing.common.AmountUtils;
 import com.swiftlabs.invoicing.common.BusinessException;
@@ -53,10 +54,12 @@ public class InvoiceController {
     private final PaymentService paymentService;
     private final InvoiceProperties properties;
     private final Messages messages;
+    private final CatalogService catalogService;
 
     public InvoiceController(InvoiceService invoiceService, ClientService clientService,
                              InvoicePdfService pdfService, InvoiceAudit audit, IssuerService issuerService,
-                             PaymentService paymentService, InvoiceProperties properties, Messages messages) {
+                             PaymentService paymentService, InvoiceProperties properties, Messages messages,
+                             CatalogService catalogService) {
         this.invoiceService = invoiceService;
         this.clientService = clientService;
         this.pdfService = pdfService;
@@ -65,6 +68,7 @@ public class InvoiceController {
         this.paymentService = paymentService;
         this.properties = properties;
         this.messages = messages;
+        this.catalogService = catalogService;
     }
 
     /**
@@ -348,6 +352,8 @@ public class InvoiceController {
                 : MessageProperties.INVOICE_FORM_TITLE_EDIT_PREFIX) + kind.name()));
         // Droit de timbre: invoices only
         model.addAttribute(CommonCodes.Attributes.STAMP_DUTY_RULES, kind == DocumentKind.INVOICE ? stampDutyRules() : null);
+        // Suggested while typing a line's description (invoice-form.js fills the unit, price and TVA)
+        model.addAttribute(CommonCodes.Attributes.CATALOG_ITEMS, catalogService.findAll());
         model.addAttribute(CommonCodes.Attributes.CLIENTS, clientService.findAll());
         model.addAttribute(CommonCodes.Attributes.PAYMENT_METHODS, PaymentMethod.values());
         // TVA per line for a company only (a draft follows the current issuer type)

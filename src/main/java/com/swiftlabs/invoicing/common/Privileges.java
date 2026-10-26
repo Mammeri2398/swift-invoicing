@@ -20,6 +20,9 @@ public final class Privileges {
     public static final String ISSUE_INVOICE = "ISSUE_INVOICE";
     public static final String DELETE_INVOICE = "DELETE_INVOICE";
 
+    // ---- Catalogue of products and services --------------------------------------------------------------------
+    public static final String MANAGE_CATALOG = "MANAGE_CATALOG";
+
     // ---- Clients ----------------------------------------------------------------------------------------------
     public static final String VIEW_CLIENTS = "VIEW_CLIENTS";
     public static final String CREATE_CLIENT = "CREATE_CLIENT";
@@ -49,6 +52,7 @@ public final class Privileges {
         public static final String CREATE_INVOICE = PREFIX + Privileges.CREATE_INVOICE + SUFFIX;
         public static final String ISSUE_INVOICE = PREFIX + Privileges.ISSUE_INVOICE + SUFFIX;
         public static final String DELETE_INVOICE = PREFIX + Privileges.DELETE_INVOICE + SUFFIX;
+        public static final String MANAGE_CATALOG = PREFIX + Privileges.MANAGE_CATALOG + SUFFIX;
         public static final String VIEW_CLIENTS = PREFIX + Privileges.VIEW_CLIENTS + SUFFIX;
         public static final String CREATE_CLIENT = PREFIX + Privileges.CREATE_CLIENT + SUFFIX;
         public static final String DELETE_CLIENT = PREFIX + Privileges.DELETE_CLIENT + SUFFIX;

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(#{catalog.list.title}, ~{::main}, ~{})}">
+<body>
+<main class="page" th:with="canManage=${currentUser != null and currentUser.can('MANAGE_CATALOG')}">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow" th:text="#{catalog.list.eyebrow}">Produits et services</p>
+            <h1 class="page-title" th:text="#{catalog.list.title}">Catalogue</h1>
+            <p class="page-subtitle" th:text="#{catalog.list.subtitle}">Proposés en tapant la désignation d'une ligne de facture.</p>
+        </div>
+        <a th:if="${canManage}" th:href="@{/catalog/new}" class="btn btn-primary"><span class="icon">add_circle</span><th:block th:text="#{catalog.list.new}">Nouvel article</th:block></a>
+    </div>
+
+    <section class="card">
+        <div class="card-header">
+            <h2 class="card-title"><span class="icon">inventory_2</span><span th:text="#{catalog.list.count(${items.size()})}">0 article</span></h2>
+            <input type="search" class="input input-sm max-w-xs" placeholder="Filtrer…" th:placeholder="#{catalog.list.filter}"
+                   th:aria-label="#{catalog.list.filterLabel}" data-table-filter="catalog-table"/>
+        </div>
+        <div class="table-wrap">
+            <table class="table" id="catalog-table">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{catalog.col.name}">Désignation</th>
+                    <th scope="col" th:text="#{catalog.col.unit}">Unité</th>
+                    <th scope="col" class="num" th:text="#{catalog.col.unitPrice}">Prix unitaire</th>
+                    <th th:if="${company}" scope="col" class="num" th:text="#{catalog.col.vat}">TVA</th>
+                    <th th:if="${canManage}" scope="col"><span class="sr-only" th:text="#{catalog.col.actions}">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${items}">
+                    <td class="font-medium" th:text="${item.name}">Développement web</td>
+                    <td th:text="${item.unit ?: '—'}">jour</td>
+                    <td class="num" th:text="${amountUtils.format(item.unitPrice)}">5 000,00 DA</td>
+                    <td th:if="${company}" class="num"
+                        th:text="${item.vatRate.signum() == 0} ? #{catalog.vatExempt} : ${amountUtils.formatRate(item.vatRate) + ' %'}">19 %</td>
+                    <td th:if="${canManage}">
+                        <div class="flex justify-end gap-1">
+                            <a th:href="@{/catalog/{id}/edit(id=${item.id})}" class="btn-icon" th:title="#{action.edit}" th:aria-label="#{action.edit}">
+                                <span class="icon">edit</span></a>
+                            <form th:action="@{/catalog/{id}/delete(id=${item.id})}" method="post" th:data-confirm="#{catalog.list.confirmDelete(${item.name})}">
+                                <button type="submit" class="btn-icon danger" th:title="#{action.delete}" th:aria-label="#{action.delete}">
+                                    <span class="icon">delete</span></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="5" class="table-empty" th:text="${canManage} ? #{catalog.list.empty} : #{catalog.list.emptyReadOnly}">Le catalogue est vide.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

@@ -111,7 +111,8 @@
                     <tr th:each="line, stat : *{lines}" data-line class="align-top">
                         <td class="text-on-surface-variant tabular-nums" data-line-number th:text="${stat.count}">1</td>
                         <td>
-                            <input class="input input-sm" type="text" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].description}" required maxlength="255" th:placeholder="#{invoice.form.description.placeholder}"/>
+                            <input class="input input-sm" type="text" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].description}" required maxlength="255" th:placeholder="#{invoice.form.description.placeholder}"
+                                   list="catalog" autocomplete="off" data-description/>
                             <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].description'})}"></p>
                         </td>
                         <td>
@@ -166,6 +167,12 @@
                 <th:block th:text="${creditNoteOf != null} ? #{invoice.form.saveCreditNote} : #{invoice.form.saveDraft}">Enregistrer le brouillon</th:block></button>
         </div>
 
+        <!--/* Catalogue: picking an article fills the line's unit, price and TVA (invoice-form.js) */-->
+        <datalist id="catalog">
+            <option th:each="c : ${catalogItems}" th:value="${c.name}" th:label="${amountUtils.format(c.unitPrice) + (c.unit != null ? ' / ' + c.unit : '')}"
+                    th:data-unit="${c.unit}" th:data-price="${c.unitPrice}" th:data-vat="${c.vatRate}"></option>
+        </datalist>
+
         <!--/* Units are printed on the document, which stays in French */-->
         <datalist id="units">
             <option value="jour"></option>
@@ -179,7 +186,8 @@
         <template id="line-template">
             <tr data-line>
                 <td class="text-on-surface-variant tabular-nums" data-line-number></td>
-                <td><input class="input input-sm" type="text" name="lines[INDEX].description" required maxlength="255" th:placeholder="#{invoice.form.description.placeholder}"/></td>
+                <td><input class="input input-sm" type="text" name="lines[INDEX].description" required maxlength="255" th:placeholder="#{invoice.form.description.placeholder}"
+                           list="catalog" autocomplete="off" data-description/></td>
                 <td><input class="input input-sm" type="text" name="lines[INDEX].unit" maxlength="50" list="units" placeholder="jour"/></td>
                 <td><input class="input input-sm text-end" type="number" name="lines[INDEX].quantity" value="1" required min="0" step="0.001" data-quantity/></td>
                 <td><input class="input input-sm text-end" type="number" name="lines[INDEX].unitPrice" required min="0" step="0.01" data-unit-price/></td>

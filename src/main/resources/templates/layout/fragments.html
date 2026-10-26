@@ -87,6 +87,8 @@
        th:classappend="${p == '/turnover'} ? 'active'" th:text="#{nav.turnover}">Chiffre d'affaires</a>
     <a th:if="${u.can('VIEW_CLIENTS')}" th:href="@{/clients}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/clients')} ? 'active'" th:text="#{nav.clients}">Clients</a>
+    <a th:if="${u.can('MANAGE_CATALOG') or u.can('CREATE_INVOICE')}" th:href="@{/catalog}" class="nav-link"
+       th:classappend="${#strings.startsWith(p, '/catalog')} ? 'active'" th:text="#{nav.catalog}">Catalogue</a>
 </th:block>
 
 <!--/* Settings and administration links: the "Réglages" dropdown on wide screens, part of the list in the mobile menu */-->

@@ -26,6 +26,7 @@ public final class CommonCodes {
         public static final String BACKUP_WARNING = "backupWarning";
         public static final String BALANCES = "balances";
         public static final String CAN_EDIT = "canEdit";
+        public static final String CATALOG_ITEMS = "catalogItems";
         public static final String CLIENT = "client";
         public static final String CLIENTS = "clients";
         public static final String COMPANY = "company";
@@ -53,6 +54,8 @@ public final class CommonCodes {
         public static final String INVOICE_ID = "invoiceId";
         public static final String INVOICE_OF = "invoiceOf";
         public static final String ISSUER = "issuer";
+        public static final String ITEM = "item";
+        public static final String ITEMS = "items";
         public static final String LANGUAGES = "languages";
         public static final String LICENCE = "licence";
         public static final String LINK_VALIDITY_MINUTES = "linkValidityMinutes";
@@ -133,6 +136,10 @@ public final class CommonCodes {
 
         // backup
         public static final String BACKUP_BACKUPS = "backup/backups";
+
+        // catalog
+        public static final String CATALOG_FORM = "catalog/form";
+        public static final String CATALOG_LIST = "catalog/list";
 
         // client
         public static final String CLIENT_FORM = "client/form";

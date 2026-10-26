@@ -14,6 +14,15 @@ public class SessionService {
         this.sessionRegistry = sessionRegistry;
     }
 
+    /** Expires every open session, e.g. after a restore replaced the users. */
+    public void expireAll() {
+        for (Object principal : sessionRegistry.getAllPrincipals()) {
+            for (SessionInformation session : sessionRegistry.getAllSessions(principal, false)) {
+                session.expireNow();
+            }
+        }
+    }
+
     /** Expires every session of the user except {@code keepSessionId} (may be null). */
     public void expireSessions(String username, String keepSessionId) {
         for (Object principal : sessionRegistry.getAllPrincipals()) {

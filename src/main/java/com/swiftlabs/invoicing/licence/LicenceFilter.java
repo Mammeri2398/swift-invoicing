@@ -18,7 +18,9 @@ public class LicenceFilter extends OncePerRequestFilter {
     public static final String LICENCE_URL = "/settings/licence";
 
     private static final List<String> ALWAYS_ALLOWED = List.of(LICENCE_URL, "/perform-login", "/perform-logout", "/login/verify",
-        "/account/", "/setup", "/forgot-password", "/reset-password");
+        "/account/", "/setup", "/forgot-password", "/reset-password",
+        // Backups stay possible (the data belongs to the customer), restoring one too
+        "/settings/backups");
 
     private final LicenceService licenceService;
 

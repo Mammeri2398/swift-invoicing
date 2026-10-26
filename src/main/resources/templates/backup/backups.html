@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page('Sauvegardes', ~{::main}, ~{})}">
+<body>
+<main class="page-narrow">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow">Réglages</p>
+            <h1 class="page-title">Sauvegardes</h1>
+            <p class="page-subtitle">Une copie complète de vos données (factures, clients, utilisateurs, réglages) est faite chaque jour.
+                Gardez aussi une copie hors de ce PC : clé USB, disque externe ou dossier partagé.</p>
+        </div>
+        <form th:if="${available}" th:action="@{/settings/backups/now}" method="post">
+            <button type="submit" class="btn btn-primary"><span class="icon">backup</span>Sauvegarder maintenant</button>
+        </form>
+    </div>
+
+    <div th:unless="${enabled}" class="alert alert-info mb-6">
+        <span class="icon">info</span>
+        <span>Les sauvegardes de l'application ne sont pas activées sur cette installation : la base est sauvegardée par l'hébergement.</span>
+    </div>
+    <div th:if="${enabled and !available}" class="alert alert-error mb-6">
+        <span class="icon">error</span><span>Les sauvegardes demandent une base PostgreSQL.</span>
+    </div>
+    <div th:if="${failure != null}" class="alert alert-error mb-6">
+        <span class="icon">error</span>
+        <span>Problème lors de la dernière sauvegarde (<span th:text="${#temporals.format(failure.at, 'dd/MM/yyyy à HH:mm')}">26/10/2026</span>) :
+            <span th:text="${failure.message}">message</span></span>
+    </div>
+
+    <!--/* Visible overflow: the restore panel opens over the rows below */-->
+    <section th:if="${available}" class="card mb-6 !overflow-visible">
+        <div class="card-header"><h2 class="card-title"><span class="icon">inventory_2</span>Sauvegardes disponibles</h2></div>
+        <p th:if="${backups.isEmpty()}" class="card-body text-on-surface-variant">Aucune sauvegarde pour l'instant : la première est faite
+            quelques minutes après le démarrage de l'application, ou tout de suite avec « Sauvegarder maintenant ».</p>
+        <ul th:unless="${backups.isEmpty()}" class="divide-y divide-surface-container">
+            <li th:each="b, it : ${backups}" class="flex flex-wrap items-center justify-between gap-3 px-6 py-3">
+                <div class="min-w-0">
+                    <p class="font-medium" th:text="${#temporals.format(b.createdAt, 'dd/MM/yyyy à HH:mm')}">26/10/2026 à 14:30</p>
+                    <p class="text-body-sm text-on-surface-variant">
+                        <span th:text="${b.kind.label()}">Automatique</span> · <span th:text="${b.displaySize()}">3,4 Mo</span>
+                        <span th:if="${it.first}" class="badge badge-success ml-1">La plus récente</span>
+                    </p>
+                </div>
+                <div class="flex items-center gap-1">
+                    <a th:href="@{/settings/backups/{name}(name=${b.name})}" class="btn-icon" title="Télécharger" aria-label="Télécharger">
+                        <span class="icon">download</span></a>
+                    <details class="relative" data-dropdown>
+                        <summary class="btn-icon list-none cursor-pointer" title="Restaurer" aria-label="Restaurer"><span class="icon">settings_backup_restore</span></summary>
+                        <form th:action="@{/settings/backups/{name}/restore(name=${b.name})}" method="post"
+                              class="absolute right-0 z-10 mt-2 flex w-80 flex-col gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-lg">
+                            <p class="text-body-sm">Toutes les données actuelles seront <strong>remplacées</strong> par celles du
+                                <span th:text="${#temporals.format(b.createdAt, 'dd/MM/yyyy à HH:mm')}">26/10/2026</span>.
+                                Une sauvegarde des données actuelles est faite juste avant, et tous les utilisateurs sont déconnectés.</p>
+                            <label class="label" th:for="'confirm-' + ${it.index}"><span>Tapez <span class="font-mono" th:text="${confirmation}">RESTAURER</span> pour confirmer</span></label>
+                            <input class="input font-mono" th:id="'confirm-' + ${it.index}" name="confirmation" required autocomplete="off"/>
+                            <button type="submit" class="btn btn-danger"><span class="icon">settings_backup_restore</span>Restaurer</button>
+                        </form>
+                    </details>
+                    <form th:unless="${it.first}" th:action="@{/settings/backups/{name}/delete(name=${b.name})}" method="post"
+                          data-confirm="Supprimer cette sauvegarde ?">
+                        <button type="submit" class="btn-icon danger" title="Supprimer" aria-label="Supprimer"><span class="icon">delete</span></button>
+                    </form>
+                </div>
+            </li>
+        </ul>
+    </section>
+
+    <form th:if="${available}" th:action="@{/settings/backups/settings}" method="post" class="card mb-6">
+        <div class="card-header"><h2 class="card-title"><span class="icon">folder</span>Emplacement</h2></div>
+        <div class="card-body flex flex-col gap-4">
+            <div class="field">
+                <label class="label" for="directory">Dossier des sauvegardes</label>
+                <input class="input input-mono" id="directory" name="directory" type="text" maxlength="1000" required
+                       th:value="${settings.directory}"/>
+                <p class="hint">Chemin sur ce PC : <span class="font-mono" th:text="${directory}">C:\Swift Invoicing\backups</span>.
+                    Un disque externe (<span class="font-mono">E:\Sauvegardes</span>) ou un dossier partagé protège aussi contre une panne du PC.</p>
+            </div>
+            <div class="field max-w-xs">
+                <label class="label" for="keepCount">Sauvegardes automatiques gardées</label>
+                <input class="input" id="keepCount" name="keepCount" type="number" min="1" max="365" required th:value="${settings.keepCount}"/>
+                <p class="hint">Une par jour : les plus anciennes sont supprimées. Les sauvegardes manuelles sont gardées.</p>
+            </div>
+        </div>
+        <div class="card-footer justify-end">
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer</button>
+        </div>
+    </form>
+
+    <form th:if="${available}" th:action="@{/settings/backups/import}" method="post" enctype="multipart/form-data" class="card">
+        <div class="card-header"><h2 class="card-title"><span class="icon">upload</span>Importer une sauvegarde</h2></div>
+        <div class="card-body flex flex-col gap-3">
+            <p class="text-body-sm">Pour reprendre vos données sur un nouveau PC, ou restaurer une copie gardée ailleurs : le fichier
+                (.dump) est ajouté à la liste, puis vous pouvez le restaurer.</p>
+            <input class="input" type="file" name="file" accept=".dump" required/>
+        </div>
+        <div class="card-footer justify-end">
+            <button type="submit" class="btn btn-secondary"><span class="icon">upload</span>Importer</button>
+        </div>
+    </form>
+</main>
+</body>
+</html>

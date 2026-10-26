@@ -25,6 +25,7 @@ public class HomeController {
         LANDING_PAGES.put("MANAGE_USERS", "/users");
         LANDING_PAGES.put("MANAGE_PROFILES", "/profiles");
         LANDING_PAGES.put("MANAGE_PRIVILEGES", "/privileges");
+        LANDING_PAGES.put("MANAGE_BACKUPS", "/settings/backups");
     }
 
     @GetMapping("/")

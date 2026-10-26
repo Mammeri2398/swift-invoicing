@@ -96,6 +96,8 @@
        th:classappend="${#strings.startsWith(p, '/settings/mail')} ? 'active'">Email</a>
     <a th:if="${u.can('VIEW_ISSUER') and licence != null and licence.state.name() != 'NOT_REQUIRED'}" th:href="@{/settings/licence}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/settings/licence')} ? 'active'">Licence</a>
+    <a th:if="${u.can('MANAGE_BACKUPS')}" th:href="@{/settings/backups}" class="nav-link"
+       th:classappend="${#strings.startsWith(p, '/settings/backups')} ? 'active'">Sauvegardes</a>
     <a th:if="${u.can('MANAGE_USERS')}" th:href="@{/users}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/users')} ? 'active'">Utilisateurs</a>
     <a th:if="${u.can('MANAGE_PROFILES')}" th:href="@{/profiles}" class="nav-link"
@@ -110,6 +112,15 @@
     <div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2 text-body-sm sm:px-6 lg:px-12">
         <span class="inline-flex items-center gap-2"><span class="icon icon-sm">workspace_premium</span><span th:text="${licence.message}">Licence</span></span>
         <a th:if="${currentUser.can('VIEW_ISSUER')}" th:href="@{/settings/licence}" class="font-semibold underline">Licence</a>
+    </div>
+</div>
+
+<!--/* Backups failing or missing for days, shown to the users who manage them (see BackupAdvice) */-->
+<div th:fragment="backupBanner" th:if="${backupWarning != null}"
+     class="bg-error-container text-on-error-container print:hidden">
+    <div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2 text-body-sm sm:px-6 lg:px-12">
+        <span class="inline-flex items-center gap-2"><span class="icon icon-sm">backup</span><span th:text="${backupWarning}">Sauvegarde</span></span>
+        <a th:href="@{/settings/backups}" class="font-semibold underline">Sauvegardes</a>
     </div>
 </div>
 

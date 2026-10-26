@@ -26,6 +26,7 @@ public class AuthController {
                         @RequestParam(name = "logout", required = false) String logout,
                         @RequestParam(name = "expired", required = false) String expired,
                         @RequestParam(name = "setup", required = false) String setup,
+                        @RequestParam(name = "restored", required = false) String restored,
                         Authentication authentication, Model model) {
         if (authentication != null && authentication.isAuthenticated()
             && !(authentication instanceof AnonymousAuthenticationToken)) {
@@ -45,6 +46,9 @@ public class AuthController {
         }
         if (expired != null) {
             model.addAttribute("logout", "Votre session a été fermée (mot de passe modifié ou compte désactivé). Reconnectez-vous.");
+        }
+        if (restored != null) {
+            model.addAttribute("logout", "Sauvegarde restaurée : reconnectez-vous avec un compte de cette sauvegarde.");
         }
         return "access/login";
     }

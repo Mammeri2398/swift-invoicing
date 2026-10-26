@@ -5,6 +5,8 @@ import com.swiftlabs.invoicing.access.auth.RateLimitFilter;
 import com.swiftlabs.invoicing.access.auth.RateLimiter;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorFilter;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorLoginSuccessHandler;
+import com.swiftlabs.invoicing.licence.LicenceFilter;
+import com.swiftlabs.invoicing.licence.LicenceService;
 import com.swiftlabs.invoicing.setup.SetupFilter;
 import com.swiftlabs.invoicing.setup.SetupService;
 
@@ -71,7 +73,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, SessionRegistry sessionRegistry, RateLimiter rateLimiter,
                                            SecurityProperties properties,
                                            TwoFactorLoginSuccessHandler loginSuccessHandler,
-                                           SetupService setupService) throws Exception {
+                                           SetupService setupService, LicenceService licenceService) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_URLS).permitAll()
@@ -107,6 +109,8 @@ public class SecurityConfig {
             .addFilterBefore(new RateLimitFilter(rateLimiter, properties), UsernamePasswordAuthenticationFilter.class)
             // First-run setup (on-premise): every page leads to it until the administrator exists
             .addFilterBefore(new SetupFilter(setupService), RateLimitFilter.class)
+            // On-premise licence: read-only once it (or the trial) is over
+            .addFilterAfter(new LicenceFilter(licenceService), AuthorizationFilter.class)
             // Code still to type, or two-factor login to set up, before the forced password change check
             .addFilterAfter(new TwoFactorFilter(properties.twoFactor().requiredFor()), AuthorizationFilter.class)
             .addFilterAfter(new ForcePasswordChangeFilter(), TwoFactorFilter.class);

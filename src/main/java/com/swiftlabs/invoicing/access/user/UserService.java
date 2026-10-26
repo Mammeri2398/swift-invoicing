@@ -4,6 +4,7 @@ import com.swiftlabs.invoicing.access.profile.Profile;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
+import com.swiftlabs.invoicing.licence.LicenceService;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,10 +28,12 @@ public class UserService {
     private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicy passwordPolicy;
+    private final LicenceService licenceService;
     private final Clock clock;
 
     public UserService(UserRepository userRepository, ProfileRepository profileRepository,
-                       PasswordEncoder passwordEncoder, PasswordPolicy passwordPolicy, Clock clock) {
+                       PasswordEncoder passwordEncoder, PasswordPolicy passwordPolicy, LicenceService licenceService, Clock clock) {
+        this.licenceService = licenceService;
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
@@ -56,6 +59,8 @@ public class UserService {
         if (userRepository.existsByEmail(form.getEmail())) {
             throw new BusinessException("email", "Cet email est déjà utilisé.");
         }
+        // The licence limits the number of active accounts
+        licenceService.checkUserLimit(userRepository.countByEnabledTrue() + 1);
         String temporaryPassword = passwordPolicy.generateTemporary();
         User user = new User();
         user.setUsername(form.getUsername());
@@ -78,6 +83,9 @@ public class UserService {
         }
         if (!form.isEnabled() && Objects.equals(existing.getId(), actingUserId)) {
             throw new BusinessException("enabled", "Vous ne pouvez pas désactiver votre propre compte.");
+        }
+        if (form.isEnabled() && !existing.isEnabled()) {
+            licenceService.checkUserLimit(userRepository.countByEnabledTrue() + 1);
         }
         existing.setFirstName(form.getFirstName());
         existing.setLastName(form.getLastName());

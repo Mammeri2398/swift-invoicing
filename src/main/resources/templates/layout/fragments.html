@@ -94,6 +94,8 @@
        th:classappend="${#strings.startsWith(p, '/settings/issuer')} ? 'active'">Paramètres</a>
     <a th:if="${u.can('VIEW_ISSUER')}" th:href="@{/settings/mail}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/settings/mail')} ? 'active'">Email</a>
+    <a th:if="${u.can('VIEW_ISSUER') and licence != null and licence.state.name() != 'NOT_REQUIRED'}" th:href="@{/settings/licence}" class="nav-link"
+       th:classappend="${#strings.startsWith(p, '/settings/licence')} ? 'active'">Licence</a>
     <a th:if="${u.can('MANAGE_USERS')}" th:href="@{/users}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/users')} ? 'active'">Utilisateurs</a>
     <a th:if="${u.can('MANAGE_PROFILES')}" th:href="@{/profiles}" class="nav-link"
@@ -101,6 +103,15 @@
     <a th:if="${u.can('MANAGE_PRIVILEGES')}" th:href="@{/privileges}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/privileges')} ? 'active'">Privilèges</a>
 </th:block>
+
+<!--/* On-premise licence: trial, renewal soon, grace period, read-only (see LicenceStatus) */-->
+<div th:fragment="licenceBanner" th:if="${licence != null and licence.noticeShown and currentUser != null}"
+     class="print:hidden" th:classappend="${licence.urgent} ? 'bg-error-container text-on-error-container' : 'bg-secondary-container/50 text-on-surface'">
+    <div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2 text-body-sm sm:px-6 lg:px-12">
+        <span class="inline-flex items-center gap-2"><span class="icon icon-sm">workspace_premium</span><span th:text="${licence.message}">Licence</span></span>
+        <a th:if="${currentUser.can('VIEW_ISSUER')}" th:href="@{/settings/licence}" class="font-semibold underline">Licence</a>
+    </div>
+</div>
 
 <!--/* Flash messages, aligned with the page content.
        Not on error pages: Spring's error model also has an "error" attribute (the status phrase). */-->

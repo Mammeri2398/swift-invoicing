@@ -15,6 +15,12 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    private final Messages messages;
+
+    public GlobalExceptionHandler(Messages messages) {
+        this.messages = messages;
+    }
+
     /** Let Spring Security answer (login redirect or the access-denied page). */
     @ExceptionHandler(AccessDeniedException.class)
     public void accessDenied(AccessDeniedException ex) {
@@ -23,19 +29,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ModelAndView notFound(ResourceNotFoundException ex) {
-        return errorPage(HttpStatus.NOT_FOUND, ex.getMessage());
+        return errorPage(HttpStatus.NOT_FOUND, messages.of(ex));
     }
 
     /** Business rule violations that a controller did not turn into a form error. */
     @ExceptionHandler(BusinessException.class)
     public ModelAndView business(BusinessException ex) {
-        return errorPage(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return errorPage(HttpStatus.BAD_REQUEST, messages.of(ex));
     }
 
     /** Upload above spring.servlet.multipart.max-file-size (raised before any controller runs). */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ModelAndView uploadTooLarge(MaxUploadSizeExceededException ex) {
-        return errorPage(HttpStatus.PAYLOAD_TOO_LARGE, "Le fichier envoyé est trop volumineux.");
+        return errorPage(HttpStatus.PAYLOAD_TOO_LARGE, messages.get("error.uploadTooLarge"));
     }
 
     @ExceptionHandler(Exception.class)
@@ -45,8 +51,7 @@ public class GlobalExceptionHandler {
             throw ex;
         }
         log.error("Unhandled exception", ex);
-        return errorPage(HttpStatus.INTERNAL_SERVER_ERROR,
-            "Une erreur inattendue est survenue. Veuillez réessayer ou contacter l'administrateur.");
+        return errorPage(HttpStatus.INTERNAL_SERVER_ERROR, messages.get("error.unexpected"));
     }
 
     private ModelAndView errorPage(HttpStatus status, String message) {

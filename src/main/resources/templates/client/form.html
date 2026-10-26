@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page(${client.id == null ? 'Nouveau client' : 'Modifier le client'}, ~{::main}, ~{::script})}">
+      th:replace="~{layout/base :: page((${client.id == null} ? #{client.form.newTitle} : #{client.form.editTitle}), ~{::main}, ~{::script})}">
 <body>
 <main class="page-narrow">
-    <nav class="breadcrumb" aria-label="Fil d'Ariane">
-        <a th:href="@{/clients}">Clients</a><span class="icon icon-xs">chevron_right</span>
-        <span class="text-primary" th:text="${client.id == null ? 'Nouveau' : client.name}">Nouveau</span>
+    <nav class="breadcrumb" aria-label="Fil d'Ariane" th:aria-label="#{client.form.breadcrumb}">
+        <a th:href="@{/clients}" th:text="#{nav.clients}">Clients</a><span class="icon icon-xs rtl-flip">chevron_right</span>
+        <span class="text-primary" th:text="${client.id == null} ? #{client.form.breadcrumbNew} : ${client.name}">Nouveau</span>
     </nav>
     <div class="page-header">
-        <h1 class="page-title" th:text="${client.id == null ? 'Nouveau client' : 'Modifier le client'}">Nouveau client</h1>
+        <h1 class="page-title" th:text="${client.id == null} ? #{client.form.newTitle} : #{client.form.editTitle}">Nouveau client</h1>
     </div>
 
     <form th:action="@{/clients/save}" method="post" th:object="${client}" class="card" id="client-form">
@@ -16,13 +16,13 @@
         <div class="card-body flex flex-col gap-5">
             <div th:replace="~{layout/fragments :: formErrors}"></div>
             <fieldset class="field">
-                <legend class="label mb-1">Type de client <span class="required">*</span></legend>
+                <legend class="label mb-1"><th:block th:text="#{client.form.type}">Type de client</th:block> <span class="required">*</span></legend>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <label th:each="t : ${types}" class="flex cursor-pointer items-start gap-3 rounded-xl bg-surface p-3 ring-1 ring-outline-variant/60 has-[:checked]:bg-primary-fixed/40 has-[:checked]:ring-2 has-[:checked]:ring-primary">
                         <input type="radio" class="checkbox" th:field="*{type}" th:value="${t.name()}" required data-client-type/>
                         <span>
-                            <span class="block font-semibold" th:text="${t.name() == 'PROFESSIONNEL'} ? 'Professionnel' : 'Particulier'">Professionnel</span>
-                            <span class="hint" th:text="${t.name() == 'PROFESSIONNEL'} ? 'Entreprise, administration : NIF obligatoire' : 'Personne physique'">Entreprise</span>
+                            <span class="block font-semibold" th:text="${@messages.label(t)}">Professionnel</span>
+                            <span class="hint" th:text="#{${'client.form.typeHint.' + t.name()}}">Entreprise</span>
                         </span>
                     </label>
                 </div>
@@ -31,62 +31,63 @@
 
             <div class="form-grid">
                 <div class="field md:col-span-2">
-                    <label class="label" for="name"><span data-name-label>Nom / Raison sociale</span> <span class="required">*</span></label>
+                    <label class="label" for="name"><span data-name-label th:data-label-professional="#{client.form.name.professional}"
+                          th:data-label-private="#{client.form.name.private}" th:text="#{client.form.name}">Nom / Raison sociale</span> <span class="required">*</span></label>
                     <input class="input" th:errorclass="input-invalid" th:field="*{name}" type="text" required maxlength="255"/>
                     <p th:replace="~{layout/fragments :: fieldError('name')}"></p>
                 </div>
                 <div class="field md:col-span-2">
                     <label class="label" for="nif">
-                        <span>NIF <span class="required" data-nif-required>*</span></span>
-                        <span class="optional">15 ou 20 chiffres</span>
+                        <span><th:block th:text="#{client.form.nif}">NIF</th:block> <span class="required" data-nif-required>*</span></span>
+                        <span class="optional" th:text="#{client.form.nifHint}">15 ou 20 chiffres</span>
                     </label>
                     <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" maxlength="50" inputmode="numeric"/>
                     <p th:replace="~{layout/fragments :: fieldError('nif')}"></p>
                 </div>
                 <!-- Professional clients only (client-form.js hides them for a private person) -->
                 <div class="field" data-professional>
-                    <label class="label" for="rcNumber">N° registre du commerce (RC)</label>
+                    <label class="label" for="rcNumber" th:text="#{client.form.rc}">N° registre du commerce (RC)</label>
                     <input class="input input-mono" th:errorclass="input-invalid" th:field="*{rcNumber}" type="text" maxlength="50"/>
                     <p th:replace="~{layout/fragments :: fieldError('rcNumber')}"></p>
                 </div>
                 <div class="field" data-professional>
-                    <label class="label" for="taxArticle">Article d'imposition (AI)</label>
+                    <label class="label" for="taxArticle" th:text="#{client.form.taxArticle}">Article d'imposition (AI)</label>
                     <input class="input input-mono" th:errorclass="input-invalid" th:field="*{taxArticle}" type="text" maxlength="50"/>
                     <p th:replace="~{layout/fragments :: fieldError('taxArticle')}"></p>
                 </div>
                 <div class="field" data-professional>
-                    <label class="label" for="nis">NIS <span class="optional">Optionnel</span></label>
+                    <label class="label" for="nis"><th:block th:text="#{client.form.nis}">NIS</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
                     <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="50" inputmode="numeric"/>
                     <p th:replace="~{layout/fragments :: fieldError('nis')}"></p>
                 </div>
-                <p class="hint md:col-span-2" data-professional th:if="${companyType?.company}">
+                <p class="hint md:col-span-2" data-professional th:if="${companyType?.company}" th:text="#{client.form.companyHint}">
                     Votre profil est une société : le RC et l'article d'imposition d'un client professionnel sont obligatoires pour émettre une facture.
                 </p>
                 <div class="field md:col-span-2">
-                    <label class="label" for="address">Adresse</label>
+                    <label class="label" for="address" th:text="#{client.form.address}">Adresse</label>
                     <input class="input" th:errorclass="input-invalid" th:field="*{address}" type="text" maxlength="255"/>
                     <p th:replace="~{layout/fragments :: fieldError('address')}"></p>
                 </div>
                 <div class="field">
-                    <label class="label" for="city">Ville</label>
+                    <label class="label" for="city" th:text="#{client.form.city}">Ville</label>
                     <input class="input" th:errorclass="input-invalid" th:field="*{city}" type="text" maxlength="255"/>
                     <p th:replace="~{layout/fragments :: fieldError('city')}"></p>
                 </div>
                 <div class="field">
-                    <label class="label" for="phone">Téléphone</label>
+                    <label class="label" for="phone" th:text="#{client.form.phone}">Téléphone</label>
                     <input class="input" th:errorclass="input-invalid" th:field="*{phone}" type="tel" maxlength="50"/>
                     <p th:replace="~{layout/fragments :: fieldError('phone')}"></p>
                 </div>
                 <div class="field md:col-span-2">
-                    <label class="label" for="email">Email</label>
+                    <label class="label" for="email" th:text="#{client.form.email}">Email</label>
                     <input class="input" th:errorclass="input-invalid" th:field="*{email}" type="email" maxlength="255"/>
                     <p th:replace="~{layout/fragments :: fieldError('email')}"></p>
                 </div>
             </div>
         </div>
         <div class="card-footer justify-end">
-            <a th:href="@{/clients}" class="btn btn-secondary">Annuler</a>
-            <button type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer</button>
+            <a th:href="@{/clients}" class="btn btn-secondary" th:text="#{action.cancel}">Annuler</a>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span><th:block th:text="#{action.save}">Enregistrer</th:block></button>
         </div>
     </form>
 </main>

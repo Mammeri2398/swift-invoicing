@@ -79,7 +79,8 @@ module.exports = {
         "space-xs": "0.25rem"
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Arabic letters come from the system fonts after Inter (Segoe UI, Tahoma on Windows)
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'Segoe UI', 'Tahoma', 'Noto Sans Arabic', 'sans-serif'],
       },
       fontSize: {
         "body-sm": [

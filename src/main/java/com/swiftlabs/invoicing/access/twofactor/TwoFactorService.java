@@ -85,7 +85,7 @@ public class TwoFactorService {
         User user = user(userId);
         OptionalLong step = Totp.verify(secret, normalize(code), clock.instant(), null);
         if (step.isEmpty()) {
-            throw new BusinessException("code", "Code incorrect. Vérifiez l'heure de votre téléphone et saisissez le code affiché.");
+            throw BusinessException.onField("code", "twoFactor.error.wrongSetupCode");
         }
         user.enableTotp(secret, step.getAsLong());
         log.info("Two-factor login enabled for '{}'", user.getUsername());
@@ -147,11 +147,11 @@ public class TwoFactorService {
 
     private void requireAppCode(User user, String code) {
         if (!user.isTotpEnabled()) {
-            throw new BusinessException("La double authentification n'est pas activée.");
+            throw new BusinessException("twoFactor.error.notEnabled");
         }
         OptionalLong step = Totp.verify(user.getTotpSecret(), normalize(code), clock.instant(), user.getTotpLastStep());
         if (step.isEmpty()) {
-            throw new BusinessException("code", "Code incorrect.");
+            throw BusinessException.onField("code", "twoFactor.error.wrongCode");
         }
         user.acceptTotpStep(step.getAsLong());
     }
@@ -189,6 +189,6 @@ public class TwoFactorService {
     }
 
     private User user(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+        return userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("user.error.notFound"));
     }
 }

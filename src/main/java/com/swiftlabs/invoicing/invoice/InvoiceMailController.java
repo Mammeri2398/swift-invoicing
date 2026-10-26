@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.Messages;
 
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,10 +24,12 @@ public class InvoiceMailController {
 
     private final InvoiceService invoiceService;
     private final InvoiceMailService mailService;
+    private final Messages messages;
 
-    public InvoiceMailController(InvoiceService invoiceService, InvoiceMailService mailService) {
+    public InvoiceMailController(InvoiceService invoiceService, InvoiceMailService mailService, Messages messages) {
         this.invoiceService = invoiceService;
         this.mailService = mailService;
+        this.messages = messages;
     }
 
     @GetMapping
@@ -35,7 +38,7 @@ public class InvoiceMailController {
         try {
             model.addAttribute("mail", reminder ? mailService.prepareReminder(id) : mailService.prepare(id));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
             return "redirect:/invoices/" + id;
         }
         return formView(id, model);
@@ -48,7 +51,7 @@ public class InvoiceMailController {
         if (!result.hasErrors()) {
             try {
                 mailService.send(id, form);
-                redirectAttributes.addFlashAttribute("success", "Facture envoyée à " + form.getTo() + ".");
+                redirectAttributes.addFlashAttribute("success", messages.get("invoiceMail.sent", form.getTo()));
                 return "redirect:/invoices/" + id;
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);

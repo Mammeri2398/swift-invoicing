@@ -1,30 +1,31 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page('Double authentification', ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page(#{twoFactor.title}, ~{::main}, ~{})}">
 <body>
 <main class="page-narrow">
-    <nav class="breadcrumb" aria-label="Fil d'Ariane">
-        <a th:href="@{/account}">Mon compte</a><span class="icon icon-xs">chevron_right</span>
-        <span class="text-primary">Double authentification</span>
+    <nav class="breadcrumb" th:aria-label="#{access.breadcrumb}" aria-label="Fil d'Ariane">
+        <a th:href="@{/account}" th:text="#{account.title}">Mon compte</a><span class="icon icon-xs rtl-flip">chevron_right</span>
+        <span class="text-primary" th:text="#{twoFactor.title}">Double authentification</span>
     </nav>
     <div class="page-header">
         <div>
-            <p class="page-eyebrow">Mon compte</p>
-            <h1 class="page-title">Double authentification</h1>
-            <p class="page-subtitle">En plus du mot de passe, un code à 6 chiffres généré par une application sur votre téléphone
+            <p class="page-eyebrow" th:text="#{account.title}">Mon compte</p>
+            <h1 class="page-title" th:text="#{twoFactor.title}">Double authentification</h1>
+            <p class="page-subtitle" th:text="#{twoFactor.intro}">En plus du mot de passe, un code à 6 chiffres généré par une application sur votre téléphone
                 (Google Authenticator, Microsoft Authenticator, FreeOTP…) est demandé à chaque connexion.</p>
         </div>
-        <span th:if="${enabled}" class="badge badge-success"><span class="icon icon-sm">verified_user</span>Activée</span>
-        <span th:unless="${enabled}" class="badge badge-neutral"><span class="icon icon-sm">shield</span>Désactivée</span>
+        <span th:if="${enabled}" class="badge badge-success"><span class="icon icon-sm">verified_user</span><th:block th:text="#{account.twoFactor.on}">Activée</th:block></span>
+        <span th:unless="${enabled}" class="badge badge-neutral"><span class="icon icon-sm">shield</span><th:block th:text="#{account.twoFactor.off}">Désactivée</th:block></span>
     </div>
 
     <!-- Shown once: only their hashes are stored -->
     <section th:if="${recoveryCodes}" class="card mb-6 ring-2 ring-primary">
-        <div class="card-header"><h2 class="card-title"><span class="icon">key</span>Vos codes de secours</h2></div>
+        <div class="card-header"><h2 class="card-title"><span class="icon">key</span><th:block th:text="#{twoFactor.newCodes.title}">Vos codes de secours</th:block></h2></div>
         <div class="card-body flex flex-col gap-4">
-            <p>Chaque code remplace une fois le code de l'application, si vous perdez votre téléphone.
+            <!--/* Own bundle text with <strong> */-->
+            <p th:utext="#{twoFactor.newCodes.text}">Chaque code remplace une fois le code de l'application, si vous perdez votre téléphone.
                 <strong>Recopiez-les ou imprimez-les maintenant</strong> et gardez-les en lieu sûr : ils ne seront plus affichés.</p>
-            <ul class="grid grid-cols-2 gap-2 rounded-lg bg-surface p-4 font-mono text-title-sm ring-1 ring-surface-variant sm:grid-cols-5">
+            <ul class="grid grid-cols-2 gap-2 rounded-lg bg-surface p-4 font-mono text-title-sm ring-1 ring-surface-variant sm:grid-cols-5" dir="ltr">
                 <li th:each="c : ${recoveryCodes}" th:text="${c}">abcd-efgh</li>
             </ul>
         </div>
@@ -32,7 +33,7 @@
 
     <div th:if="${required and !enabled}" class="alert alert-warning mb-6">
         <span class="icon">admin_panel_settings</span>
-        <span>Votre profil donne des droits d'administration : la double authentification est obligatoire.
+        <span th:text="#{twoFactor.required}">Votre profil donne des droits d'administration : la double authentification est obligatoire.
             Configurez-la pour continuer.</span>
     </div>
 
@@ -40,30 +41,30 @@
     <section th:if="${setup}" class="card mb-6">
         <div class="card-header">
             <h2 class="card-title"><span class="icon">qr_code_2</span>
-                <th:block th:text="${enabled} ? 'Configurer un nouveau téléphone' : 'Configurer votre application'">Configurer</th:block></h2>
+                <th:block th:text="${enabled} ? #{twoFactor.setup.newPhone} : #{twoFactor.setup.first}">Configurer</th:block></h2>
         </div>
         <div class="card-body flex flex-col gap-6 sm:flex-row">
-            <img th:src="${setup.qrCodeDataUri}" alt="QR code à scanner avec votre application d'authentification"
+            <img th:src="${setup.qrCodeDataUri}" th:alt="#{twoFactor.setup.qrAlt}" alt="QR code à scanner avec votre application d'authentification"
                  class="h-48 w-48 shrink-0 self-center rounded-lg ring-1 ring-surface-variant"/>
             <div class="flex min-w-0 flex-col gap-4">
-                <ol class="list-decimal space-y-1 pl-5 text-body-md">
-                    <li>Ouvrez votre application d'authentification et ajoutez un compte.</li>
-                    <li>Scannez ce QR code. Sans appareil photo, saisissez la clé ci-dessous.</li>
-                    <li>Tapez le code à 6 chiffres que l'application affiche.</li>
+                <ol class="list-decimal space-y-1 ps-5 text-body-md">
+                    <li th:text="#{twoFactor.setup.step1}">Ouvrez votre application d'authentification et ajoutez un compte.</li>
+                    <li th:text="#{twoFactor.setup.step2}">Scannez ce QR code. Sans appareil photo, saisissez la clé ci-dessous.</li>
+                    <li th:text="#{twoFactor.setup.step3}">Tapez le code à 6 chiffres que l'application affiche.</li>
                 </ol>
                 <div>
-                    <p class="label">Clé de configuration</p>
-                    <p class="break-all font-mono text-body-sm" th:text="${setup.groupedSecret()}">ABCD EFGH</p>
+                    <p class="label" th:text="#{twoFactor.setup.key}">Clé de configuration</p>
+                    <p class="break-all font-mono text-body-sm" dir="ltr" th:text="${setup.groupedSecret()}">ABCD EFGH</p>
                 </div>
                 <form th:action="@{/account/two-factor/confirm}" method="post" class="flex flex-wrap items-end gap-2">
                     <div class="field">
-                        <label class="label" for="setup-code">Code de l'application</label>
-                        <input class="input input-mono w-40 tracking-[0.2em]" id="setup-code" name="code" type="text" inputmode="numeric"
+                        <label class="label" for="setup-code" th:text="#{twoFactor.appCode}">Code de l'application</label>
+                        <input class="input input-mono w-40 tracking-[0.2em]" id="setup-code" name="code" type="text" inputmode="numeric" dir="ltr"
                                autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required placeholder="123456"/>
                     </div>
                     <button type="submit" class="btn btn-primary"><span class="icon">check</span>
-                        <th:block th:text="${enabled} ? 'Remplacer' : 'Activer'">Activer</th:block></button>
-                    <a th:if="${enabled}" th:href="@{/account/two-factor}" class="btn btn-secondary">Annuler</a>
+                        <th:block th:text="${enabled} ? #{twoFactor.setup.replace} : #{twoFactor.setup.enable}">Activer</th:block></button>
+                    <a th:if="${enabled}" th:href="@{/account/two-factor}" class="btn btn-secondary" th:text="#{action.cancel}">Annuler</a>
                 </form>
             </div>
         </div>
@@ -72,39 +73,40 @@
     <!-- Managing an active setup: each action needs a current code -->
     <th:block th:if="${enabled and setup == null}">
         <section class="card mb-6">
-            <div class="card-header"><h2 class="card-title"><span class="icon">smartphone</span>Téléphone</h2></div>
+            <div class="card-header"><h2 class="card-title"><span class="icon">smartphone</span><th:block th:text="#{twoFactor.phone.title}">Téléphone</th:block></h2></div>
             <div class="card-body flex flex-wrap items-center justify-between gap-3">
-                <p>Nouveau téléphone ? Configurez-le : l'ancien ne générera plus de codes valides.</p>
-                <a th:href="@{/account/two-factor(change=true)}" class="btn btn-secondary"><span class="icon">phonelink_setup</span>Changer de téléphone</a>
+                <p th:text="#{twoFactor.phone.text}">Nouveau téléphone ? Configurez-le : l'ancien ne générera plus de codes valides.</p>
+                <a th:href="@{/account/two-factor(change=true)}" class="btn btn-secondary"><span class="icon">phonelink_setup</span><th:block th:text="#{twoFactor.phone.change}">Changer de téléphone</th:block></a>
             </div>
         </section>
 
         <section class="card mb-6">
-            <div class="card-header"><h2 class="card-title"><span class="icon">key</span>Codes de secours</h2></div>
+            <div class="card-header"><h2 class="card-title"><span class="icon">key</span><th:block th:text="#{twoFactor.codes.title}">Codes de secours</th:block></h2></div>
             <form th:action="@{/account/two-factor/recovery-codes}" method="post" class="card-body flex flex-col gap-3">
-                <p><strong th:text="${remainingCodes}">10</strong> code(s) de secours inutilisé(s).
+                <!--/* Own bundle text with <strong>; the argument is a number */-->
+                <p th:utext="#{twoFactor.codes.remaining(${remainingCodes})}"><strong>10</strong> code(s) de secours inutilisé(s).
                     En générer de nouveaux rend les anciens inutilisables.</p>
                 <div class="flex flex-wrap items-end gap-2">
                     <div class="field">
-                        <label class="label" for="codes-code">Code de l'application</label>
-                        <input class="input input-mono w-40" id="codes-code" name="code" type="text" inputmode="numeric"
+                        <label class="label" for="codes-code" th:text="#{twoFactor.appCode}">Code de l'application</label>
+                        <input class="input input-mono w-40" id="codes-code" name="code" type="text" inputmode="numeric" dir="ltr"
                                autocomplete="one-time-code" maxlength="7" required/>
                     </div>
-                    <button type="submit" class="btn btn-secondary"><span class="icon">autorenew</span>Générer de nouveaux codes</button>
+                    <button type="submit" class="btn btn-secondary"><span class="icon">autorenew</span><th:block th:text="#{twoFactor.codes.generate}">Générer de nouveaux codes</th:block></button>
                 </div>
             </form>
         </section>
 
         <section th:unless="${required}" class="card">
-            <div class="card-header"><h2 class="card-title"><span class="icon">gpp_bad</span>Désactiver</h2></div>
+            <div class="card-header"><h2 class="card-title"><span class="icon">gpp_bad</span><th:block th:text="#{twoFactor.disable.title}">Désactiver</th:block></h2></div>
             <form th:action="@{/account/two-factor/disable}" method="post" class="card-body flex flex-wrap items-end gap-2"
-                  data-confirm="Désactiver la double authentification ? Votre mot de passe suffira de nouveau pour vous connecter.">
+                  th:data-confirm="#{twoFactor.disable.confirm}">
                 <div class="field">
-                    <label class="label" for="disable-code">Code de l'application</label>
-                    <input class="input input-mono w-40" id="disable-code" name="code" type="text" inputmode="numeric"
+                    <label class="label" for="disable-code" th:text="#{twoFactor.appCode}">Code de l'application</label>
+                    <input class="input input-mono w-40" id="disable-code" name="code" type="text" inputmode="numeric" dir="ltr"
                            autocomplete="one-time-code" maxlength="7" required/>
                 </div>
-                <button type="submit" class="btn btn-danger"><span class="icon">gpp_bad</span>Désactiver</button>
+                <button type="submit" class="btn btn-danger"><span class="icon">gpp_bad</span><th:block th:text="#{twoFactor.disable.submit}">Désactiver</th:block></button>
             </form>
         </section>
     </th:block>

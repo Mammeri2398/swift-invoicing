@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page(${privilege.id == null ? 'Nouveau privilège' : 'Modifier le privilège'}, ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page((${privilege.id == null} ? #{privilege.new} : #{privilege.edit}), ~{::main}, ~{})}">
 <body>
 <main class="page-narrow">
-    <nav class="breadcrumb" aria-label="Fil d'Ariane">
-        <a th:href="@{/privileges}">Privilèges</a><span class="icon icon-xs">chevron_right</span>
-        <span class="text-primary" th:text="${privilege.id == null ? 'Nouveau' : privilege.code}">Nouveau</span>
+    <nav class="breadcrumb" th:aria-label="#{access.breadcrumb}" aria-label="Fil d'Ariane">
+        <a th:href="@{/privileges}" th:text="#{privilege.list.title}">Privilèges</a><span class="icon icon-xs rtl-flip">chevron_right</span>
+        <span class="text-primary" th:text="${privilege.id == null} ? #{access.new} : ${privilege.code}">Nouveau</span>
     </nav>
     <div class="page-header">
-        <h1 class="page-title" th:text="${privilege.id == null ? 'Nouveau privilège' : 'Modifier le privilège'}">Nouveau privilège</h1>
+        <h1 class="page-title" th:text="${privilege.id == null} ? #{privilege.new} : #{privilege.edit}">Nouveau privilège</h1>
     </div>
 
     <form th:action="@{/privileges/save}" method="post" th:object="${privilege}" class="card">
@@ -16,26 +16,26 @@
         <div class="card-body flex flex-col gap-4">
             <div th:replace="~{layout/fragments :: formErrors}"></div>
             <div class="field">
-                <label class="label" for="code">Code <span class="required">*</span></label>
-                <input class="input input-mono uppercase" th:errorclass="input-invalid" th:field="*{code}" type="text" required maxlength="100"
+                <label class="label" for="code"><span><th:block th:text="#{privilege.code}">Code</th:block> <span class="required">*</span></span></label>
+                <input class="input input-mono uppercase" th:errorclass="input-invalid" th:field="*{code}" type="text" required maxlength="100" dir="ltr"
                        pattern="[A-Za-z_]+" placeholder="EXPORT_INVOICES" th:readonly="*{id != null}"/>
                 <p th:replace="~{layout/fragments :: fieldError('code')}"></p>
-                <p class="hint" th:text="*{id == null} ? 'Lettres et _ uniquement. Il ne pourra plus être modifié.' : 'Le code ne peut pas être modifié : il est vérifié par l\'application.'">Lettres et _ uniquement.</p>
+                <p class="hint" th:text="*{id == null} ? #{privilege.code.hint.new} : #{privilege.code.hint.fixed}">Lettres et _ uniquement.</p>
             </div>
             <div class="field">
-                <label class="label" for="name">Nom <span class="required">*</span></label>
+                <label class="label" for="name"><span><th:block th:text="#{privilege.name}">Nom</th:block> <span class="required">*</span></span></label>
                 <input class="input" th:errorclass="input-invalid" th:field="*{name}" type="text" required maxlength="255"/>
                 <p th:replace="~{layout/fragments :: fieldError('name')}"></p>
             </div>
             <div class="field">
-                <label class="label" for="description">Description <span class="optional">Optionnel</span></label>
+                <label class="label" for="description"><th:block th:text="#{privilege.description}">Description</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
                 <input class="input" th:errorclass="input-invalid" th:field="*{description}" type="text" maxlength="500"/>
                 <p th:replace="~{layout/fragments :: fieldError('description')}"></p>
             </div>
         </div>
         <div class="card-footer justify-end">
-            <a th:href="@{/privileges}" class="btn btn-secondary">Annuler</a>
-            <button type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer</button>
+            <a th:href="@{/privileges}" class="btn btn-secondary" th:text="#{action.cancel}">Annuler</a>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span><th:block th:text="#{action.save}">Enregistrer</th:block></button>
         </div>
     </form>
 </main>

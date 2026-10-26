@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.access.auth;
 
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 import com.swiftlabs.invoicing.setup.NetworkAddresses;
 
@@ -15,10 +16,12 @@ public class AuthController {
 
     private final SecurityProperties.Lockout lockout;
     private final NetworkAddresses networkAddresses;
+    private final Messages messages;
 
-    public AuthController(SecurityProperties properties, NetworkAddresses networkAddresses) {
+    public AuthController(SecurityProperties properties, NetworkAddresses networkAddresses, Messages messages) {
         this.lockout = properties.lockout();
         this.networkAddresses = networkAddresses;
+        this.messages = messages;
     }
 
     @GetMapping("/login")
@@ -34,21 +37,20 @@ public class AuthController {
         }
         if (error != null) {
             // Never tells whether the user exists, is locked or disabled
-            model.addAttribute("error", "Identifiants invalides. Après " + lockout.maxAttempts()
-                + " échecs consécutifs, le compte est verrouillé " + lockout.duration().toMinutes() + " minutes.");
+            model.addAttribute("error", messages.get("auth.login.error", lockout.maxAttempts(), lockout.duration().toMinutes()));
         }
         if (logout != null) {
-            model.addAttribute("logout", "Vous avez été déconnecté.");
+            model.addAttribute("logout", messages.get("auth.login.loggedOut"));
         }
         if (setup != null) {
-            model.addAttribute("logout", "Installation terminée : connectez-vous avec le compte administrateur que vous venez de créer.");
+            model.addAttribute("logout", messages.get("auth.login.setupDone"));
             model.addAttribute("networkAddresses", networkAddresses.urls());
         }
         if (expired != null) {
-            model.addAttribute("logout", "Votre session a été fermée (mot de passe modifié ou compte désactivé). Reconnectez-vous.");
+            model.addAttribute("logout", messages.get("auth.login.expired"));
         }
         if (restored != null) {
-            model.addAttribute("logout", "Sauvegarde restaurée : reconnectez-vous avec un compte de cette sauvegarde.");
+            model.addAttribute("logout", messages.get("auth.login.restored"));
         }
         return "access/login";
     }

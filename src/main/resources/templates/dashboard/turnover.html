@@ -1,26 +1,26 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page(${'Chiffre d''affaires'}, ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page(#{turnover.title}, ~{::main}, ~{})}">
 <body>
 <main class="page" th:with="usage=${report.usage},
                             pct=${#numbers.formatDecimal(report.usage.percent, 1, 'WHITESPACE', 1, 'COMMA')}">
 
     <div class="page-header">
         <div>
-            <p class="page-eyebrow" th:text="${'Exercice ' + report.year}">Exercice 2026</p>
-            <h1 class="page-title">Chiffre d'affaires</h1>
-            <p class="page-subtitle">Factures émises et payées moins les avoirs, par mois d'émission<th:block th:if="${report.company}">, montants hors taxes (HT)</th:block>.
+            <p class="page-eyebrow" th:text="#{dashboard.fiscalYear(${report.year})}">Exercice 2026</p>
+            <h1 class="page-title" th:text="#{turnover.title}">Chiffre d'affaires</h1>
+            <p class="page-subtitle" th:text="${report.company} ? #{turnover.subtitle.company} : #{turnover.subtitle}">Factures émises et payées moins les avoirs, par mois d'émission, montants hors taxes (HT).
                 Les factures annulées ne sont pas comptées.</p>
         </div>
         <div class="flex flex-wrap items-end gap-2">
             <form th:action="@{/turnover}" method="get" class="flex items-end gap-2">
                 <div class="field">
-                    <label class="label" for="year">Année</label>
+                    <label class="label" for="year" th:text="#{turnover.year}">Année</label>
                     <select class="input" id="year" name="year" data-autosubmit>
                         <option th:each="y : ${years}" th:value="${y}" th:text="${y}" th:selected="${y == report.year}">2026</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-secondary" aria-label="Afficher l'année"><span class="icon">refresh</span></button>
+                <button type="submit" class="btn btn-secondary" aria-label="Afficher l'année" th:aria-label="#{turnover.showYear}"><span class="icon">refresh</span></button>
             </form>
             <a th:href="@{/invoices/export/xlsx(year=${report.year})}" class="btn btn-secondary"><span class="icon">table_view</span>Excel</a>
             <a th:href="@{/invoices/export/csv(year=${report.year})}" class="btn btn-secondary"><span class="icon">download</span>CSV</a>
@@ -31,43 +31,43 @@
     <section class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="stat">
             <div class="flex items-center justify-between">
-                <span class="stat-label">Chiffre d'affaires</span>
+                <span class="stat-label" th:text="#{turnover.billed}">Chiffre d'affaires</span>
                 <span class="stat-icon"><span class="icon">payments</span></span>
             </div>
             <div>
                 <p class="stat-value" th:text="${amountUtils.format(report.billed)}">0,00 DA</p>
-                <p class="text-body-sm text-on-surface-variant" th:text="${report.invoiceCount + ' facture(s) émise(s)'
-                    + (report.company ? ' · TVA collectée ' + amountUtils.format(report.vat) : '')}">0 facture</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="${report.company} ? #{turnover.issuedCountVat(${report.invoiceCount}, ${amountUtils.format(report.vat)})}
+                    : #{turnover.issuedCount(${report.invoiceCount})}">0 facture</p>
             </div>
         </div>
         <div class="stat">
             <div class="flex items-center justify-between">
-                <span class="stat-label">Encaissé</span>
+                <span class="stat-label" th:text="#{turnover.paid}">Encaissé</span>
                 <span class="stat-icon bg-tertiary-fixed/30 text-tertiary"><span class="icon">price_check</span></span>
             </div>
             <div>
                 <p class="stat-value" th:text="${amountUtils.format(report.paid)}">0,00 DA</p>
-                <p class="text-body-sm text-on-surface-variant">Factures payées</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="#{turnover.paidHint}">Factures payées</p>
             </div>
         </div>
         <a th:href="@{/invoices(status='ISSUED',year=${report.year})}" class="stat transition-shadow hover:shadow-md">
             <div class="flex items-center justify-between">
-                <span class="stat-label">En attente</span>
+                <span class="stat-label" th:text="#{turnover.pending}">En attente</span>
                 <span class="stat-icon bg-secondary-container/40 text-secondary"><span class="icon">schedule</span></span>
             </div>
             <div>
                 <p class="stat-value" th:text="${amountUtils.format(report.pending)}">0,00 DA</p>
-                <p class="text-body-sm text-on-surface-variant">Émises, non payées</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="#{turnover.pendingHint}">Émises, non payées</p>
             </div>
         </a>
         <a th:href="@{/invoices(status='CANCELLED',year=${report.year})}" class="stat transition-shadow hover:shadow-md">
             <div class="flex items-center justify-between">
-                <span class="stat-label">Annulées</span>
+                <span class="stat-label" th:text="#{turnover.cancelled}">Annulées</span>
                 <span class="stat-icon bg-surface-container-high text-outline"><span class="icon">block</span></span>
             </div>
             <div>
                 <p class="stat-value" th:text="${amountUtils.format(report.cancelledAmount)}">0,00 DA</p>
-                <p class="text-body-sm text-on-surface-variant" th:text="${report.cancelledCount + ' facture(s), non comptée(s)'}">0 facture</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="#{turnover.cancelledHint(${report.cancelledCount})}">0 facture</p>
             </div>
         </a>
     </section>
@@ -75,32 +75,32 @@
     <!-- Ceiling: auto-entrepreneurs only -->
     <section th:unless="${report.company}" class="card mb-6">
         <div class="card-header">
-            <h2 class="card-title"><span class="icon">trending_up</span>Plafond annuel</h2>
+            <h2 class="card-title"><span class="icon">trending_up</span><th:block th:text="#{turnover.ceiling}">Plafond annuel</th:block></h2>
             <a th:if="${currentUser != null and currentUser.can('VIEW_ISSUER')}" th:href="@{/settings/issuer}" class="btn btn-secondary btn-sm">
-                <span class="icon">tune</span>Modifier le plafond
+                <span class="icon">tune</span><th:block th:text="#{turnover.editCeiling}">Modifier le plafond</th:block>
             </a>
         </div>
         <div class="card-body flex flex-col gap-3">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
                 <span><strong class="tabular-nums" th:text="${amountUtils.format(usage.billed)}">0,00 DA</strong>
-                    <span class="text-on-surface-variant" th:text="${'sur ' + amountUtils.format(usage.ceiling)}">sur 5 000 000,00 DA</span></span>
-                <span class="font-semibold" th:classappend="${usage.alert100} ? 'text-error' : 'text-primary'" th:text="${pct + ' % consommé'}">0 %</span>
+                    <span class="text-on-surface-variant" th:text="#{turnover.ofCeiling(${amountUtils.format(usage.ceiling)})}">sur 5 000 000,00 DA</span></span>
+                <span class="font-semibold" th:classappend="${usage.alert100} ? 'text-error' : 'text-primary'" th:text="#{dashboard.consumed(${pct})}">0 %</span>
             </div>
             <div class="progress">
                 <div class="progress-bar" th:classappend="${usage.alert100} ? 'from-error to-error'"
                      th:style="'width: ' + ${usage.barPercent} + '%'"></div>
             </div>
-            <p class="text-body-sm text-on-surface-variant">
-                Reste <strong class="text-on-surface" th:text="${amountUtils.format(usage.remaining)}">0,00 DA</strong> avant le plafond ·
-                alerte à <span th:text="${amountUtils.format(usage.warningThreshold)}">4 000 000,00 DA</span> (80 %).
+            <p class="text-body-sm text-on-surface-variant"
+               th:utext="#{turnover.remaining(${amountUtils.format(usage.remaining)}, ${amountUtils.format(usage.warningThreshold)})}">
+                Reste <strong class="text-on-surface">0,00 DA</strong> avant le plafond · alerte à 4 000 000,00 DA (80 %).
             </p>
             <div th:if="${usage.alert100}" class="alert alert-error">
                 <span class="icon">warning</span>
-                <p>Le plafond est atteint. Le régime de l'auto-entrepreneur peut ne plus s'appliquer : rapprochez-vous de l'ANAE ou d'un expert-comptable.</p>
+                <p th:text="#{turnover.alert100}">Le plafond est atteint. Le régime de l'auto-entrepreneur peut ne plus s'appliquer : rapprochez-vous de l'ANAE ou d'un expert-comptable.</p>
             </div>
             <div th:if="${usage.warning80}" class="alert alert-warning">
                 <span class="icon">warning</span>
-                <p>Plus de 80 % du plafond est déjà facturé.</p>
+                <p th:text="#{turnover.warning80}">Plus de 80 % du plafond est déjà facturé.</p>
             </div>
         </div>
     </section>
@@ -108,17 +108,17 @@
     <!-- Monthly chart: bar height relative to the best month; paid at the bottom, pending on top -->
     <section class="card mb-6">
         <div class="card-header">
-            <h2 class="card-title"><span class="icon">bar_chart</span>Par mois</h2>
+            <h2 class="card-title"><span class="icon">bar_chart</span><th:block th:text="#{turnover.byMonth}">Par mois</th:block></h2>
             <div class="flex gap-4 text-body-sm text-on-surface-variant">
-                <span class="inline-flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-primary"></span>Payé</span>
-                <span class="inline-flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-secondary-container"></span>En attente</span>
+                <span class="inline-flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-primary"></span><th:block th:text="#{turnover.legend.paid}">Payé</th:block></span>
+                <span class="inline-flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-secondary-container"></span><th:block th:text="#{turnover.legend.pending}">En attente</th:block></span>
             </div>
         </div>
         <div class="card-body">
             <div class="flex h-48 items-end gap-1 sm:gap-2" role="img"
-                 th:attr="aria-label=${'Chiffre d''affaires mensuel ' + report.year}">
+                 th:aria-label="#{turnover.chartLabel(${report.year})}">
                 <div th:each="m : ${report.months}" class="flex h-full flex-1 flex-col justify-end"
-                     th:title="${m.name + ' : ' + amountUtils.format(m.billed)}">
+                     th:title="#{turnover.monthTitle(${m.name}, ${amountUtils.format(m.billed)})}">
                     <div class="w-full rounded-t bg-secondary-container"
                          th:style="'height: ' + ${m.pending.multiply(100).divide(report.bestMonth, 2, T(java.math.RoundingMode).HALF_UP)} + '%'"></div>
                     <div class="w-full bg-primary" th:classappend="${m.pending.signum() == 0} ? 'rounded-t'"
@@ -126,7 +126,7 @@
                 </div>
             </div>
             <div class="mt-2 flex gap-1 text-center text-label-sm text-on-surface-variant sm:gap-2">
-                <span th:each="m : ${report.months}" class="flex-1 truncate" th:text="${#strings.substring(m.name, 0, 3)}">Jan</span>
+                <span th:each="m : ${report.months}" class="flex-1 truncate" th:text="${m.shortName}">Jan</span>
             </div>
         </div>
     </section>
@@ -136,15 +136,15 @@
             <table class="table">
                 <thead>
                 <tr>
-                    <th scope="col">Mois</th>
-                    <th scope="col" class="num">Factures</th>
-                    <th scope="col" class="num">Chiffre d'affaires</th>
-                    <th scope="col" class="num">Payé</th>
-                    <th scope="col" class="num">En attente</th>
-                    <th th:if="${report.credited.signum() != 0}" scope="col" class="num">Avoirs</th>
-                    <th th:if="${report.company}" scope="col" class="num">TVA collectée</th>
-                    <th scope="col" class="num">Cumul</th>
-                    <th scope="col" class="num">Annulées</th>
+                    <th scope="col" th:text="#{turnover.col.month}">Mois</th>
+                    <th scope="col" class="num" th:text="#{turnover.col.invoices}">Factures</th>
+                    <th scope="col" class="num" th:text="#{turnover.col.billed}">Chiffre d'affaires</th>
+                    <th scope="col" class="num" th:text="#{turnover.col.paid}">Payé</th>
+                    <th scope="col" class="num" th:text="#{turnover.col.pending}">En attente</th>
+                    <th th:if="${report.credited.signum() != 0}" scope="col" class="num" th:text="#{turnover.col.credited}">Avoirs</th>
+                    <th th:if="${report.company}" scope="col" class="num" th:text="#{turnover.col.vat}">TVA collectée</th>
+                    <th scope="col" class="num" th:text="#{turnover.col.cumulative}">Cumul</th>
+                    <th scope="col" class="num" th:text="#{turnover.col.cancelled}">Annulées</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -159,14 +159,14 @@
                     <td th:if="${report.company}" class="num" th:text="${amountUtils.format(m.vat)}">0,00 DA</td>
                     <td class="num" th:classappend="${m.overCeiling} ? 'text-error font-semibold'">
                         <span th:text="${amountUtils.format(m.cumulative)}">0,00 DA</span>
-                        <span th:if="${m.overCeiling}" class="icon icon-sm align-middle" title="Plafond dépassé">warning</span>
+                        <span th:if="${m.overCeiling}" class="icon icon-sm align-middle" title="Plafond dépassé" th:title="#{turnover.overCeiling}">warning</span>
                     </td>
                     <td class="num" th:text="${m.cancelledCount > 0} ? ${m.cancelledCount + ' (' + amountUtils.format(m.cancelledAmount) + ')'} : '—'">—</td>
                 </tr>
                 </tbody>
                 <tfoot>
                 <tr class="font-semibold">
-                    <td>Total</td>
+                    <td th:text="#{turnover.total}">Total</td>
                     <td class="num" th:text="${report.invoiceCount}">0</td>
                     <td class="num" th:text="${amountUtils.format(report.billed)}">0,00 DA</td>
                     <td class="num" th:text="${amountUtils.format(report.paid)}">0,00 DA</td>

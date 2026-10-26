@@ -1,31 +1,31 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page(${'Relevé ' + statement.client.name}, ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page(#{clientStatement.title(${statement.client.name})}, ~{::main}, ~{})}">
 <body>
 <main class="page" th:with="s=${statement}">
-    <nav class="breadcrumb print:hidden" aria-label="Fil d'Ariane">
-        <a th:href="@{/clients}">Clients</a><span class="icon icon-xs">chevron_right</span>
+    <nav class="breadcrumb print:hidden" th:aria-label="#{invoicePages.breadcrumb}">
+        <a th:href="@{/clients}" th:text="#{nav.clients}">Clients</a><span class="icon icon-xs rtl-flip">chevron_right</span>
         <span class="text-primary" th:text="${s.client.name}">Client</span>
     </nav>
     <div class="page-header">
         <div>
-            <p class="page-eyebrow">Relevé de compte</p>
+            <p class="page-eyebrow" th:text="#{clientStatement.eyebrow}">Relevé de compte</p>
             <h1 class="page-title" th:text="${s.client.name}">Client</h1>
-            <p class="page-subtitle" th:text="${'Du ' + #temporals.format(s.from, 'dd/MM/yyyy') + ' au ' + #temporals.format(s.to, 'dd/MM/yyyy')}">Période</p>
+            <p class="page-subtitle" th:text="#{clientStatement.period(${#temporals.format(s.from, 'dd/MM/yyyy')}, ${#temporals.format(s.to, 'dd/MM/yyyy')})}">Période</p>
         </div>
         <div class="flex flex-wrap items-end gap-2 print:hidden">
             <form th:action="@{/clients/{id}/statement(id=${s.client.id})}" method="get" class="flex flex-wrap items-end gap-2">
                 <div class="field">
-                    <label class="label" for="from">Du</label>
+                    <label class="label" for="from" th:text="#{clientStatement.from}">Du</label>
                     <input class="input" id="from" name="from" type="date" th:value="${s.from}"/>
                 </div>
                 <div class="field">
-                    <label class="label" for="to">Au</label>
+                    <label class="label" for="to" th:text="#{clientStatement.to}">Au</label>
                     <input class="input" id="to" name="to" type="date" th:value="${s.to}"/>
                 </div>
-                <button type="submit" class="btn btn-secondary"><span class="icon">filter_alt</span>Afficher</button>
+                <button type="submit" class="btn btn-secondary"><span class="icon">filter_alt</span><th:block th:text="#{clientStatement.show}">Afficher</th:block></button>
             </form>
-            <button type="button" class="btn btn-primary" data-print><span class="icon">print</span>Imprimer</button>
+            <button type="button" class="btn btn-primary" data-print><span class="icon">print</span><th:block th:text="#{clientStatement.print}">Imprimer</th:block></button>
         </div>
     </div>
 
@@ -34,19 +34,19 @@
             <table class="table">
                 <thead>
                 <tr>
-                    <th scope="col">Date</th>
-                    <th scope="col">Pièce</th>
-                    <th scope="col">Libellé</th>
-                    <th scope="col" class="num">Débit</th>
-                    <th scope="col" class="num">Crédit</th>
-                    <th scope="col" class="num">Solde</th>
+                    <th scope="col" th:text="#{clientStatement.col.date}">Date</th>
+                    <th scope="col" th:text="#{clientStatement.col.document}">Pièce</th>
+                    <th scope="col" th:text="#{clientStatement.col.label}">Libellé</th>
+                    <th scope="col" class="num" th:text="#{clientStatement.col.debit}">Débit</th>
+                    <th scope="col" class="num" th:text="#{clientStatement.col.credit}">Crédit</th>
+                    <th scope="col" class="num" th:text="#{clientStatement.col.balance}">Solde</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr class="text-on-surface-variant">
                     <td th:text="${#temporals.format(s.from, 'dd/MM/yyyy')}">01/01/2026</td>
                     <td></td>
-                    <td>Solde au début de la période</td>
+                    <td th:text="#{clientStatement.opening}">Solde au début de la période</td>
                     <td class="num"></td>
                     <td class="num"></td>
                     <td class="num font-semibold" th:text="${amountUtils.format(s.openingBalance)}">0,00 DA</td>
@@ -62,12 +62,12 @@
                     <td class="num font-semibold" th:text="${amountUtils.format(e.balance)}">0,00 DA</td>
                 </tr>
                 <tr th:if="${s.entries.isEmpty()}">
-                    <td colspan="6" class="table-empty">Aucun mouvement sur la période.</td>
+                    <td colspan="6" class="table-empty" th:text="#{clientStatement.empty}">Aucun mouvement sur la période.</td>
                 </tr>
                 </tbody>
                 <tfoot>
                 <tr class="font-semibold">
-                    <td colspan="3">Totaux de la période et solde dû</td>
+                    <td colspan="3" th:text="#{clientStatement.totals}">Totaux de la période et solde dû</td>
                     <td class="num" th:text="${amountUtils.format(s.totalDebit)}">0,00 DA</td>
                     <td class="num" th:text="${amountUtils.format(s.totalCredit)}">0,00 DA</td>
                     <td class="num" th:classappend="${s.closingBalance.signum() > 0} ? 'text-error'" th:text="${amountUtils.format(s.closingBalance)}">0,00 DA</td>
@@ -76,7 +76,7 @@
             </table>
         </div>
     </section>
-    <p class="hint mt-4">Débit : factures (net à payer, droit de timbre inclus). Crédit : avoirs et paiements reçus.
+    <p class="hint mt-4" th:text="#{clientStatement.hint}">Débit : factures (net à payer, droit de timbre inclus). Crédit : avoirs et paiements reçus.
         Un solde négatif est un trop-perçu à rembourser.</p>
 </main>
 </body>

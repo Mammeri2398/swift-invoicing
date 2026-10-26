@@ -6,6 +6,8 @@ import com.swiftlabs.invoicing.access.user.PasswordPolicy;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserService;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.Language;
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.common.FormErrors;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
@@ -39,12 +41,15 @@ public class AccountController {
     private final UserService userService;
     private final PasswordPolicy passwordPolicy;
     private final SessionService sessionService;
+    private final Messages messages;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
-    public AccountController(UserService userService, PasswordPolicy passwordPolicy, SessionService sessionService) {
+    public AccountController(UserService userService, PasswordPolicy passwordPolicy, SessionService sessionService,
+                             Messages messages) {
         this.userService = userService;
         this.passwordPolicy = passwordPolicy;
         this.sessionService = sessionService;
+        this.messages = messages;
     }
 
     /** {@code ?password} opens the password form (after an error in it). */
@@ -65,7 +70,7 @@ public class AccountController {
                 User user = userService.updateOwnDetails(principal.getId(), form.getFirstName(), form.getLastName(), form.getEmail());
                 // The header shows the new name straight away
                 refreshAuthentication(principal.withDisplayName(user.getDisplayName()), request, response);
-                redirectAttributes.addFlashAttribute("success", "Informations personnelles enregistrées.");
+                redirectAttributes.addFlashAttribute("success", messages.get("account.saved"));
                 return "redirect:/account";
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
@@ -73,6 +78,17 @@ public class AccountController {
         }
         model.addAttribute("openPassword", false);
         return accountView(principal, model);
+    }
+
+    /** The interface switches to the chosen language at once (it is read from the session's user). */
+    @PostMapping("/language")
+    public String changeLanguage(@AuthenticationPrincipal AppUserPrincipal principal, @RequestParam String language,
+                                 HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        Language chosen = Language.of(language);
+        userService.updateOwnLanguage(principal.getId(), chosen);
+        refreshAuthentication(principal.withLanguage(chosen), request, response);
+        redirectAttributes.addFlashAttribute("success", messages.get(chosen, "account.language.saved"));
+        return "redirect:/account";
     }
 
     /** Page of its own for the forced change after a temporary password; otherwise the form sits in "Mon compte". */
@@ -95,32 +111,33 @@ public class AccountController {
         boolean forced = principal.isMustChangePassword();
         String formUrl = forced ? "redirect:/account/password" : "redirect:/account?password=true";
         if (!newPassword.equals(confirmPassword)) {
-            redirectAttributes.addFlashAttribute("error", "Les deux nouveaux mots de passe ne correspondent pas.");
+            redirectAttributes.addFlashAttribute("error", messages.get("account.password.mismatch"));
             return formUrl;
         }
         try {
             userService.changeOwnPassword(principal.getId(), currentPassword, newPassword);
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
             return formUrl;
         }
         refreshAuthentication(principal.withPasswordChanged(), request, response);
         // New session id, and the user's other sessions (other browsers) are ended
         String sessionId = request.changeSessionId();
         sessionService.expireSessions(principal.getUsername(), sessionId);
-        redirectAttributes.addFlashAttribute("success", "Mot de passe modifié. Vos autres sessions ont été fermées.");
+        redirectAttributes.addFlashAttribute("success", messages.get("account.password.changed"));
         return forced ? "redirect:/" : "redirect:/account";
     }
 
     private String accountView(AppUserPrincipal principal, Model model) {
         model.addAttribute("user", user(principal));
         model.addAttribute("passwordRules", passwordPolicy.describe());
+        model.addAttribute("languages", Language.values());
         return "access/account/index";
     }
 
     private User user(AppUserPrincipal principal) {
         return userService.findById(principal.getId())
-            .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+            .orElseThrow(() -> new ResourceNotFoundException("user.error.notFound"));
     }
 
     /** The session keeps an updated principal, without logging in again. */

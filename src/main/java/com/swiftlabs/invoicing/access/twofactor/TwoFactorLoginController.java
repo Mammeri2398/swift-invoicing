@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.access.twofactor;
 
 import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
+import com.swiftlabs.invoicing.common.Messages;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,9 +29,12 @@ public class TwoFactorLoginController {
 
     private final TwoFactorService twoFactorService;
     private final TwoFactorLoginSuccessHandler successHandler;
+    private final Messages messages;
 
-    public TwoFactorLoginController(TwoFactorService twoFactorService, TwoFactorLoginSuccessHandler successHandler) {
+    public TwoFactorLoginController(TwoFactorService twoFactorService, TwoFactorLoginSuccessHandler successHandler,
+                                    Messages messages) {
         this.twoFactorService = twoFactorService;
+        this.messages = messages;
         this.successHandler = successHandler;
     }
 
@@ -48,7 +52,7 @@ public class TwoFactorLoginController {
             case ACCEPTED, RECOVERY_CODE_USED -> {
                 Authentication full = TwoFactorLogin.complete(request, response);
                 if (check == TwoFactorService.Check.RECOVERY_CODE_USED) {
-                    warnAboutRecoveryCodes(principal.getId(), request, response);
+                    warnAboutRecoveryCodes(principal, request, response);
                 }
                 successHandler.continueTo(request, response, full);
                 return null;
@@ -60,18 +64,20 @@ public class TwoFactorLoginController {
                 return "redirect:/login?error";
             }
             default -> {
-                redirectAttributes.addFlashAttribute("error", "Code incorrect.");
+                redirectAttributes.addFlashAttribute("error", messages.get("twoFactor.error.wrongCode"));
                 return "redirect:" + TwoFactorLogin.VERIFY_URL;
             }
         }
     }
 
     /** Shown on the next page: the login's own redirect does not go through RedirectAttributes. */
-    private void warnAboutRecoveryCodes(Long userId, HttpServletRequest request, HttpServletResponse response) {
-        long left = twoFactorService.remainingRecoveryCodes(userId);
+    private void warnAboutRecoveryCodes(AppUserPrincipal principal, HttpServletRequest request, HttpServletResponse response) {
+        long left = twoFactorService.remainingRecoveryCodes(principal.getId());
         FlashMap flash = RequestContextUtils.getOutputFlashMap(request);
-        flash.put("message", "Vous vous êtes connecté avec un code de secours. Il vous en reste " + left
-            + ". Si vous avez perdu votre téléphone, reconfigurez la double authentification dans votre compte.");
+        // In the user's own language: this request was still in the one of the login page
+        flash.put("message", principal.getLanguage() != null
+            ? messages.get(principal.getLanguage(), "twoFactor.recoveryCodeUsed", left)
+            : messages.get("twoFactor.recoveryCodeUsed", left));
         RequestContextUtils.getFlashMapManager(request).saveOutputFlashMap(flash, request, response);
     }
 }

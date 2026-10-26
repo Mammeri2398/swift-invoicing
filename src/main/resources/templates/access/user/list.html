@@ -1,24 +1,25 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page('Utilisateurs', ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page(#{user.list.title}, ~{::main}, ~{})}">
 <body>
 <main class="page">
     <div class="page-header">
         <div>
-            <p class="page-eyebrow">Accès</p>
-            <h1 class="page-title">Utilisateurs</h1>
-            <p class="page-subtitle">Chaque utilisateur reçoit les privilèges de son profil.</p>
+            <p class="page-eyebrow" th:text="#{access.eyebrow}">Accès</p>
+            <h1 class="page-title" th:text="#{user.list.title}">Utilisateurs</h1>
+            <p class="page-subtitle" th:text="#{user.list.subtitle}">Chaque utilisateur reçoit les privilèges de son profil.</p>
         </div>
-        <a th:href="@{/users/new}" class="btn btn-primary"><span class="icon">person_add</span>Nouvel utilisateur</a>
+        <a th:href="@{/users/new}" class="btn btn-primary"><span class="icon">person_add</span><th:block th:text="#{user.new}">Nouvel utilisateur</th:block></a>
     </div>
 
     <!-- Shown once, right after creation or reset: it is not stored in clear anywhere -->
     <div th:if="${temporaryPassword}" class="alert alert-warning mb-6">
         <span class="icon">key</span>
         <div>
-            <p>Mot de passe temporaire de <strong th:text="${temporaryPasswordUser}">user</strong> :
-                <code class="rounded bg-surface-container-lowest px-2 py-0.5 font-mono text-body-lg" th:text="${temporaryPassword}">Abc123</code></p>
-            <p class="text-body-sm">Transmettez-le de façon sûre. Il ne sera plus affiché ; l'utilisateur devra le changer à sa première connexion.</p>
+            <p><th:block th:text="#{user.temporaryPassword.before}">Mot de passe temporaire de</th:block>
+                <strong th:text="${temporaryPasswordUser}">user</strong><th:block th:text="#{user.temporaryPassword.after}"> :</th:block>
+                <code class="rounded bg-surface-container-lowest px-2 py-0.5 font-mono text-body-lg" dir="ltr" th:text="${temporaryPassword}">Abc123</code></p>
+            <p class="text-body-sm" th:text="#{user.temporaryPassword.hint}">Transmettez-le de façon sûre. Il ne sera plus affiché ; l'utilisateur devra le changer à sa première connexion.</p>
         </div>
     </div>
 
@@ -27,12 +28,13 @@
             <table class="table">
                 <thead>
                 <tr>
-                    <th scope="col">Utilisateur</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Profil</th>
-                    <th scope="col">État</th>
-                    <th scope="col">Dernière connexion</th>
-                    <th scope="col"><span class="sr-only">Actions</span></th>
+                    <th scope="col" th:text="#{user.col.user}">Utilisateur</th>
+                    <th scope="col" th:text="#{user.col.email}">Email</th>
+                    <th scope="col" th:text="#{user.col.profile}">Profil</th>
+                    <th scope="col" th:text="#{user.col.language}">Langue</th>
+                    <th scope="col" th:text="#{user.col.status}">État</th>
+                    <th scope="col" th:text="#{user.col.lastLogin}">Dernière connexion</th>
+                    <th scope="col"><span class="sr-only" th:text="#{access.actions}">Actions</span></th>
                 </tr>
                 </thead>
                 <tbody>
@@ -44,40 +46,42 @@
                     </td>
                     <td class="text-on-surface-variant" th:text="${user.email}">admin@exemple.dz</td>
                     <td><span class="badge badge-info" th:text="${user.profile.name}">Administrateur</span></td>
+                    <td class="text-on-surface-variant" th:lang="${user.language.code}" th:text="${user.language.nativeName}">Français</td>
                     <td>
                         <div class="flex flex-wrap gap-1">
-                            <span th:if="${user.enabled}" class="badge badge-success">Actif</span>
-                            <span th:unless="${user.enabled}" class="badge badge-neutral">Désactivé</span>
+                            <span th:if="${user.enabled}" class="badge badge-success" th:text="#{user.status.active}">Actif</span>
+                            <span th:unless="${user.enabled}" class="badge badge-neutral" th:text="#{user.status.disabled}">Désactivé</span>
                             <span th:if="${user.isLocked(now)}" class="badge badge-danger"
-                                  th:title="${'Jusqu''à ' + #temporals.format(user.lockedUntil, 'HH:mm')}">Verrouillé</span>
-                            <span th:if="${user.mustChangePassword}" class="badge badge-info">Mot de passe à changer</span>
-                            <span th:if="${user.totpEnabled}" class="badge badge-success" title="Double authentification activée">
+                                  th:title="#{user.status.lockedUntil(${#temporals.format(user.lockedUntil, 'HH:mm')})}"
+                                  th:text="#{user.status.locked}">Verrouillé</span>
+                            <span th:if="${user.mustChangePassword}" class="badge badge-info" th:text="#{user.status.mustChangePassword}">Mot de passe à changer</span>
+                            <span th:if="${user.totpEnabled}" class="badge badge-success" th:title="#{user.status.twoFactor}" title="Double authentification activée">
                                 <span class="icon icon-sm">verified_user</span>2FA</span>
                         </div>
                     </td>
                     <td class="text-on-surface-variant"
-                        th:text="${user.lastLoginAt != null ? #temporals.format(user.lastLoginAt, 'dd/MM/yyyy HH:mm') : 'Jamais'}">Jamais</td>
+                        th:text="${user.lastLoginAt != null} ? ${#temporals.format(user.lastLoginAt, 'dd/MM/yyyy HH:mm')} : #{user.lastLogin.never}">Jamais</td>
                     <td>
                         <div class="flex justify-end gap-1">
-                            <a th:href="@{/users/{id}/edit(id=${user.id})}" class="btn-icon" title="Modifier" aria-label="Modifier"><span class="icon">edit</span></a>
+                            <a th:href="@{/users/{id}/edit(id=${user.id})}" class="btn-icon" th:title="#{action.edit}" th:aria-label="#{action.edit}"><span class="icon">edit</span></a>
                             <form th:action="@{/users/{id}/reset-password(id=${user.id})}" method="post"
-                                  th:attr="data-confirm=${'Générer un nouveau mot de passe temporaire pour ' + user.username + ' ? Ses sessions seront fermées.'}">
-                                <button type="submit" class="btn-icon" title="Réinitialiser le mot de passe" aria-label="Réinitialiser le mot de passe"><span class="icon">lock_reset</span></button>
+                                  th:data-confirm="#{user.resetPassword.confirm(${user.username})}">
+                                <button type="submit" class="btn-icon" th:title="#{user.resetPassword}" th:aria-label="#{user.resetPassword}"><span class="icon">lock_reset</span></button>
                             </form>
                             <form th:if="${user.totpEnabled}" th:action="@{/users/{id}/reset-two-factor(id=${user.id})}" method="post"
-                                  th:attr="data-confirm=${'Réinitialiser la double authentification de ' + user.username + ' (téléphone perdu) ? Ses sessions seront fermées.'}">
-                                <button type="submit" class="btn-icon" title="Réinitialiser la double authentification"
-                                        aria-label="Réinitialiser la double authentification"><span class="icon">phonelink_erase</span></button>
+                                  th:data-confirm="#{user.resetTwoFactor.confirm(${user.username})}">
+                                <button type="submit" class="btn-icon" th:title="#{user.resetTwoFactor}"
+                                        th:aria-label="#{user.resetTwoFactor}"><span class="icon">phonelink_erase</span></button>
                             </form>
                             <form th:action="@{/users/{id}/delete(id=${user.id})}" method="post"
-                                  th:attr="data-confirm=${'Supprimer l''utilisateur ' + user.username + ' ?'}">
-                                <button type="submit" class="btn-icon danger" title="Supprimer" aria-label="Supprimer"><span class="icon">delete</span></button>
+                                  th:data-confirm="#{user.delete.confirm(${user.username})}">
+                                <button type="submit" class="btn-icon danger" th:title="#{action.delete}" th:aria-label="#{action.delete}"><span class="icon">delete</span></button>
                             </form>
                         </div>
                     </td>
                 </tr>
                 <tr th:if="${users.isEmpty()}">
-                    <td colspan="6" class="table-empty">Aucun utilisateur.</td>
+                    <td colspan="7" class="table-empty" th:text="#{user.list.empty}">Aucun utilisateur.</td>
                 </tr>
                 </tbody>
             </table>

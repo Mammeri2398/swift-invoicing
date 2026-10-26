@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page(${user.id == null ? 'Nouvel utilisateur' : 'Modifier l''utilisateur'}, ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page((${user.id == null} ? #{user.new} : #{user.edit}), ~{::main}, ~{})}">
 <body>
 <main class="page-narrow">
-    <nav class="breadcrumb" aria-label="Fil d'Ariane">
-        <a th:href="@{/users}">Utilisateurs</a><span class="icon icon-xs">chevron_right</span>
-        <span class="text-primary" th:text="${user.id == null ? 'Nouveau' : user.username}">Nouveau</span>
+    <nav class="breadcrumb" th:aria-label="#{access.breadcrumb}" aria-label="Fil d'Ariane">
+        <a th:href="@{/users}" th:text="#{user.list.title}">Utilisateurs</a><span class="icon icon-xs rtl-flip">chevron_right</span>
+        <span class="text-primary" th:text="${user.id == null} ? #{access.new} : ${user.username}">Nouveau</span>
     </nav>
     <div class="page-header">
-        <h1 class="page-title" th:text="${user.id == null ? 'Nouvel utilisateur' : 'Modifier l''utilisateur'}">Nouvel utilisateur</h1>
+        <h1 class="page-title" th:text="${user.id == null} ? #{user.new} : #{user.edit}">Nouvel utilisateur</h1>
     </div>
 
     <form th:action="@{/users/save}" method="post" th:object="${user}" class="card">
@@ -16,51 +16,62 @@
         <div class="card-body flex flex-col gap-4">
             <div th:replace="~{layout/fragments :: formErrors}"></div>
             <div class="field">
-                <label class="label" for="username">Nom d'utilisateur <span class="required">*</span></label>
+                <label class="label" for="username"><span><th:block th:text="#{user.username}">Nom d'utilisateur</th:block> <span class="required">*</span></span></label>
                 <input class="input" th:errorclass="input-invalid" th:field="*{username}" type="text" required maxlength="100" autocomplete="off"
                        th:readonly="*{id != null}"/>
                 <p th:replace="~{layout/fragments :: fieldError('username')}"></p>
-                <p th:if="*{id != null}" class="hint">Le nom d'utilisateur ne peut pas être modifié.</p>
+                <p th:if="*{id != null}" class="hint" th:text="#{user.username.readonly}">Le nom d'utilisateur ne peut pas être modifié.</p>
             </div>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="field">
-                    <label class="label" for="firstName">Prénom <span class="optional">Optionnel</span></label>
+                    <label class="label" for="firstName"><th:block th:text="#{user.firstName}">Prénom</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
                     <input class="input" th:errorclass="input-invalid" th:field="*{firstName}" type="text" maxlength="100" autocomplete="off"/>
                     <p th:replace="~{layout/fragments :: fieldError('firstName')}"></p>
                 </div>
                 <div class="field">
-                    <label class="label" for="lastName">Nom <span class="optional">Optionnel</span></label>
+                    <label class="label" for="lastName"><th:block th:text="#{user.lastName}">Nom</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
                     <input class="input" th:errorclass="input-invalid" th:field="*{lastName}" type="text" maxlength="100" autocomplete="off"/>
                     <p th:replace="~{layout/fragments :: fieldError('lastName')}"></p>
                 </div>
             </div>
             <div class="field">
-                <label class="label" for="email">Email <span class="required">*</span></label>
+                <label class="label" for="email"><span><th:block th:text="#{user.email}">Email</th:block> <span class="required">*</span></span></label>
                 <input class="input" th:errorclass="input-invalid" th:field="*{email}" type="email" required maxlength="255"/>
                 <p th:replace="~{layout/fragments :: fieldError('email')}"></p>
             </div>
-            <div class="field">
-                <label class="label" for="profileId">Profil <span class="required">*</span></label>
-                <select class="input" th:errorclass="input-invalid" th:field="*{profileId}" required>
-                    <option value="">Sélectionner un profil…</option>
-                    <option th:each="p : ${profiles}" th:value="${p.id}" th:text="${p.name}">Administrateur</option>
-                </select>
-                <p th:replace="~{layout/fragments :: fieldError('profileId')}"></p>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="field">
+                    <label class="label" for="profileId"><span><th:block th:text="#{user.profile}">Profil</th:block> <span class="required">*</span></span></label>
+                    <select class="input" th:errorclass="input-invalid" th:field="*{profileId}" required>
+                        <option value="" th:text="#{user.profile.choose}">Sélectionner un profil…</option>
+                        <option th:each="p : ${profiles}" th:value="${p.id}" th:text="${p.name}">Administrateur</option>
+                    </select>
+                    <p th:replace="~{layout/fragments :: fieldError('profileId')}"></p>
+                </div>
+                <!--/* The user's interface and their emails (password reset); they can change it in Mon compte */-->
+                <div class="field">
+                    <label class="label" for="language" th:text="#{user.language}">Langue</label>
+                    <select class="input" th:errorclass="input-invalid" th:field="*{language}">
+                        <option th:each="lang : ${languages}" th:value="${lang}" th:lang="${lang.code}" th:text="${lang.nativeName}">Français</option>
+                    </select>
+                    <p th:replace="~{layout/fragments :: fieldError('language')}"></p>
+                </div>
             </div>
+            <p class="hint -mt-2" th:text="#{user.language.hint}">Langue de l'application et des emails envoyés à cet utilisateur. Il peut la changer dans Mon compte.</p>
             <label th:if="*{id != null}" class="flex items-start gap-2">
                 <input type="checkbox" class="checkbox" th:field="*{enabled}"/>
-                <span>Compte actif <span class="hint block">Un compte désactivé ne peut plus se connecter.</span></span>
+                <span><th:block th:text="#{user.enabled}">Compte actif</th:block> <span class="hint block" th:text="#{user.enabled.hint}">Un compte désactivé ne peut plus se connecter.</span></span>
             </label>
             <p th:replace="~{layout/fragments :: fieldError('enabled')}"></p>
             <div th:if="*{id == null}" class="alert alert-info">
                 <span class="icon">key</span>
-                <span>Un mot de passe temporaire aléatoire est généré et affiché une seule fois après l'enregistrement.
+                <span th:text="#{user.temporaryPassword.info}">Un mot de passe temporaire aléatoire est généré et affiché une seule fois après l'enregistrement.
                     L'utilisateur devra le changer à sa première connexion.</span>
             </div>
         </div>
         <div class="card-footer justify-end">
-            <a th:href="@{/users}" class="btn btn-secondary">Annuler</a>
-            <button type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer</button>
+            <a th:href="@{/users}" class="btn btn-secondary" th:text="#{action.cancel}">Annuler</a>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span><th:block th:text="#{action.save}">Enregistrer</th:block></button>
         </div>
     </form>
 </main>

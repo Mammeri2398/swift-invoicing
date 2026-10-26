@@ -6,6 +6,8 @@ import com.swiftlabs.invoicing.access.profile.ProfileService;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorService;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.Language;
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import jakarta.validation.Valid;
@@ -33,10 +35,12 @@ public class UserController {
     private final ProfileService profileService;
     private final SessionService sessionService;
     private final TwoFactorService twoFactorService;
+    private final Messages messages;
     private final Clock clock;
 
     public UserController(UserService userService, ProfileService profileService, SessionService sessionService,
-                          TwoFactorService twoFactorService, Clock clock) {
+                          TwoFactorService twoFactorService, Messages messages, Clock clock) {
+        this.messages = messages;
         this.userService = userService;
         this.profileService = profileService;
         this.sessionService = sessionService;
@@ -53,14 +57,17 @@ public class UserController {
 
     @GetMapping("/new")
     public String newForm(Model model) {
-        model.addAttribute("user", new UserForm());
+        UserForm form = new UserForm();
+        // By default the new colleague works in the administrator's language
+        form.setLanguage(messages.current());
+        model.addAttribute("user", form);
         return formView(model);
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
         User user = userService.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+            .orElseThrow(() -> new ResourceNotFoundException("user.error.notFound"));
         model.addAttribute("user", UserForm.from(user));
         return formView(model);
     }
@@ -75,13 +82,13 @@ public class UserController {
                     UserService.NewAccount account = userService.create(form);
                     redirectAttributes.addFlashAttribute("temporaryPassword", account.temporaryPassword());
                     redirectAttributes.addFlashAttribute("temporaryPasswordUser", account.user().getUsername());
-                    redirectAttributes.addFlashAttribute("success", "Utilisateur créé.");
+                    redirectAttributes.addFlashAttribute("success", messages.get("user.created"));
                 } else {
                     User user = userService.update(form, me.getId());
                     if (!user.isEnabled()) {
                         sessionService.expireSessions(user.getUsername(), null);
                     }
-                    redirectAttributes.addFlashAttribute("success", "Utilisateur mis à jour.");
+                    redirectAttributes.addFlashAttribute("success", messages.get("user.updated"));
                 }
                 return "redirect:/users";
             } catch (BusinessException ex) {
@@ -100,9 +107,9 @@ public class UserController {
             sessionService.expireSessions(user.getUsername(), null);
             redirectAttributes.addFlashAttribute("temporaryPassword", temporaryPassword);
             redirectAttributes.addFlashAttribute("temporaryPasswordUser", user.getUsername());
-            redirectAttributes.addFlashAttribute("success", "Mot de passe réinitialisé et compte déverrouillé.");
+            redirectAttributes.addFlashAttribute("success", messages.get("user.passwordReset"));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:/users";
     }
@@ -110,11 +117,10 @@ public class UserController {
     /** Lost phone and recovery codes: the user logs in with the password alone and sets it up again. */
     @PostMapping("/{id}/reset-two-factor")
     public String resetTwoFactor(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        User user = userService.findById(id).orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+        User user = userService.findById(id).orElseThrow(() -> new ResourceNotFoundException("user.error.notFound"));
         twoFactorService.reset(id);
         sessionService.expireSessions(user.getUsername(), null);
-        redirectAttributes.addFlashAttribute("success", "Double authentification réinitialisée pour " + user.getUsername()
-            + " : à sa prochaine connexion, le mot de passe suffira et la configuration lui sera redemandée si son profil l'exige.");
+        redirectAttributes.addFlashAttribute("success", messages.get("user.twoFactorReset", user.getUsername()));
         return "redirect:/users";
     }
 
@@ -123,17 +129,18 @@ public class UserController {
                          RedirectAttributes redirectAttributes) {
         try {
             userService.delete(id, me.getId());
-            redirectAttributes.addFlashAttribute("success", "Utilisateur supprimé.");
+            redirectAttributes.addFlashAttribute("success", messages.get("user.deleted"));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         } catch (RuntimeException ex) {
-            redirectAttributes.addFlashAttribute("error", "Impossible de supprimer cet utilisateur.");
+            redirectAttributes.addFlashAttribute("error", messages.get("user.error.deleteFailed"));
         }
         return "redirect:/users";
     }
 
     private String formView(Model model) {
         model.addAttribute("profiles", profileService.findAll());
+        model.addAttribute("languages", Language.values());
         return "access/user/form";
     }
 }

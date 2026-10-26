@@ -1,45 +1,46 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/auth :: page('Connexion', ~{::main})}">
+      th:replace="~{layout/auth :: page(#{auth.login.title}, ~{::main})}">
 <body>
 <main class="card">
     <div class="card-body flex flex-col gap-5 p-6 sm:p-8">
         <div>
-            <h1 class="text-headline-md text-on-surface">Connexion</h1>
-            <p class="mt-1 text-body-md text-on-surface-variant">Accédez à vos factures et à votre registre.</p>
+            <h1 class="text-headline-md text-on-surface" th:text="#{auth.login.title}">Connexion</h1>
+            <p class="mt-1 text-body-md text-on-surface-variant" th:text="#{auth.login.subtitle}">Accédez à vos factures et à votre registre.</p>
         </div>
 
         <div th:if="${logout}" class="alert alert-info">
             <span class="icon">info</span><span th:text="${logout}">Vous avez été déconnecté.</span>
         </div>
         <div th:if="${networkAddresses != null and !networkAddresses.isEmpty()}" class="rounded-lg bg-surface-container-low p-3 text-body-sm">
-            <p class="font-medium">Depuis les autres ordinateurs du bureau :</p>
-            <p th:each="url : ${networkAddresses}" class="font-mono" th:text="${url}">http://BUREAU-PC:7070</p>
+            <p class="font-medium" th:text="#{auth.login.network}">Depuis les autres ordinateurs du bureau :</p>
+            <p th:each="url : ${networkAddresses}" class="font-mono" dir="ltr" th:text="${url}">http://BUREAU-PC:7070</p>
         </div>
 
         <form th:action="@{/perform-login}" method="post" class="flex flex-col gap-4">
             <div class="field">
-                <label class="label" for="username">Nom d'utilisateur</label>
+                <label class="label" for="username" th:text="#{auth.login.username}">Nom d'utilisateur</label>
                 <input class="input" id="username" name="username" type="text" autocomplete="username" required autofocus/>
             </div>
             <div class="field">
-                <label class="label" for="password">Mot de passe</label>
+                <label class="label" for="password" th:text="#{auth.login.password}">Mot de passe</label>
                 <div class="relative">
-                    <input class="input pr-11" id="password" name="password" type="password" autocomplete="current-password" required/>
-                    <button type="button" class="btn-icon absolute right-1.5 top-1/2 -translate-y-1/2" data-toggle-password="password"
+                    <input class="input pe-11" id="password" name="password" type="password" autocomplete="current-password" required/>
+                    <button type="button" class="btn-icon absolute end-1.5 top-1/2 -translate-y-1/2" data-toggle-password="password"
+                            th:aria-label="#{password.show}" th:data-label-show="#{password.show}" th:data-label-hide="#{password.hide}"
                             aria-label="Afficher le mot de passe"><span class="icon">visibility</span></button>
                 </div>
                 <!-- After the field, so Tab goes from the username straight to the password -->
-                <a th:href="@{/forgot-password}" class="self-end text-label-sm text-primary hover:underline">Mot de passe oublié ?</a>
+                <a th:href="@{/forgot-password}" class="self-end text-label-sm text-primary hover:underline" th:text="#{auth.login.forgot}">Mot de passe oublié ?</a>
             </div>
             <button type="submit" class="btn btn-primary mt-2 w-full py-2.5">
-                Se connecter<span class="icon">arrow_forward</span>
+                <th:block th:text="#{auth.login.submit}">Se connecter</th:block><span class="icon rtl-flip">arrow_forward</span>
             </button>
         </form>
 
         <p class="flex items-center gap-1.5 text-body-sm text-on-surface-variant">
             <span class="icon icon-sm">lock</span>
-            Session fermée automatiquement après 20 minutes d'inactivité.
+            <th:block th:text="#{auth.login.timeout}">Session fermée automatiquement après 20 minutes d'inactivité.</th:block>
         </p>
     </div>
 </main>

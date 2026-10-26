@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -85,10 +87,29 @@ class MailSettingsTest {
         assertThat(gateway.isEnabled()).isTrue();
         assertThat(gateway.fromAddress()).isEqualTo("factures@atlas.test");
 
-        settingsService.sendTest("moi@atlas.test");
-        assertThat(smtp.getReceivedMessages()).hasSize(1);
-        assertThat(smtp.getReceivedMessages()[0].getSubject()).isEqualTo("Swift Invoicing : test d'envoi");
-        assertThat(smtp.getReceivedMessages()[0].getFrom()[0].toString()).isEqualTo("factures@atlas.test");
+        // The test message is for the logged-in user: in their language (here French, then English)
+        LocaleContextHolder.setLocale(Locale.FRENCH);
+        try {
+            settingsService.sendTest("moi@atlas.test");
+            assertThat(smtp.getReceivedMessages()).hasSize(1);
+            assertThat(smtp.getReceivedMessages()[0].getSubject()).isEqualTo("Swift Invoicing : test d'envoi");
+            assertThat(smtp.getReceivedMessages()[0].getFrom()[0].toString()).isEqualTo("factures@atlas.test");
+
+            LocaleContextHolder.setLocale(Locale.ENGLISH);
+            settingsService.sendTest("moi@atlas.test");
+            assertThat(smtp.getReceivedMessages()[1].getSubject()).isEqualTo("Swift Invoicing: test email");
+        } finally {
+            LocaleContextHolder.resetLocaleContext();
+        }
+    }
+
+    @Test
+    void thePageFollowsTheUsersLanguage() throws Exception {
+        mockMvc.perform(get("/settings/mail").header("Accept-Language", "en"))
+            .andExpect(content().string(containsString("Sending emails")))
+            .andExpect(content().string(containsString("Example settings")));
+        mockMvc.perform(get("/settings/mail").header("Accept-Language", "ar"))
+            .andExpect(content().string(containsString("إرسال الرسائل الإلكترونية")));
     }
 
     @Test

@@ -78,7 +78,7 @@ public final class LicenceCodec {
         String compact = key == null ? "" : key.replaceAll("\\s", "");
         int dot = compact.indexOf('.');
         if (!compact.startsWith(PREFIX) || dot < 0) {
-            throw new InvalidLicenceException("Ce texte n'est pas une clé de licence Swift Invoicing.");
+            throw new InvalidLicenceException("licence.error.notAKey");
         }
         try {
             byte[] payload = DECODER.decode(compact.substring(PREFIX.length(), dot));
@@ -87,11 +87,11 @@ public final class LicenceCodec {
             signature.initVerify(publicKey);
             signature.update(payload);
             if (!signature.verify(signed)) {
-                throw new InvalidLicenceException("Clé de licence invalide : elle a été modifiée ou ne vient pas de l'éditeur.");
+                throw new InvalidLicenceException("licence.error.badSignature");
             }
             return Licence.parse(new String(payload, StandardCharsets.UTF_8));
         } catch (IllegalArgumentException | GeneralSecurityException ex) {
-            throw new InvalidLicenceException("Clé de licence illisible : vérifiez qu'elle a été copiée en entier.");
+            throw new InvalidLicenceException("licence.error.unreadable");
         }
     }
 }

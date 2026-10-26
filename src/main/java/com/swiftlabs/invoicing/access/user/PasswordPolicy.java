@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.access.user;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 
 import org.springframework.stereotype.Component;
@@ -15,14 +16,17 @@ public class PasswordPolicy {
     private static final String LOWER = "abcdefghijkmnpqrstuvwxyz";
     private static final String DIGITS = "23456789";
     private static final int TEMPORARY_LENGTH = 16;
+    private static final String RULES = "password.rules";
 
     private final int minLength;
     private final int maxLength;
+    private final Messages messages;
     private final SecureRandom random = new SecureRandom();
 
-    public PasswordPolicy(SecurityProperties properties) {
+    public PasswordPolicy(SecurityProperties properties, Messages messages) {
         this.minLength = properties.password().minLength();
         this.maxLength = properties.password().maxLength();
+        this.messages = messages;
     }
 
     /** @throws BusinessException with a message for the user when the password is not acceptable */
@@ -31,16 +35,16 @@ public class PasswordPolicy {
             || !password.chars().anyMatch(Character::isUpperCase)
             || !password.chars().anyMatch(Character::isLowerCase)
             || !password.chars().anyMatch(Character::isDigit)) {
-            throw new BusinessException(describe());
+            throw new BusinessException(RULES, minLength, maxLength);
         }
         if (username != null && password.toLowerCase().contains(username.toLowerCase())) {
-            throw new BusinessException("Le mot de passe ne doit pas contenir le nom d'utilisateur.");
+            throw new BusinessException("password.error.containsUsername");
         }
     }
 
+    /** The rules, in the current request's language (shown next to the password fields). */
     public String describe() {
-        return "Le mot de passe doit contenir entre " + minLength + " et " + maxLength
-            + " caractères, dont une majuscule, une minuscule et un chiffre.";
+        return messages.get(RULES, minLength, maxLength);
     }
 
     /** Random password meeting the rules, without ambiguous characters (0/O, 1/l/I). */

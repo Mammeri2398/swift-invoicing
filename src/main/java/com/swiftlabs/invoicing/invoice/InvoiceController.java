@@ -4,6 +4,7 @@ import com.swiftlabs.invoicing.client.ClientService;
 import com.swiftlabs.invoicing.common.AmountUtils;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.common.PageLinks;
 import com.swiftlabs.invoicing.config.InvoiceProperties;
 import com.swiftlabs.invoicing.issuer.IssuerService;
@@ -47,10 +48,11 @@ public class InvoiceController {
     private final IssuerService issuerService;
     private final PaymentService paymentService;
     private final InvoiceProperties properties;
+    private final Messages messages;
 
     public InvoiceController(InvoiceService invoiceService, ClientService clientService,
                              InvoicePdfService pdfService, InvoiceAudit audit, IssuerService issuerService,
-                             PaymentService paymentService, InvoiceProperties properties) {
+                             PaymentService paymentService, InvoiceProperties properties, Messages messages) {
         this.invoiceService = invoiceService;
         this.clientService = clientService;
         this.pdfService = pdfService;
@@ -58,6 +60,7 @@ public class InvoiceController {
         this.issuerService = issuerService;
         this.paymentService = paymentService;
         this.properties = properties;
+        this.messages = messages;
     }
 
     /**
@@ -95,7 +98,7 @@ public class InvoiceController {
     public String editForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         Invoice invoice = invoiceService.findWithLines(id);
         if (!invoice.isDraft()) {
-            redirectAttributes.addFlashAttribute("error", "Seules les factures brouillon peuvent être modifiées.");
+            redirectAttributes.addFlashAttribute("error", messages.get("invoice.error.notDraft"));
             return "redirect:/invoices/" + id;
         }
         model.addAttribute("invoice", InvoiceForm.from(invoice));
@@ -110,12 +113,7 @@ public class InvoiceController {
         if (!result.hasErrors()) {
             try {
                 Invoice saved = invoiceService.saveDraft(form);
-                redirectAttributes.addFlashAttribute("success", switch (saved.getKind()) {
-                    case INVOICE -> "Facture brouillon enregistrée.";
-                    case CREDIT_NOTE -> "Avoir brouillon enregistré.";
-                    case QUOTE -> "Devis brouillon enregistré.";
-                    case PROFORMA -> "Facture pro forma brouillon enregistrée.";
-                });
+                redirectAttributes.addFlashAttribute("success", messages.get("invoice.flash.draftSaved." + saved.getKind().name()));
                 return "redirect:/invoices/" + saved.getId();
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
@@ -132,14 +130,10 @@ public class InvoiceController {
     public String view(@PathVariable Long id, Model model) {
         Invoice invoice = invoiceService.findWithLines(id);
         model.addAttribute("invoice", invoice);
+        // DocumentKind.getLabel() is the French label of the PDF: the page uses the reader's language
         model.addAttribute("docTitle", invoice.getInvoiceNumber() != null
-            ? invoice.getKind().getLabel() + " " + invoice.getInvoiceNumber()
-            : switch (invoice.getKind()) {
-                case INVOICE -> "Brouillon de facture";
-                case CREDIT_NOTE -> "Brouillon d'avoir";
-                case QUOTE -> "Brouillon de devis";
-                case PROFORMA -> "Brouillon de facture pro forma";
-            });
+            ? messages.get("invoice.view.title", messages.label(invoice.getKind()), invoice.getInvoiceNumber())
+            : messages.get("invoice.view.draftTitle." + invoice.getKind().name()));
         model.addAttribute("issuer", IssuerDetails.of(invoice, issuerService.getIssuer()));
         if (invoice.isOffer()) {
             model.addAttribute("invoiceOf", invoiceService.invoiceOf(id));
@@ -170,14 +164,10 @@ public class InvoiceController {
     public String issue(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             Invoice issued = invoiceService.issue(id);
-            redirectAttributes.addFlashAttribute("success", switch (issued.getKind()) {
-                case INVOICE -> "Facture émise : ";
-                case CREDIT_NOTE -> "Avoir émis : ";
-                case QUOTE -> "Devis émis : ";
-                case PROFORMA -> "Facture pro forma émise : ";
-            } + issued.getInvoiceNumber());
+            redirectAttributes.addFlashAttribute("success",
+                messages.get("invoice.flash.issued." + issued.getKind().name(), issued.getInvoiceNumber()));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:/invoices/" + id;
     }
@@ -188,17 +178,17 @@ public class InvoiceController {
     public String recordPayment(@PathVariable Long id, @Valid @ModelAttribute("paymentForm") PaymentForm form, BindingResult result,
                                 RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
-            redirectAttributes.addFlashAttribute("error", "Paiement non enregistré : vérifiez le montant et la date.");
+            redirectAttributes.addFlashAttribute("error", messages.get("invoice.flash.paymentInvalid"));
             return "redirect:/invoices/" + id;
         }
         try {
             InvoicePayment payment = paymentService.record(id, form);
             Invoice invoice = payment.getInvoice();
             redirectAttributes.addFlashAttribute("success", invoice.getStatus() == InvoiceStatus.PAID
-                ? "Paiement enregistré : la facture est entièrement payée."
-                : "Paiement de " + AmountUtils.format(payment.getAmount()) + " enregistré.");
+                ? messages.get("invoice.flash.paidInFull")
+                : messages.get("invoice.flash.paymentRecorded", AmountUtils.format(payment.getAmount())));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:/invoices/" + id;
     }
@@ -208,7 +198,7 @@ public class InvoiceController {
     @PreAuthorize("hasAuthority('ISSUE_INVOICE')")
     public String deletePayment(@PathVariable Long id, @PathVariable Long paymentId, RedirectAttributes redirectAttributes) {
         paymentService.delete(id, paymentId);
-        redirectAttributes.addFlashAttribute("success", "Paiement supprimé.");
+        redirectAttributes.addFlashAttribute("success", messages.get("invoice.flash.paymentDeleted"));
         return "redirect:/invoices/" + id;
     }
 
@@ -227,9 +217,10 @@ public class InvoiceController {
     private String quoteAnswer(Long id, boolean accepted, RedirectAttributes redirectAttributes) {
         try {
             Invoice quote = accepted ? invoiceService.accept(id) : invoiceService.refuse(id);
-            redirectAttributes.addFlashAttribute("success", "Devis " + quote.getInvoiceNumber() + (accepted ? " accepté." : " refusé."));
+            redirectAttributes.addFlashAttribute("success",
+                messages.get(accepted ? "invoice.flash.quoteAccepted" : "invoice.flash.quoteRefused", quote.getInvoiceNumber()));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:/invoices/" + id;
     }
@@ -241,13 +232,13 @@ public class InvoiceController {
         try {
             Invoice invoice = invoiceService.convertToInvoice(id);
             if (!invoice.isDraft()) {
-                redirectAttributes.addFlashAttribute("message", "Ce document est déjà facturé : " + invoice.getInvoiceNumber() + ".");
+                redirectAttributes.addFlashAttribute("message", messages.get("invoice.flash.alreadyInvoiced", invoice.getInvoiceNumber()));
                 return "redirect:/invoices/" + invoice.getId();
             }
-            redirectAttributes.addFlashAttribute("message", "Facture brouillon créée à partir du document : vérifiez-la puis émettez-la.");
+            redirectAttributes.addFlashAttribute("message", messages.get("invoice.flash.converted"));
             return "redirect:/invoices/" + invoice.getId() + "/edit";
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
             return "redirect:/invoices/" + id;
         }
     }
@@ -258,11 +249,10 @@ public class InvoiceController {
     public String creditNote(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             Invoice creditNote = invoiceService.createCreditNote(id);
-            redirectAttributes.addFlashAttribute("message",
-                "Avoir brouillon : il reprend les lignes de la facture. Réduisez-les pour un avoir partiel, puis émettez-le.");
+            redirectAttributes.addFlashAttribute("message", messages.get("invoice.flash.creditNoteDraft"));
             return "redirect:/invoices/" + creditNote.getId() + "/edit";
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
             return "redirect:/invoices/" + id;
         }
     }
@@ -272,9 +262,9 @@ public class InvoiceController {
     public String pay(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             invoiceService.pay(id);
-            redirectAttributes.addFlashAttribute("success", "Facture marquée payée.");
+            redirectAttributes.addFlashAttribute("success", messages.get("invoice.flash.paid"));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:/invoices/" + id;
     }
@@ -284,9 +274,9 @@ public class InvoiceController {
     public String cancel(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             invoiceService.cancel(id);
-            redirectAttributes.addFlashAttribute("success", "Facture annulée.");
+            redirectAttributes.addFlashAttribute("success", messages.get("invoice.flash.cancelled"));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:/invoices/" + id;
     }
@@ -297,10 +287,10 @@ public class InvoiceController {
         try {
             boolean offer = invoiceService.findById(id).isOffer();
             invoiceService.delete(id);
-            redirectAttributes.addFlashAttribute("success", "Brouillon supprimé.");
+            redirectAttributes.addFlashAttribute("success", messages.get("invoice.flash.draftDeleted"));
             return offer ? "redirect:/quotes" : "redirect:/invoices";
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
             return "redirect:/invoices/" + id;
         }
     }
@@ -343,12 +333,9 @@ public class InvoiceController {
         boolean creating = form.getId() == null;
         model.addAttribute("creditNoteOf", creditNoteOf);
         model.addAttribute("formKind", kind);
-        model.addAttribute("formTitle", switch (kind) {
-            case INVOICE -> creating ? "Nouvelle facture" : "Modifier le brouillon";
-            case CREDIT_NOTE -> "Avoir sur la facture " + creditNoteOf.getInvoiceNumber();
-            case QUOTE -> creating ? "Nouveau devis" : "Modifier le devis";
-            case PROFORMA -> creating ? "Nouvelle facture pro forma" : "Modifier la facture pro forma";
-        });
+        model.addAttribute("formTitle", kind == DocumentKind.CREDIT_NOTE
+            ? messages.get("invoice.form.title.CREDIT_NOTE", creditNoteOf.getInvoiceNumber())
+            : messages.get("invoice.form.title." + (creating ? "new." : "edit.") + kind.name()));
         // Droit de timbre: invoices only
         model.addAttribute("stampDutyRules", kind == DocumentKind.INVOICE ? stampDutyRules() : null);
         model.addAttribute("clients", clientService.findAll());

@@ -22,6 +22,7 @@ public enum DocumentKind {
         this.label = label;
     }
 
+    /** The French label, printed on the PDF; pages use the reader's language (enum.DocumentKind.* via Messages#label). */
     public String getLabel() {
         return label;
     }

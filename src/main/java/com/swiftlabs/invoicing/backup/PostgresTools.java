@@ -4,6 +4,7 @@ import com.swiftlabs.invoicing.common.BusinessException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -33,6 +34,11 @@ public class PostgresTools {
         this.properties = properties;
     }
 
+    /** What was being done when a tool fails (backup.tool.*): resolved in the reader's language. */
+    private static DefaultMessageSourceResolvable step(String code) {
+        return new DefaultMessageSourceResolvable(new String[] {code}, null, (String) null);
+    }
+
     /** Writes a backup of the application's data to {@code target}. */
     public void dump(PostgresConnection connection, Path target) {
         List<String> command = command("pg_dump", connection);
@@ -40,17 +46,17 @@ public class PostgresTools {
         if (!connection.isDefaultSchema()) {
             command.add("--schema=" + connection.schema());
         }
-        deleteQuietly(run(command, connection, target.getParent(), "La sauvegarde a échoué"));
+        deleteQuietly(run(command, connection, target.getParent(), step("backup.tool.dump")));
     }
 
     /** The table of contents of a backup, one entry per line; fails when the file is not a readable backup. */
     public List<String> contents(Path backup) {
         Path output = run(new ArrayList<>(List.of(tool("pg_restore"), "--list", backup.toString())), null,
-            backup.getParent(), "Ce fichier n'est pas une sauvegarde lisible");
+            backup.getParent(), step("backup.tool.list"));
         try {
             return Files.readAllLines(output, StandardCharsets.UTF_8);
         } catch (IOException ex) {
-            throw new BusinessException("Ce fichier n'est pas une sauvegarde lisible.");
+            throw new BusinessException("backup.error.unreadableBackup");
         } finally {
             deleteQuietly(output);
         }
@@ -66,12 +72,12 @@ public class PostgresTools {
         Path restoreScript = workDirectory.resolve("restauration-" + System.nanoTime() + "-complete.sql");
         try {
             deleteQuietly(run(new ArrayList<>(List.of(tool("pg_restore"), "--clean", "--if-exists", "--no-owner", "--no-privileges",
-                "--file=" + script, backup.toString())), null, workDirectory, "La sauvegarde n'a pas pu être lue"));
+                "--file=" + script, backup.toString())), null, workDirectory, step("backup.tool.read")));
             writeRestoreScript(connection.schema(), script, restoreScript);
             List<String> command = command("psql", connection);
             command.addAll(List.of("--no-psqlrc", "--quiet", "--single-transaction", "--set=ON_ERROR_STOP=1",
                 "--file=" + restoreScript));
-            deleteQuietly(run(command, connection, workDirectory, "La restauration a échoué, aucune donnée n'a été modifiée"));
+            deleteQuietly(run(command, connection, workDirectory, step("backup.tool.restore")));
         } finally {
             deleteQuietly(script);
             deleteQuietly(restoreScript);
@@ -105,7 +111,7 @@ public class PostgresTools {
                 writer.newLine();
             }
         } catch (IOException ex) {
-            throw new BusinessException("La sauvegarde n'a pas pu être lue : " + ex.getMessage());
+            throw new BusinessException("backup.error.backupNotRead", String.valueOf(ex.getMessage()));
         }
     }
 
@@ -124,12 +130,12 @@ public class PostgresTools {
     }
 
     /** Runs the command; its output (and errors) go to a file, returned on success. */
-    private Path run(List<String> command, PostgresConnection connection, Path workDirectory, String failure) {
+    private Path run(List<String> command, PostgresConnection connection, Path workDirectory, DefaultMessageSourceResolvable failure) {
         Path output;
         try {
             output = Files.createTempFile(workDirectory, "pg-", ".log");
         } catch (IOException ex) {
-            throw new BusinessException("Le dossier des sauvegardes n'est pas accessible en écriture : " + workDirectory);
+            throw new BusinessException("backup.error.folderNotWritable", workDirectory.toString());
         }
         ProcessBuilder builder = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(output.toFile());
         builder.environment().put("PGCONNECT_TIMEOUT", "10");
@@ -142,26 +148,26 @@ public class PostgresTools {
         } catch (IOException ex) {
             deleteQuietly(output);
             log.error("Cannot run {}: {}", command.get(0), ex.getMessage());
-            throw new BusinessException("Outil PostgreSQL introuvable (" + Path.of(command.get(0)).getFileName()
-                + ") : vérifiez le réglage app.backup.tools-directory.");
+            throw new BusinessException("backup.error.toolMissing", Path.of(command.get(0)).getFileName().toString());
         }
         try {
             if (!process.waitFor(properties.timeout().toSeconds(), TimeUnit.SECONDS)) {
                 process.destroyForcibly();
                 deleteQuietly(output);
-                throw new BusinessException(failure + " : délai dépassé.");
+                throw new BusinessException("backup.tool.timeout", failure);
             }
         } catch (InterruptedException ex) {
             process.destroyForcibly();
             Thread.currentThread().interrupt();
             deleteQuietly(output);
-            throw new BusinessException(failure + " : interrompue.");
+            throw new BusinessException("backup.tool.interrupted", failure);
         }
         if (process.exitValue() != 0) {
             String detail = lastLines(output);
             deleteQuietly(output);
             log.error("{} failed (exit {}): {}", Path.of(command.get(0)).getFileName(), process.exitValue(), detail);
-            throw new BusinessException(failure + (detail.isEmpty() ? "." : " : " + detail));
+            throw detail.isEmpty() ? new BusinessException("backup.tool.failed", failure)
+                : new BusinessException("backup.tool.failedDetail", failure, detail);
         }
         return output;
     }

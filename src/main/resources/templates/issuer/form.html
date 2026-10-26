@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page('Profil émetteur', ~{::main}, ~{::script})}">
+      th:replace="~{layout/base :: page(#{issuer.title}, ~{::main}, ~{::script})}">
 <body>
 <main class="page" th:with="pct=${#numbers.formatDecimal(stats.percent, 1, 'WHITESPACE', 1, 'COMMA')}">
     <form th:action="@{/settings/issuer/save}" method="post" th:object="${issuer}" id="issuer-form">
@@ -8,12 +8,12 @@
 
         <div class="page-header">
             <div>
-                <p class="page-eyebrow">Paramètres</p>
-                <h1 class="page-title">Profil de l'émetteur</h1>
-                <p class="page-subtitle">Ces informations sont copiées sur chaque facture au moment de son émission.</p>
+                <p class="page-eyebrow" th:text="#{settings.eyebrow}">Paramètres</p>
+                <h1 class="page-title" th:text="#{issuer.heading}">Profil de l'émetteur</h1>
+                <p class="page-subtitle" th:text="#{issuer.subtitle}">Ces informations sont copiées sur chaque facture au moment de son émission.</p>
             </div>
-            <button th:if="${canEdit}" type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer</button>
-            <span th:unless="${canEdit}" class="badge badge-neutral"><span class="icon icon-sm">lock</span>Lecture seule</span>
+            <button th:if="${canEdit}" type="submit" class="btn btn-primary"><span class="icon">save</span><th:block th:text="#{action.save}">Enregistrer</th:block></button>
+            <span th:unless="${canEdit}" class="badge badge-neutral"><span class="icon icon-sm">lock</span><th:block th:text="#{settings.readOnly}">Lecture seule</th:block></span>
         </div>
 
         <div class="mb-6 empty:hidden"><div th:replace="~{layout/fragments :: formErrors}"></div></div>
@@ -23,45 +23,45 @@
             <div class="flex flex-col gap-6 lg:col-span-2">
                 <!-- Legal status: shows the matching fields (see issuer-form.js) and decides whether TVA applies -->
                 <section class="card">
-                    <div class="card-header"><h2 class="card-title"><span class="icon">domain</span>Type d'entreprise</h2></div>
+                    <div class="card-header"><h2 class="card-title"><span class="icon">domain</span><th:block th:text="#{issuer.type.title}">Type d'entreprise</th:block></h2></div>
                     <div class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <label class="flex cursor-pointer items-start gap-3 rounded-lg p-4 ring-1 ring-surface-variant has-[:checked]:bg-primary-fixed/30 has-[:checked]:ring-2 has-[:checked]:ring-primary">
                             <input type="radio" th:field="*{companyType}" value="AUTO_ENTREPRENEUR" class="mt-1" data-company-type/>
-                            <span><span class="block font-semibold">Auto-entrepreneur</span>
-                                <span class="hint">Carte ANAE, TVA non applicable, plafond annuel de chiffre d'affaires.</span></span>
+                            <span><span class="block font-semibold" th:text="#{issuer.type.autoEntrepreneur}">Auto-entrepreneur</span>
+                                <span class="hint" th:text="#{issuer.type.autoEntrepreneur.hint}">Carte ANAE, TVA non applicable, plafond annuel de chiffre d'affaires.</span></span>
                         </label>
                         <label class="flex cursor-pointer items-start gap-3 rounded-lg p-4 ring-1 ring-surface-variant has-[:checked]:bg-primary-fixed/30 has-[:checked]:ring-2 has-[:checked]:ring-primary">
                             <input type="radio" th:field="*{companyType}" value="COMPANY" class="mt-1" data-company-type/>
-                            <span><span class="block font-semibold">Société</span>
-                                <span class="hint">SARL, EURL, SPA… : registre du commerce, article d'imposition, TVA sur chaque ligne.</span></span>
+                            <span><span class="block font-semibold" th:text="#{issuer.type.company}">Société</span>
+                                <span class="hint" th:text="#{issuer.type.company.hint}">SARL, EURL, SPA… : registre du commerce, article d'imposition, TVA sur chaque ligne.</span></span>
                         </label>
-                        <p class="hint sm:col-span-2">Les factures déjà émises ne changent pas : elles gardent les informations de leur date d'émission.</p>
+                        <p class="hint sm:col-span-2" th:text="#{issuer.type.hint}">Les factures déjà émises ne changent pas : elles gardent les informations de leur date d'émission.</p>
                     </div>
                 </section>
 
                 <section class="card">
-                    <div class="card-header"><h2 class="card-title"><span class="icon">badge</span>Identité</h2></div>
+                    <div class="card-header"><h2 class="card-title"><span class="icon">badge</span><th:block th:text="#{issuer.identity.title}">Identité</th:block></h2></div>
                     <div class="card-body form-grid">
                         <div class="field">
                             <label class="label" for="fullName">
-                                <span data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">Nom complet du titulaire</span>
-                                <span data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">Raison sociale</span>
+                                <span data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'" th:text="#{issuer.fullName.autoEntrepreneur}">Nom complet du titulaire</span>
+                                <span data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'" th:text="#{issuer.fullName.company}">Raison sociale</span>
                                 <span class="required">*</span></label>
                             <input class="input" th:errorclass="input-invalid" th:field="*{fullName}" type="text" required maxlength="255"/>
                             <p th:replace="~{layout/fragments :: fieldError('fullName')}"></p>
                         </div>
                         <div class="field">
-                            <label class="label" for="tradeName">Nom commercial <span class="optional">Optionnel</span></label>
+                            <label class="label" for="tradeName"><th:block th:text="#{issuer.tradeName}">Nom commercial</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
                             <input class="input" th:errorclass="input-invalid" th:field="*{tradeName}" type="text" maxlength="255"/>
                             <p th:replace="~{layout/fragments :: fieldError('tradeName')}"></p>
                         </div>
                         <div class="field md:col-span-2" data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">
-                            <label class="label" for="legal-quality">Qualité légale</label>
+                            <label class="label" for="legal-quality" th:text="#{issuer.legalQuality}">Qualité légale</label>
                             <input class="input" id="legal-quality" type="text" readonly value="Entrepreneur individuel / Auto-entrepreneur"/>
-                            <p class="hint">Mention imprimée sous votre nom sur chaque facture.</p>
+                            <p class="hint" th:text="#{issuer.legalQuality.hint}">Mention imprimée sous votre nom sur chaque facture.</p>
                         </div>
                         <div class="field md:col-span-2">
-                            <label class="label" for="activityDescription">Activité déclarée <span class="optional">Optionnel</span></label>
+                            <label class="label" for="activityDescription"><th:block th:text="#{issuer.activity}">Activité déclarée</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
                             <textarea class="input" th:errorclass="input-invalid" th:field="*{activityDescription}" rows="2" maxlength="500"></textarea>
                             <p th:replace="~{layout/fragments :: fieldError('activityDescription')}"></p>
                         </div>
@@ -69,15 +69,15 @@
                 </section>
 
                 <section class="card">
-                    <div class="card-header"><h2 class="card-title"><span class="icon">account_balance</span>Identifiants légaux et fiscaux</h2></div>
+                    <div class="card-header"><h2 class="card-title"><span class="icon">account_balance</span><th:block th:text="#{issuer.ids.title}">Identifiants légaux et fiscaux</th:block></h2></div>
                     <div class="card-body form-grid">
                         <div class="field" data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">
-                            <label class="label" for="aeCardNumber">N° carte auto-entrepreneur <span class="required">*</span></label>
+                            <label class="label" for="aeCardNumber"><th:block th:text="#{issuer.aeCardNumber}">N° carte auto-entrepreneur</th:block> <span class="required">*</span></label>
                             <input class="input input-mono" th:errorclass="input-invalid" th:field="*{aeCardNumber}" type="text" required maxlength="50"/>
                             <p th:replace="~{layout/fragments :: fieldError('aeCardNumber')}"></p>
                         </div>
                         <div class="field" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
-                            <label class="label" for="legalForm">Forme juridique <span class="required">*</span></label>
+                            <label class="label" for="legalForm"><th:block th:text="#{issuer.legalForm}">Forme juridique</th:block> <span class="required">*</span></label>
                             <input class="input" th:errorclass="input-invalid" th:field="*{legalForm}" type="text" maxlength="50" list="legal-forms" placeholder="SARL"/>
                             <datalist id="legal-forms">
                                 <option value="SARL"></option><option value="EURL"></option><option value="SPA"></option>
@@ -86,61 +86,61 @@
                             <p th:replace="~{layout/fragments :: fieldError('legalForm')}"></p>
                         </div>
                         <div class="field" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
-                            <label class="label" for="shareCapital">Capital social (DA) <span class="required">*</span></label>
+                            <label class="label" for="shareCapital"><th:block th:text="#{issuer.shareCapital}">Capital social (DA)</th:block> <span class="required">*</span></label>
                             <input class="input input-mono" th:errorclass="input-invalid" th:field="*{shareCapital}" type="number" min="0" step="0.01"/>
                             <p th:replace="~{layout/fragments :: fieldError('shareCapital')}"></p>
                         </div>
                         <div class="field" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
-                            <label class="label" for="rcNumber">N° registre du commerce (RC) <span class="required">*</span></label>
+                            <label class="label" for="rcNumber"><th:block th:text="#{issuer.rcNumber}">N° registre du commerce (RC)</th:block> <span class="required">*</span></label>
                             <input class="input input-mono" th:errorclass="input-invalid" th:field="*{rcNumber}" type="text" maxlength="50"/>
                             <p th:replace="~{layout/fragments :: fieldError('rcNumber')}"></p>
                         </div>
                         <div class="field" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
-                            <label class="label" for="taxArticle">Article d'imposition (AI) <span class="required">*</span></label>
+                            <label class="label" for="taxArticle"><th:block th:text="#{issuer.taxArticle}">Article d'imposition (AI)</th:block> <span class="required">*</span></label>
                             <input class="input input-mono" th:errorclass="input-invalid" th:field="*{taxArticle}" type="text" maxlength="50"/>
                             <p th:replace="~{layout/fragments :: fieldError('taxArticle')}"></p>
                         </div>
                         <div class="field">
-                            <label class="label" for="nif">NIF <span class="required">*</span></label>
+                            <label class="label" for="nif"><th:block th:text="#{issuer.nif}">NIF</th:block> <span class="required">*</span></label>
                             <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" required maxlength="50"/>
                             <p th:replace="~{layout/fragments :: fieldError('nif')}"></p>
                         </div>
                         <div class="field">
-                            <label class="label" for="nis">NIS <span class="optional">Optionnel</span></label>
+                            <label class="label" for="nis"><th:block th:text="#{issuer.nis}">NIS</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
                             <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="50"/>
                             <p th:replace="~{layout/fragments :: fieldError('nis')}"></p>
                         </div>
                         <div class="alert alert-info md:col-span-2" data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">
                             <span class="icon">receipt_long</span>
-                            <span>Mention TVA imprimée sur les factures : <strong th:text="${vatMention}">TVA non applicable</strong></span>
+                            <span><th:block th:text="#{issuer.vatMention}">Mention TVA imprimée sur les factures :</th:block> <strong th:text="${vatMention}">TVA non applicable</strong></span>
                         </div>
                         <div class="alert alert-info md:col-span-2" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
                             <span class="icon">receipt_long</span>
-                            <span>TVA choisie sur chaque ligne de facture ; totaux HT, TVA et TTC imprimés sur les factures.</span>
+                            <span th:text="#{issuer.vatPerLine}">TVA choisie sur chaque ligne de facture ; totaux HT, TVA et TTC imprimés sur les factures.</span>
                         </div>
                     </div>
                 </section>
 
                 <section class="card">
-                    <div class="card-header"><h2 class="card-title"><span class="icon">location_on</span>Coordonnées</h2></div>
+                    <div class="card-header"><h2 class="card-title"><span class="icon">location_on</span><th:block th:text="#{issuer.contact.title}">Coordonnées</th:block></h2></div>
                     <div class="card-body form-grid">
                         <div class="field md:col-span-2">
-                            <label class="label" for="address">Adresse</label>
+                            <label class="label" for="address" th:text="#{issuer.address}">Adresse</label>
                             <input class="input" th:errorclass="input-invalid" th:field="*{address}" type="text" maxlength="255"/>
                             <p th:replace="~{layout/fragments :: fieldError('address')}"></p>
                         </div>
                         <div class="field">
-                            <label class="label" for="city">Ville</label>
+                            <label class="label" for="city" th:text="#{issuer.city}">Ville</label>
                             <input class="input" th:errorclass="input-invalid" th:field="*{city}" type="text" maxlength="255"/>
                             <p th:replace="~{layout/fragments :: fieldError('city')}"></p>
                         </div>
                         <div class="field">
-                            <label class="label" for="phone">Téléphone</label>
+                            <label class="label" for="phone" th:text="#{issuer.phone}">Téléphone</label>
                             <input class="input" th:errorclass="input-invalid" th:field="*{phone}" type="tel" maxlength="50"/>
                             <p th:replace="~{layout/fragments :: fieldError('phone')}"></p>
                         </div>
                         <div class="field md:col-span-2">
-                            <label class="label" for="email">Email</label>
+                            <label class="label" for="email" th:text="#{issuer.email}">Email</label>
                             <input class="input" th:errorclass="input-invalid" th:field="*{email}" type="email" maxlength="255"/>
                             <p th:replace="~{layout/fragments :: fieldError('email')}"></p>
                         </div>
@@ -148,13 +148,13 @@
                 </section>
 
                 <section class="card">
-                    <div class="card-header"><h2 class="card-title"><span class="icon">account_balance_wallet</span>Règlement</h2></div>
+                    <div class="card-header"><h2 class="card-title"><span class="icon">account_balance_wallet</span><th:block th:text="#{issuer.payment.title}">Règlement</th:block></h2></div>
                     <div class="card-body field">
-                        <label class="label" for="bankOrCcpAccount">Compte bancaire (RIB) ou CCP <span class="optional">Optionnel</span></label>
+                        <label class="label" for="bankOrCcpAccount"><th:block th:text="#{issuer.bankAccount}">Compte bancaire (RIB) ou CCP</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
                         <input class="input input-mono" th:errorclass="input-invalid" th:field="*{bankOrCcpAccount}" type="text" maxlength="100"
-                               placeholder="BNA 001 00624 0300012345 78 ou CCP 0021458992 clé 45"/>
+                               placeholder="BNA 001 00624 0300012345 78 ou CCP 0021458992 clé 45" th:placeholder="#{issuer.bankAccount.placeholder}"/>
                         <p th:replace="~{layout/fragments :: fieldError('bankOrCcpAccount')}"></p>
-                        <p class="hint">Affiché dans la zone « Règlement » des factures.</p>
+                        <p class="hint" th:text="#{issuer.bankAccount.hint}">Affiché dans la zone « Règlement » des factures.</p>
                     </div>
                 </section>
             </div>
@@ -162,43 +162,43 @@
             <aside class="flex flex-col gap-6">
                 <!-- On-premise install: how the other PCs of the office reach the application -->
                 <section th:unless="${networkAddresses.isEmpty()}" class="card">
-                    <div class="card-header"><h2 class="card-title"><span class="icon">lan</span>Accès depuis les autres postes</h2></div>
+                    <div class="card-header"><h2 class="card-title"><span class="icon">lan</span><th:block th:text="#{issuer.network.title}">Accès depuis les autres postes</th:block></h2></div>
                     <div class="card-body flex flex-col gap-2">
-                        <p class="text-body-sm">Sur les autres ordinateurs du bureau, ouvrez le navigateur à l'une de ces adresses :</p>
+                        <p class="text-body-sm" th:text="#{issuer.network.text}">Sur les autres ordinateurs du bureau, ouvrez le navigateur à l'une de ces adresses :</p>
                         <ul class="flex flex-col gap-1 font-mono text-body-sm">
                             <li th:each="url : ${networkAddresses}" th:text="${url}">http://BUREAU-PC:7070</li>
                         </ul>
-                        <p class="hint">Cet ordinateur doit rester allumé pendant que les autres travaillent.</p>
+                        <p class="hint" th:text="#{issuer.network.hint}">Cet ordinateur doit rester allumé pendant que les autres travaillent.</p>
                     </div>
                 </section>
 
                 <!-- Logo: its controls belong to the separate forms declared after the main form -->
                 <section class="card">
-                    <div class="card-header"><h2 class="card-title"><span class="icon">image</span>Logo</h2></div>
+                    <div class="card-header"><h2 class="card-title"><span class="icon">image</span><th:block th:text="#{issuer.logo.title}">Logo</th:block></h2></div>
                     <div class="card-body flex flex-col gap-3">
                         <div class="flex h-28 items-center justify-center rounded-lg bg-surface p-3 ring-1 ring-surface-variant">
-                            <img th:if="${hasLogo}" th:src="@{/settings/issuer/logo}" alt="Logo de l'émetteur" class="max-h-full max-w-full object-contain"/>
-                            <span th:unless="${hasLogo}" class="hint">Aucun logo</span>
+                            <img th:if="${hasLogo}" th:src="@{/settings/issuer/logo}" alt="Logo de l'émetteur" th:alt="#{issuer.logo.alt}" class="max-h-full max-w-full object-contain"/>
+                            <span th:unless="${hasLogo}" class="hint" th:text="#{issuer.logo.none}">Aucun logo</span>
                         </div>
                         <input type="file" name="logo" form="logo-upload-form" accept="image/png,image/jpeg" required
-                               class="block w-full text-body-sm text-on-surface-variant file:mr-3 file:rounded-lg file:border-0 file:bg-surface-container-high file:px-3 file:py-1.5 file:text-label-md file:text-on-surface hover:file:bg-surface-container-highest"
-                               aria-label="Choisir un logo"/>
-                        <p class="hint">PNG ou JPEG, 500 Ko et 2000 × 2000 pixels au maximum. Imprimé en haut des factures.</p>
+                               class="block w-full text-body-sm text-on-surface-variant file:me-3 file:rounded-lg file:border-0 file:bg-surface-container-high file:px-3 file:py-1.5 file:text-label-md file:text-on-surface hover:file:bg-surface-container-highest"
+                               aria-label="Choisir un logo" th:aria-label="#{issuer.logo.choose}"/>
+                        <p class="hint" th:text="#{issuer.logo.hint}">PNG ou JPEG, 500 Ko et 2000 × 2000 pixels au maximum. Imprimé en haut des factures.</p>
                         <div class="flex flex-wrap gap-2">
-                            <button type="submit" form="logo-upload-form" class="btn btn-secondary btn-sm"><span class="icon">upload</span>Envoyer</button>
-                            <button th:if="${hasLogo}" type="submit" form="logo-delete-form" class="btn btn-danger btn-sm"><span class="icon">delete</span>Supprimer</button>
+                            <button type="submit" form="logo-upload-form" class="btn btn-secondary btn-sm"><span class="icon">upload</span><th:block th:text="#{issuer.logo.upload}">Envoyer</th:block></button>
+                            <button th:if="${hasLogo}" type="submit" form="logo-delete-form" class="btn btn-danger btn-sm"><span class="icon">delete</span><th:block th:text="#{action.delete}">Supprimer</th:block></button>
                         </div>
                     </div>
                 </section>
 
                 <section class="card" data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">
                     <div class="card-header">
-                        <h2 class="card-title"><span class="icon">trending_up</span>Plafond annuel</h2>
-                        <span class="badge badge-neutral" th:text="${'Exercice ' + stats.year}">Exercice 2026</span>
+                        <h2 class="card-title"><span class="icon">trending_up</span><th:block th:text="#{issuer.ceiling.title}">Plafond annuel</th:block></h2>
+                        <span class="badge badge-neutral" th:text="#{issuer.ceiling.year(${'' + stats.year})}">Exercice 2026</span>
                     </div>
                     <div class="card-body flex flex-col gap-3">
                         <div class="flex items-baseline justify-between">
-                            <span class="hint">CA facturé</span>
+                            <span class="hint" th:text="#{issuer.ceiling.invoiced}">CA facturé</span>
                             <strong class="tabular-nums" th:classappend="${stats.alert100} ? 'text-error' : 'text-primary'"
                                     th:text="${amountUtils.format(stats.totalAmount)}">0,00 DA</strong>
                         </div>
@@ -207,25 +207,25 @@
                                  th:style="'width: ' + ${stats.barPercent} + '%'"></div>
                         </div>
                         <div class="flex justify-between text-body-sm text-on-surface-variant">
-                            <span th:text="${pct + ' % consommé'}">0 % consommé</span>
-                            <span th:text="${'Reste ' + amountUtils.format(stats.remaining)}">Reste</span>
+                            <span th:text="#{issuer.ceiling.used(${pct})}">0 % consommé</span>
+                            <span th:text="#{issuer.ceiling.remaining(${amountUtils.format(stats.remaining)})}">Reste</span>
                         </div>
                         <dl class="divide-y divide-surface-container text-body-sm">
-                            <div class="flex justify-between py-2"><dt>Plafond</dt><dd class="font-semibold tabular-nums" th:text="${amountUtils.format(stats.ceiling)}">5 000 000,00 DA</dd></div>
-                            <div class="flex justify-between py-2"><dt>Alerte à 80 %</dt><dd class="tabular-nums" th:text="${amountUtils.format(stats.warningThreshold)}">4 000 000,00 DA</dd></div>
+                            <div class="flex justify-between py-2"><dt th:text="#{issuer.ceiling.ceiling}">Plafond</dt><dd class="font-semibold tabular-nums" th:text="${amountUtils.format(stats.ceiling)}">5 000 000,00 DA</dd></div>
+                            <div class="flex justify-between py-2"><dt th:text="#{issuer.ceiling.warning}">Alerte à 80 %</dt><dd class="tabular-nums" th:text="${amountUtils.format(stats.warningThreshold)}">4 000 000,00 DA</dd></div>
                         </dl>
                         <div class="field">
-                            <label class="label" for="annualCeiling">Plafond annuel (DA) <span class="required">*</span></label>
+                            <label class="label" for="annualCeiling"><th:block th:text="#{issuer.ceiling.field}">Plafond annuel (DA)</th:block> <span class="required">*</span></label>
                             <input class="input input-mono" th:errorclass="input-invalid" th:field="*{annualCeiling}" type="number"
                                    required min="0.01" step="0.01" inputmode="decimal"/>
                             <p th:replace="~{layout/fragments :: fieldError('annualCeiling')}"></p>
-                            <p class="hint">Plafond de chiffre d'affaires de votre statut. Vérifiez le montant en vigueur auprès de l'ANAE ou de votre comptable.</p>
+                            <p class="hint" th:text="#{issuer.ceiling.hint}">Plafond de chiffre d'affaires de votre statut. Vérifiez le montant en vigueur auprès de l'ANAE ou de votre comptable.</p>
                         </div>
                     </div>
                 </section>
 
                 <section class="card">
-                    <div class="card-header"><h2 class="card-title"><span class="icon">picture_as_pdf</span>Aperçu de l'en-tête</h2></div>
+                    <div class="card-header"><h2 class="card-title"><span class="icon">picture_as_pdf</span><th:block th:text="#{issuer.preview.title}">Aperçu de l'en-tête</th:block></h2></div>
                     <div class="card-body">
                         <div class="flex flex-col gap-2 rounded-lg bg-surface p-4 font-mono text-[11px] leading-tight ring-1 ring-surface-variant">
                             <img th:if="${hasLogo}" th:src="@{/settings/issuer/logo}" alt="" class="mb-1 max-h-10 max-w-[40%] object-contain"/>
@@ -255,7 +255,7 @@
     <!-- Logo forms (HTML forms cannot be nested): their controls sit in the side panel above -->
     <form id="logo-upload-form" th:action="@{/settings/issuer/logo}" method="post" enctype="multipart/form-data"></form>
     <form id="logo-delete-form" th:action="@{/settings/issuer/logo/delete}" method="post"
-          data-confirm="Supprimer le logo ? Il ne sera plus imprimé sur les factures."></form>
+          th:data-confirm="#{issuer.logo.deleteConfirm}"></form>
 </main>
 <script th:src="@{/js/issuer-form.js}" defer></script>
 </body>

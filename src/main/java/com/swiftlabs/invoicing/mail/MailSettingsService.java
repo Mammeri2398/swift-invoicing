@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.mail;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.Messages;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,10 +19,12 @@ public class MailSettingsService {
 
     private final MailSettingsRepository repository;
     private final MailGateway gateway;
+    private final Messages messages;
 
-    public MailSettingsService(MailSettingsRepository repository, MailGateway gateway) {
+    public MailSettingsService(MailSettingsRepository repository, MailGateway gateway, Messages messages) {
         this.repository = repository;
         this.gateway = gateway;
+        this.messages = messages;
     }
 
     /** The saved settings, or empty ones (nothing saved yet). */
@@ -32,7 +35,7 @@ public class MailSettingsService {
     @Transactional
     public MailSettings save(MailSettingsForm form) {
         if (form.isEnabled() && (form.getHost() == null || form.getHost().isBlank())) {
-            throw new BusinessException("host", "Indiquez le serveur d'envoi (SMTP).");
+            throw BusinessException.onField("host", "mail.error.hostRequired");
         }
         MailSettings settings = current();
         settings.setEnabled(form.isEnabled());
@@ -48,31 +51,34 @@ public class MailSettingsService {
         }
         settings.setFromAddress(blankToNull(form.getFromAddress()));
         if (form.isEnabled() && settings.sender().isBlank()) {
-            throw new BusinessException("fromAddress", "Indiquez l'adresse d'expédition (ou un compte, qui sert d'expéditeur).");
+            throw BusinessException.onField("fromAddress", "mail.error.fromRequired");
         }
         return repository.save(settings);
     }
 
-    /** Sends a short message to {@code to} with the saved settings; the error message says what went wrong. */
+    /**
+     * Sends a short message to {@code to} (the logged-in user, in their language) with the saved settings;
+     * the error message says what went wrong.
+     */
     public void sendTest(String to) {
         if (!gateway.isEnabled()) {
-            throw new BusinessException("Enregistrez d'abord un serveur d'envoi activé.");
+            throw new BusinessException("mail.error.notEnabled");
         }
         if (to == null || to.isBlank()) {
-            throw new BusinessException("Votre compte n'a pas d'adresse email : renseignez-la dans Mon compte.");
+            throw new BusinessException("mail.error.noAddress");
         }
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(gateway.fromAddress());
         message.setTo(to);
-        message.setSubject("Swift Invoicing : test d'envoi");
-        message.setText("Bonjour,\n\nCe message confirme que l'envoi d'emails fonctionne.\n\nSwift Invoicing");
+        message.setSubject(messages.get("mail.test.subject"));
+        message.setText(messages.get("mail.test.body"));
         try {
             gateway.sender().send(message);
         } catch (MailException ex) {
             log.warn("Test email to {} failed", to, ex);
             Throwable cause = ex.getMostSpecificCause();
-            throw new BusinessException("L'envoi a échoué : " + (cause.getMessage() != null ? cause.getMessage().strip() : cause.getClass().getSimpleName())
-                + ". Vérifiez le serveur, le port, la sécurité et le compte.");
+            throw new BusinessException("mail.error.sendFailed",
+                cause.getMessage() != null ? cause.getMessage().strip() : cause.getClass().getSimpleName());
         }
     }
 

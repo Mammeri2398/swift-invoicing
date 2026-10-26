@@ -1,35 +1,36 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page('Clients', ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page(#{client.list.title}, ~{::main}, ~{})}">
 <body>
 <main class="page" th:with="canEdit=${currentUser != null and currentUser.can('CREATE_CLIENT')},
                             canDelete=${currentUser != null and currentUser.can('DELETE_CLIENT')}">
     <div class="page-header">
         <div>
-            <p class="page-eyebrow">Registre</p>
-            <h1 class="page-title">Clients</h1>
-            <p class="page-subtitle">Le NIF est obligatoire pour les clients professionnels avant d'émettre une facture.</p>
+            <p class="page-eyebrow" th:text="#{client.list.eyebrow}">Registre</p>
+            <h1 class="page-title" th:text="#{client.list.title}">Clients</h1>
+            <p class="page-subtitle" th:text="#{client.list.subtitle}">Le NIF est obligatoire pour les clients professionnels avant d'émettre une facture.</p>
         </div>
-        <a th:if="${canEdit}" th:href="@{/clients/new}" class="btn btn-primary"><span class="icon">person_add</span>Nouveau client</a>
+        <a th:if="${canEdit}" th:href="@{/clients/new}" class="btn btn-primary"><span class="icon">person_add</span><th:block th:text="#{client.list.new}">Nouveau client</th:block></a>
     </div>
 
     <section class="card">
         <div class="card-header">
-            <h2 class="card-title"><span class="icon">groups</span><span th:text="${clients.size() + ' client(s)'}">0 client</span></h2>
+            <h2 class="card-title"><span class="icon">groups</span><span th:text="#{client.list.count(${clients.size()})}">0 client</span></h2>
             <input type="search" class="input input-sm max-w-xs" placeholder="Filtrer…" aria-label="Filtrer les clients"
+                   th:placeholder="#{client.list.filter}" th:aria-label="#{client.list.filterLabel}"
                    data-table-filter="clients-table"/>
         </div>
         <div class="table-wrap">
             <table class="table" id="clients-table">
                 <thead>
                 <tr>
-                    <th scope="col">Nom / Raison sociale</th>
-                    <th scope="col">Type</th>
-                    <th scope="col">NIF</th>
-                    <th scope="col">Ville</th>
-                    <th scope="col">Contact</th>
-                    <th scope="col" class="num">Solde dû</th>
-                    <th scope="col"><span class="sr-only">Actions</span></th>
+                    <th scope="col" th:text="#{client.list.col.name}">Nom / Raison sociale</th>
+                    <th scope="col" th:text="#{client.list.col.type}">Type</th>
+                    <th scope="col" th:text="#{client.list.col.nif}">NIF</th>
+                    <th scope="col" th:text="#{client.list.col.city}">Ville</th>
+                    <th scope="col" th:text="#{client.list.col.contact}">Contact</th>
+                    <th scope="col" class="num" th:text="#{client.list.col.balance}">Solde dû</th>
+                    <th scope="col"><span class="sr-only" th:text="#{client.list.col.actions}">Actions</span></th>
                 </tr>
                 </thead>
                 <tbody>
@@ -37,11 +38,11 @@
                     <td class="font-medium" th:text="${c.name}">SARL Exemple</td>
                     <td>
                         <span class="badge" th:classappend="${c.type.name() == 'PROFESSIONNEL'} ? 'badge-info' : 'badge-neutral'"
-                              th:text="${c.type.name() == 'PROFESSIONNEL'} ? 'Professionnel' : 'Particulier'">Professionnel</span>
+                              th:text="${@messages.label(c.type)}">Professionnel</span>
                     </td>
                     <td class="font-mono text-body-sm">
                         <span th:if="${c.nif != null and !c.nif.isBlank()}" th:text="${c.nif}">000000000000000</span>
-                        <span th:if="${(c.nif == null or c.nif.isBlank()) and c.type.name() == 'PROFESSIONNEL'}" class="badge badge-danger">NIF manquant</span>
+                        <span th:if="${(c.nif == null or c.nif.isBlank()) and c.type.name() == 'PROFESSIONNEL'}" class="badge badge-danger" th:text="#{client.list.nifMissing}">NIF manquant</span>
                         <span th:if="${(c.nif == null or c.nif.isBlank()) and c.type.name() != 'PROFESSIONNEL'}" class="text-on-surface-variant">—</span>
                     </td>
                     <td th:text="${c.city ?: '—'}">Alger</td>
@@ -55,19 +56,22 @@
                     <td>
                         <div class="flex justify-end gap-1">
                             <a th:if="${currentUser != null and currentUser.can('VIEW_INVOICES')}" th:href="@{/clients/{id}/statement(id=${c.id})}"
-                               class="btn-icon" title="Relevé de compte" aria-label="Relevé de compte"><span class="icon">account_balance_wallet</span></a>
-                            <a th:if="${canEdit}" th:href="@{/clients/{id}/edit(id=${c.id})}" class="btn-icon" title="Modifier" aria-label="Modifier">
+                               class="btn-icon" title="Relevé de compte" aria-label="Relevé de compte"
+                               th:title="#{client.list.statement}" th:aria-label="#{client.list.statement}"><span class="icon">account_balance_wallet</span></a>
+                            <a th:if="${canEdit}" th:href="@{/clients/{id}/edit(id=${c.id})}" class="btn-icon" title="Modifier" aria-label="Modifier"
+                               th:title="#{action.edit}" th:aria-label="#{action.edit}">
                                 <span class="icon">edit</span>
                             </a>
                             <form th:if="${canDelete}" th:action="@{/clients/{id}/delete(id=${c.id})}" method="post"
-                                  th:attr="data-confirm=${'Supprimer le client ' + c.name + ' ?'}">
-                                <button type="submit" class="btn-icon danger" title="Supprimer" aria-label="Supprimer"><span class="icon">delete</span></button>
+                                  th:data-confirm="#{client.list.confirmDelete(${c.name})}">
+                                <button type="submit" class="btn-icon danger" title="Supprimer" aria-label="Supprimer"
+                                        th:title="#{action.delete}" th:aria-label="#{action.delete}"><span class="icon">delete</span></button>
                             </form>
                         </div>
                     </td>
                 </tr>
                 <tr th:if="${clients.isEmpty()}">
-                    <td colspan="7" class="table-empty">Aucun client. Commencez par en créer un.</td>
+                    <td colspan="7" class="table-empty" th:text="#{client.list.empty}">Aucun client. Commencez par en créer un.</td>
                 </tr>
                 </tbody>
             </table>

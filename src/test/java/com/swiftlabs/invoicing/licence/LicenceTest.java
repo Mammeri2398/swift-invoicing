@@ -122,6 +122,21 @@ class LicenceTest {
         mockMvc.perform(get("/settings/licence").param("readonly", ""))
             .andExpect(content().string(containsString("l&#39;application est en lecture seule")))
             .andExpect(content().string(containsString("La période d&#39;essai est terminée")));
+        // The banner and the licence page follow the viewer's language
+        mockMvc.perform(get("/settings/licence").header("Accept-Language", "en"))
+            .andExpect(content().string(containsString("The trial period is over: the application is read-only.")))
+            .andExpect(content().string(containsString("Your licence")));
+    }
+
+    @Test
+    void theRemainingDaysAreCountedInEachLanguage() throws Exception {
+        trialStartedDaysAgo(29);
+        mockMvc.perform(get("/settings/licence"))
+            .andExpect(content().string(containsString("Version d&#39;essai : 1 jour restant(s).")));
+        mockMvc.perform(get("/settings/licence").header("Accept-Language", "en"))
+            .andExpect(content().string(containsString("Trial version: 1 day left.")));
+        mockMvc.perform(get("/settings/licence").header("Accept-Language", "ar"))
+            .andExpect(content().string(containsString("يوم واحد")));
     }
 
     @Test

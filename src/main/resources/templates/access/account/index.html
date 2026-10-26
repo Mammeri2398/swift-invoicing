@@ -1,105 +1,123 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page('Mon compte', ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page(#{account.title}, ~{::main}, ~{})}">
 <body>
 <main class="page-narrow">
     <div class="page-header">
         <div>
-            <p class="page-eyebrow">Mon compte</p>
+            <p class="page-eyebrow" th:text="#{account.title}">Mon compte</p>
             <h1 class="page-title" th:text="${user.fullName}">Karim Benali</h1>
             <p class="page-subtitle">
                 <span th:text="${user.profile.name}">Administrateur</span>
-                <th:block th:if="${user.lastLoginAt}"> · dernière connexion le
-                    <span th:text="${#temporals.format(user.lastLoginAt, 'dd/MM/yyyy à HH:mm')}">01/01/2026 à 10:00</span></th:block>
+                <th:block th:if="${user.lastLoginAt}"> · <th:block
+                    th:text="#{account.lastLogin(${#temporals.format(user.lastLoginAt, 'dd/MM/yyyy HH:mm')})}">dernière connexion le 01/01/2026 10:00</th:block></th:block>
             </p>
         </div>
     </div>
 
     <form th:action="@{/account/save}" method="post" th:object="${account}" class="card mb-6">
-        <div class="card-header"><h2 class="card-title"><span class="icon">person</span>Informations personnelles</h2></div>
+        <div class="card-header"><h2 class="card-title"><span class="icon">person</span><th:block th:text="#{account.details.title}">Informations personnelles</th:block></h2></div>
         <div class="card-body flex flex-col gap-4">
             <div th:replace="~{layout/fragments :: formErrors}"></div>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="field">
-                    <label class="label" for="firstName">Prénom</label>
+                    <label class="label" for="firstName" th:text="#{account.firstName}">Prénom</label>
                     <input class="input" th:errorclass="input-invalid" th:field="*{firstName}" type="text" maxlength="100" autocomplete="given-name"/>
                     <p th:replace="~{layout/fragments :: fieldError('firstName')}"></p>
                 </div>
                 <div class="field">
-                    <label class="label" for="lastName">Nom</label>
+                    <label class="label" for="lastName" th:text="#{account.lastName}">Nom</label>
                     <input class="input" th:errorclass="input-invalid" th:field="*{lastName}" type="text" maxlength="100" autocomplete="family-name"/>
                     <p th:replace="~{layout/fragments :: fieldError('lastName')}"></p>
                 </div>
             </div>
             <div class="field">
-                <label class="label" for="email">Email <span class="required">*</span></label>
+                <label class="label" for="email"><span><th:block th:text="#{account.email}">Email</th:block> <span class="required">*</span></span></label>
                 <input class="input" th:errorclass="input-invalid" th:field="*{email}" type="email" required maxlength="255" autocomplete="email"/>
                 <p th:replace="~{layout/fragments :: fieldError('email')}"></p>
-                <p class="hint">Utilisé pour vous envoyer un lien si vous oubliez votre mot de passe.</p>
+                <p class="hint" th:text="#{account.email.hint}">Utilisé pour vous envoyer un lien si vous oubliez votre mot de passe.</p>
             </div>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="field">
-                    <label class="label" for="username">Nom d'utilisateur</label>
+                    <label class="label" for="username" th:text="#{account.username}">Nom d'utilisateur</label>
                     <input class="input" id="username" type="text" th:value="${user.username}" readonly/>
                 </div>
                 <div class="field">
-                    <label class="label" for="profile">Profil</label>
+                    <label class="label" for="profile" th:text="#{account.profile}">Profil</label>
                     <input class="input" id="profile" type="text" th:value="${user.profile.name}" readonly/>
                 </div>
             </div>
-            <p class="hint">Le nom d'utilisateur et le profil sont modifiés par un administrateur.</p>
+            <p class="hint" th:text="#{account.adminOnly.hint}">Le nom d'utilisateur et le profil sont modifiés par un administrateur.</p>
         </div>
         <div class="card-footer justify-end">
-            <button type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer</button>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span><th:block th:text="#{action.save}">Enregistrer</th:block></button>
+        </div>
+    </form>
+
+    <!--/* Per user: each user of the company works in their own language */-->
+    <form th:action="@{/account/language}" method="post" class="card mb-6">
+        <div class="card-header"><h2 class="card-title"><span class="icon">translate</span><th:block th:text="#{account.language.title}">Langue</th:block></h2></div>
+        <div class="card-body flex flex-col gap-3">
+            <div class="flex flex-wrap gap-2" role="radiogroup" th:aria-label="#{account.language.title}">
+                <label th:each="lang : ${languages}" class="flex cursor-pointer items-center gap-2 rounded-lg border border-outline-variant px-3 py-2
+                       has-[:checked]:border-primary has-[:checked]:bg-primary-fixed/30">
+                    <input type="radio" class="checkbox rounded-full" name="language" th:value="${lang.code}" th:checked="${lang.code == #locale.language}"/>
+                    <span th:lang="${lang.code}" th:text="${lang.nativeName}">Français</span>
+                </label>
+            </div>
+            <p class="hint" th:text="#{account.language.hint}">La langue de l'application pour vous seul.</p>
+        </div>
+        <div class="card-footer justify-end">
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span><th:block th:text="#{action.save}">Enregistrer</th:block></button>
         </div>
     </form>
 
     <section class="card">
-        <div class="card-header"><h2 class="card-title"><span class="icon">lock</span>Sécurité</h2></div>
+        <div class="card-header"><h2 class="card-title"><span class="icon">lock</span><th:block th:text="#{account.security.title}">Sécurité</th:block></h2></div>
         <div class="card-body flex flex-col divide-y divide-surface-container">
             <!-- Password: the form opens in place -->
             <details class="group pb-4" th:open="${openPassword}">
                 <summary class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
                     <span>
-                        <span class="block font-medium">Mot de passe</span>
-                        <span class="hint" th:text="${user.passwordChangedAt != null
-                            ? 'Modifié le ' + #temporals.format(user.passwordChangedAt, 'dd/MM/yyyy')
-                            : 'Jamais modifié'}">Modifié le 01/01/2026</span>
+                        <span class="block font-medium" th:text="#{account.password}">Mot de passe</span>
+                        <span class="hint" th:text="${user.passwordChangedAt != null}
+                            ? #{account.password.changedOn(${#temporals.format(user.passwordChangedAt, 'dd/MM/yyyy')})}
+                            : #{account.password.never}">Modifié le 01/01/2026</span>
                     </span>
-                    <span class="btn btn-secondary btn-sm group-open:hidden"><span class="icon">key</span>Changer le mot de passe</span>
-                    <span class="btn btn-secondary btn-sm hidden group-open:inline-flex"><span class="icon">close</span>Fermer</span>
+                    <span class="btn btn-secondary btn-sm group-open:hidden"><span class="icon">key</span><th:block th:text="#{account.password.change}">Changer le mot de passe</th:block></span>
+                    <span class="btn btn-secondary btn-sm hidden group-open:inline-flex"><span class="icon">close</span><th:block th:text="#{action.close}">Fermer</th:block></span>
                 </summary>
                 <form th:action="@{/account/password}" method="post" class="mt-4 flex flex-col gap-4">
                     <div class="field">
-                        <label class="label" for="currentPassword">Mot de passe actuel</label>
+                        <label class="label" for="currentPassword" th:text="#{account.password.current}">Mot de passe actuel</label>
                         <input class="input" id="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required/>
                     </div>
                     <div class="field">
-                        <label class="label" for="newPassword">Nouveau mot de passe</label>
+                        <label class="label" for="newPassword" th:text="#{account.password.new}">Nouveau mot de passe</label>
                         <input class="input" id="newPassword" name="newPassword" type="password" autocomplete="new-password" required/>
                         <p class="hint" th:text="${passwordRules}">Règles du mot de passe</p>
                     </div>
                     <div class="field">
-                        <label class="label" for="confirmPassword">Confirmer le nouveau mot de passe</label>
+                        <label class="label" for="confirmPassword" th:text="#{account.password.confirm}">Confirmer le nouveau mot de passe</label>
                         <input class="input" id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required/>
                     </div>
                     <div class="flex flex-wrap items-center justify-between gap-3">
-                        <p class="hint">Vos autres sessions ouvertes (autres navigateurs ou appareils) seront fermées.</p>
-                        <button type="submit" class="btn btn-primary"><span class="icon">key</span>Enregistrer le mot de passe</button>
+                        <p class="hint" th:text="#{account.password.otherSessions}">Vos autres sessions ouvertes seront fermées.</p>
+                        <button type="submit" class="btn btn-primary"><span class="icon">key</span><th:block th:text="#{account.password.save}">Enregistrer le mot de passe</th:block></button>
                     </div>
                 </form>
             </details>
 
             <div class="flex flex-wrap items-center justify-between gap-3 pt-4">
                 <span>
-                    <span class="flex items-center gap-2 font-medium">Double authentification
-                        <span th:if="${user.totpEnabled}" class="badge badge-success"><span class="icon icon-sm">verified_user</span>Activée</span>
-                        <span th:unless="${user.totpEnabled}" class="badge badge-neutral">Désactivée</span>
+                    <span class="flex items-center gap-2 font-medium"><th:block th:text="#{account.twoFactor}">Double authentification</th:block>
+                        <span th:if="${user.totpEnabled}" class="badge badge-success"><span class="icon icon-sm">verified_user</span><th:block th:text="#{account.twoFactor.on}">Activée</th:block></span>
+                        <span th:unless="${user.totpEnabled}" class="badge badge-neutral" th:text="#{account.twoFactor.off}">Désactivée</span>
                     </span>
-                    <span class="hint">Un code de votre téléphone en plus du mot de passe à chaque connexion.</span>
+                    <span class="hint" th:text="#{account.twoFactor.hint}">Un code de votre téléphone en plus du mot de passe à chaque connexion.</span>
                 </span>
                 <a th:href="@{/account/two-factor}" class="btn btn-secondary btn-sm"><span class="icon">shield_lock</span>
-                    <th:block th:text="${user.totpEnabled} ? 'Gérer' : 'Activer'">Gérer</th:block></a>
+                    <th:block th:text="${user.totpEnabled} ? #{account.twoFactor.manage} : #{account.twoFactor.enable}">Gérer</th:block></a>
             </div>
         </div>
     </section>

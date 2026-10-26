@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page('Email', ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page(#{mail.title}, ~{::main}, ~{})}">
 <body>
 <main class="page-narrow" th:with="canEdit=${currentUser != null and currentUser.can('EDIT_ISSUER')}">
     <div class="page-header">
         <div>
-            <p class="page-eyebrow">Paramètres</p>
-            <h1 class="page-title">Envoi des emails</h1>
-            <p class="page-subtitle">Le serveur qui envoie les factures, les relances et les liens de mot de passe oublié.
+            <p class="page-eyebrow" th:text="#{settings.eyebrow}">Paramètres</p>
+            <h1 class="page-title" th:text="#{mail.heading}">Envoi des emails</h1>
+            <p class="page-subtitle" th:text="#{mail.subtitle}">Le serveur qui envoie les factures, les relances et les liens de mot de passe oublié.
                 Utilisez le compte email de l'entreprise.</p>
         </div>
     </div>
@@ -17,63 +17,63 @@
             <div th:replace="~{layout/fragments :: formErrors}"></div>
             <label class="flex items-start gap-2">
                 <input type="checkbox" class="checkbox" th:field="*{enabled}"/>
-                <span>Activer l'envoi d'emails <span class="hint block">Désactivé, les factures se téléchargent en PDF pour être envoyées autrement.</span></span>
+                <span><th:block th:text="#{mail.enabled}">Activer l'envoi d'emails</th:block> <span class="hint block" th:text="#{mail.enabled.hint}">Désactivé, les factures se téléchargent en PDF pour être envoyées autrement.</span></span>
             </label>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_7rem_10rem]">
                 <div class="field">
-                    <label class="label" for="host">Serveur SMTP</label>
+                    <label class="label" for="host" th:text="#{mail.host}">Serveur SMTP</label>
                     <input class="input input-mono" th:errorclass="input-invalid" th:field="*{host}" type="text" maxlength="255" placeholder="smtp.gmail.com"/>
                     <p th:replace="~{layout/fragments :: fieldError('host')}"></p>
                 </div>
                 <div class="field">
-                    <label class="label" for="port">Port</label>
+                    <label class="label" for="port" th:text="#{mail.port}">Port</label>
                     <input class="input input-mono" th:errorclass="input-invalid" th:field="*{port}" type="number" min="1" max="65535" placeholder="587"/>
                     <p th:replace="~{layout/fragments :: fieldError('port')}"></p>
                 </div>
                 <div class="field">
-                    <label class="label" for="security">Sécurité</label>
+                    <label class="label" for="security" th:text="#{mail.security}">Sécurité</label>
                     <select class="input" th:field="*{security}">
                         <option th:each="s : ${securities}" th:value="${s.name()}"
-                                th:text="${s.name() == 'STARTTLS'} ? 'STARTTLS (587)' : (${s.name() == 'SSL'} ? 'SSL/TLS (465)' : 'Aucune')">STARTTLS</option>
+                                th:text="${@messages.label(s)}">STARTTLS</option>
                     </select>
                 </div>
             </div>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="field">
-                    <label class="label" for="username">Compte</label>
+                    <label class="label" for="username" th:text="#{mail.username}">Compte</label>
                     <input class="input" th:errorclass="input-invalid" th:field="*{username}" type="text" maxlength="255" autocomplete="off"
-                           placeholder="factures@entreprise.dz"/>
+                           placeholder="factures@entreprise.dz" th:placeholder="#{mail.username.placeholder}"/>
                 </div>
                 <div class="field">
-                    <label class="label" for="password">Mot de passe</label>
+                    <label class="label" for="password" th:text="#{mail.password}">Mot de passe</label>
                     <input class="input" id="password" name="password" type="password" maxlength="255" autocomplete="new-password"
-                           th:placeholder="${hasPassword} ? 'Enregistré : laisser vide pour le garder' : ''"/>
+                           th:placeholder="${hasPassword} ? #{mail.password.kept} : ''"/>
                 </div>
             </div>
             <div class="field">
-                <label class="label" for="fromAddress">Adresse d'expédition <span class="optional">Par défaut : le compte</span></label>
+                <label class="label" for="fromAddress"><th:block th:text="#{mail.fromAddress}">Adresse d'expédition</th:block> <span class="optional" th:text="#{mail.fromAddress.default}">Par défaut : le compte</span></label>
                 <input class="input" th:errorclass="input-invalid" th:field="*{fromAddress}" type="email" maxlength="255"/>
                 <p th:replace="~{layout/fragments :: fieldError('fromAddress')}"></p>
             </div>
             <details class="rounded-lg bg-surface-container-low p-3 text-body-sm">
-                <summary class="cursor-pointer font-medium">Exemples de réglages</summary>
-                <ul class="mt-2 list-disc space-y-1 pl-5">
-                    <li><strong>Gmail</strong> : smtp.gmail.com, port 587, STARTTLS, votre adresse Gmail et un <em>mot de passe d'application</em>
-                        (Compte Google &gt; Sécurité &gt; Validation en deux étapes &gt; Mots de passe des applications).</li>
-                    <li><strong>Outlook / Microsoft 365</strong> : smtp.office365.com, port 587, STARTTLS.</li>
-                    <li><strong>Hébergeur de votre domaine</strong> : les réglages SMTP figurent dans son espace client.</li>
+                <summary class="cursor-pointer font-medium" th:text="#{mail.examples.title}">Exemples de réglages</summary>
+                <ul class="mt-2 list-disc space-y-1 ps-5">
+                    <li><strong>Gmail</strong> : <th:block th:utext="#{mail.examples.gmail}">smtp.gmail.com, port 587, STARTTLS, votre adresse Gmail et un <em>mot de passe d'application</em>
+                        (Compte Google &gt; Sécurité &gt; Validation en deux étapes &gt; Mots de passe des applications).</th:block></li>
+                    <li><strong>Outlook / Microsoft 365</strong> : <th:block th:text="#{mail.examples.outlook}">smtp.office365.com, port 587, STARTTLS.</th:block></li>
+                    <li><strong th:text="#{mail.examples.host}">Hébergeur de votre domaine</strong> : <th:block th:text="#{mail.examples.hostText}">les réglages SMTP figurent dans son espace client.</th:block></li>
                 </ul>
             </details>
         </fieldset>
         <div th:if="${canEdit}" class="card-footer justify-end">
-            <button type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer</button>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span><th:block th:text="#{action.save}">Enregistrer</th:block></button>
         </div>
     </form>
 
     <form th:if="${canEdit}" th:action="@{/settings/mail/test}" method="post" class="card">
         <div class="card-body flex flex-wrap items-center justify-between gap-3">
-            <p>Vérifiez les réglages enregistrés : un email de test est envoyé à l'adresse de votre compte.</p>
-            <button type="submit" class="btn btn-secondary"><span class="icon">send</span>Envoyer un email de test</button>
+            <p th:text="#{mail.test.text}">Vérifiez les réglages enregistrés : un email de test est envoyé à l'adresse de votre compte.</p>
+            <button type="submit" class="btn btn-secondary"><span class="icon">send</span><th:block th:text="#{mail.test.send}">Envoyer un email de test</th:block></button>
         </div>
     </form>
 </main>

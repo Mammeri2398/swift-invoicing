@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.common;
 
+import org.springframework.context.i18n.LocaleContextHolder;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -50,9 +52,17 @@ public final class AmountUtils {
             quantity = BigDecimal.ZERO;
         }
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.FRANCE);
-        symbols.setGroupingSeparator(' ');
+        symbols.setGroupingSeparator(groupingSeparator());
         symbols.setDecimalSeparator(',');
         return new DecimalFormat("#,##0.###", symbols).format(quantity);
+    }
+
+    /**
+     * A space between thousands. On an Arabic (right-to-left) page, a no-break space: the browser keeps
+     * "2 000 000,00" in one piece, where ordinary spaces would let it reorder the groups ("000,00 000 2").
+     */
+    private static char groupingSeparator() {
+        return Language.of(LocaleContextHolder.getLocale()).isRightToLeft() ? '\u00A0' : ' ';
     }
 
     public static String format(BigDecimal amount) {
@@ -60,7 +70,7 @@ public final class AmountUtils {
             amount = BigDecimal.ZERO;
         }
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.FRANCE);
-        symbols.setGroupingSeparator(' ');
+        symbols.setGroupingSeparator(groupingSeparator());
         symbols.setDecimalSeparator(',');
         DecimalFormat df = new DecimalFormat("#,##0.00", symbols);
         df.setGroupingUsed(true);

@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.access.auth;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.access.user.UserService;
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 import com.swiftlabs.invoicing.mail.MailGateway;
 
@@ -37,6 +38,7 @@ public class PasswordResetService {
     private final UserService userService;
     private final SessionService sessionService;
     private final MailGateway mailGateway;
+    private final Messages messages;
     private final String baseUrl;
     private final Duration validity;
     private final Clock clock;
@@ -49,7 +51,9 @@ public class PasswordResetService {
                                 SecurityProperties properties,
                                 Clock clock,
                                 MailGateway mailGateway,
+                                Messages messages,
                                 @Value("${app.base-url:}") String baseUrl) {
+        this.messages = messages;
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
         this.userService = userService;
@@ -135,13 +139,9 @@ public class PasswordResetService {
             message.setFrom(mailGateway.fromAddress());
         }
         message.setTo(user.getEmail());
-        message.setSubject("Réinitialisation de votre mot de passe - Swift Invoicing");
-        message.setText("Bonjour " + user.getUsername() + ",\n\n"
-            + "Cliquez sur le lien suivant pour réinitialiser votre mot de passe :\n"
-            + resetUrl + "\n\n"
-            + "Ce lien expire dans " + validity.toMinutes() + " minutes et ne peut servir qu'une fois.\n"
-            + "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\n"
-            + "Cordialement,\nSwift Invoicing");
+        // In the user's own language, whatever the language of the page that asked for it
+        message.setSubject(messages.get(user.getLanguage(), "auth.reset.mail.subject"));
+        message.setText(messages.get(user.getLanguage(), "auth.reset.mail.body", user.getUsername(), resetUrl, validity.toMinutes()));
         try {
             mailGateway.sender().send(message);
         } catch (Exception ex) {

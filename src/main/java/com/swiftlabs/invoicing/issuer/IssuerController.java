@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.issuer;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.dashboard.DashboardService;
 import com.swiftlabs.invoicing.setup.NetworkAddresses;
 
@@ -31,11 +32,14 @@ public class IssuerController {
     private final IssuerService issuerService;
     private final DashboardService dashboardService;
     private final NetworkAddresses networkAddresses;
+    private final Messages messages;
 
-    public IssuerController(IssuerService issuerService, DashboardService dashboardService, NetworkAddresses networkAddresses) {
+    public IssuerController(IssuerService issuerService, DashboardService dashboardService, NetworkAddresses networkAddresses,
+                            Messages messages) {
         this.issuerService = issuerService;
         this.dashboardService = dashboardService;
         this.networkAddresses = networkAddresses;
+        this.messages = messages;
     }
 
     @GetMapping
@@ -53,7 +57,7 @@ public class IssuerController {
         if (!result.hasErrors()) {
             try {
                 issuerService.save(form);
-                redirectAttributes.addFlashAttribute("success", "Profil émetteur enregistré.");
+                redirectAttributes.addFlashAttribute("success", messages.get("issuer.saved"));
                 return "redirect:/settings/issuer";
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
@@ -81,11 +85,11 @@ public class IssuerController {
     public String uploadLogo(@RequestParam("logo") MultipartFile file, RedirectAttributes redirectAttributes) {
         try {
             issuerService.updateLogo(file.getBytes());
-            redirectAttributes.addFlashAttribute("success", "Logo enregistré : il sera imprimé sur les factures.");
+            redirectAttributes.addFlashAttribute("success", messages.get("issuer.logo.saved"));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         } catch (IOException ex) {
-            redirectAttributes.addFlashAttribute("error", "Le fichier n'a pas pu être lu.");
+            redirectAttributes.addFlashAttribute("error", messages.get("issuer.logo.unreadable"));
         }
         return "redirect:/settings/issuer";
     }
@@ -94,7 +98,7 @@ public class IssuerController {
     @PreAuthorize("hasAuthority('EDIT_ISSUER')")
     public String removeLogo(RedirectAttributes redirectAttributes) {
         issuerService.removeLogo();
-        redirectAttributes.addFlashAttribute("success", "Logo supprimé.");
+        redirectAttributes.addFlashAttribute("success", messages.get("issuer.logo.deleted"));
         return "redirect:/settings/issuer";
     }
 

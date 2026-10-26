@@ -114,6 +114,11 @@ class AuthenticationSecurityTest {
             .andExpect(redirectedUrl("/login?error"));
         mockMvc.perform(get("/login").param("error", ""))
             .andExpect(content().string(containsString("Identifiants invalides. Après 5 échecs consécutifs")));
+        // Before login, the page follows the browser's language
+        mockMvc.perform(get("/login").param("error", "").header("Accept-Language", "en"))
+            .andExpect(content().string(containsString("Invalid username or password. After 5 failed attempts in a row")))
+            .andExpect(content().string(containsString("Forgot your password?")))
+            .andExpect(content().string(containsString("data-label-hide=\"Hide password\"")));
     }
 
     @Test

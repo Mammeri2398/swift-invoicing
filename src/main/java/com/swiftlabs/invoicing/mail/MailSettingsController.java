@@ -4,6 +4,7 @@ import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
 import com.swiftlabs.invoicing.access.user.UserService;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.Messages;
 
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,10 +24,12 @@ public class MailSettingsController {
 
     private final MailSettingsService settingsService;
     private final UserService userService;
+    private final Messages messages;
 
-    public MailSettingsController(MailSettingsService settingsService, UserService userService) {
+    public MailSettingsController(MailSettingsService settingsService, UserService userService, Messages messages) {
         this.settingsService = settingsService;
         this.userService = userService;
+        this.messages = messages;
     }
 
     @GetMapping
@@ -43,9 +46,8 @@ public class MailSettingsController {
         if (!result.hasErrors()) {
             try {
                 settingsService.save(form);
-                redirectAttributes.addFlashAttribute("success", form.isEnabled()
-                    ? "Réglages enregistrés. Envoyez un email de test pour vérifier."
-                    : "Réglages enregistrés : l'envoi d'emails est désactivé.");
+                redirectAttributes.addFlashAttribute("success", messages.get(form.isEnabled()
+                    ? "mail.saved.enabled" : "mail.saved.disabled"));
                 return "redirect:/settings/mail";
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
@@ -61,9 +63,9 @@ public class MailSettingsController {
         String to = userService.findById(principal.getId()).map(user -> user.getEmail()).orElse(null);
         try {
             settingsService.sendTest(to);
-            redirectAttributes.addFlashAttribute("success", "Email de test envoyé à " + to + ".");
+            redirectAttributes.addFlashAttribute("success", messages.get("mail.test.sent", to));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:/settings/mail";
     }

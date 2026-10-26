@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.access.user;
 
+import com.swiftlabs.invoicing.common.Language;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,6 +33,9 @@ public class UserForm {
     @NotNull
     private Long profileId;
 
+    /** Language of the interface and of the emails sent to this user. */
+    private Language language;
+
     public static UserForm from(User user) {
         UserForm form = new UserForm();
         form.setId(user.getId());
@@ -40,6 +45,7 @@ public class UserForm {
         form.setEmail(user.getEmail());
         form.setEnabled(user.isEnabled());
         form.setProfileId(user.getProfile() != null ? user.getProfile().getId() : null);
+        form.setLanguage(user.getLanguage());
         return form;
     }
 
@@ -97,5 +103,13 @@ public class UserForm {
 
     public void setProfileId(Long profileId) {
         this.profileId = profileId;
+    }
+
+    public Language getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(Language language) {
+        this.language = language;
     }
 }

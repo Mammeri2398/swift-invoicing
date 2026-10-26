@@ -3,7 +3,7 @@
     Layout of the pages reached without being logged in (login, password reset):
         <html th:replace="~{layout/auth :: page('Title', ~{::main})}">
 */-->
-<html lang="fr" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, content)">
+<html lang="fr" th:lang="${#locale.language}" th:dir="${#locale.language == 'ar'} ? 'rtl' : 'ltr'" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, content)">
 <head th:replace="~{layout/fragments :: head(${title})}"></head>
 <body class="flex min-h-screen flex-col bg-surface-container-low">
 
@@ -16,11 +16,12 @@
             <span class="flex flex-col leading-tight">
                 <span class="text-title-sm text-primary">Swift Invoicing</span>
                 <span class="text-label-sm uppercase tracking-wider text-on-surface-variant"
-                      th:text="${companyType?.company} ? 'Gestion de facturation' : 'Auto-entrepreneur ANAE'">Auto-entrepreneur ANAE</span>
+                      th:text="${companyType?.company} ? #{app.tagline.company} : #{app.tagline.autoEntrepreneur}">Auto-entrepreneur ANAE</span>
             </span>
         </a>
         <div th:replace="~{layout/fragments :: alerts}"></div>
         <th:block th:replace="${content}"></th:block>
+        <nav th:replace="~{layout/fragments :: languageSwitch}"></nav>
     </div>
 </div>
 

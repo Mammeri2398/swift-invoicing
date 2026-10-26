@@ -43,6 +43,11 @@
   [x-cloak] {
     display: none !important;
   }
+
+  /* Arabic: Inter has no Arabic letters, Windows' own fonts draw them (see fontFamily) */
+  [dir="rtl"] body {
+    @apply leading-relaxed;
+  }
 }
 
 @layer components {
@@ -123,6 +128,11 @@
 
   .card-title {
     @apply flex items-center gap-2 text-title-sm text-on-surface;
+  }
+
+  /* Arrows (chevron_right, arrow_back...) point the other way in a right-to-left page */
+  [dir="rtl"] .icon.rtl-flip {
+    transform: scaleX(-1);
   }
 
   .card-title .icon {
@@ -248,7 +258,7 @@
   }
 
   .table {
-    @apply w-full text-left text-body-md;
+    @apply w-full text-start text-body-md;
   }
 
   .table thead tr {
@@ -256,11 +266,11 @@
   }
 
   .table th {
-    @apply px-4 py-3 font-semibold first:pl-5 last:pr-5;
+    @apply px-4 py-3 font-semibold first:ps-5 last:pe-5;
   }
 
   .table td {
-    @apply px-4 py-3 align-middle first:pl-5 last:pr-5;
+    @apply px-4 py-3 align-middle first:ps-5 last:pe-5;
   }
 
   .table tbody {
@@ -272,7 +282,7 @@
   }
 
   .table .num {
-    @apply whitespace-nowrap text-right tabular-nums;
+    @apply whitespace-nowrap text-end tabular-nums;
   }
 
   .table-empty {

@@ -34,22 +34,22 @@ public class PrivilegeService {
     @Transactional
     public Privilege save(PrivilegeForm form) {
         if (form.getName() == null || form.getName().trim().isEmpty()) {
-            throw new BusinessException("name", "Le nom du privilège est obligatoire.");
+            throw BusinessException.onField("name", "privilege.error.nameRequired");
         }
         Privilege privilege;
         if (form.getId() == null) {
             String code = form.getCode() != null ? form.getCode().trim().toUpperCase() : "";
             if (code.isEmpty()) {
-                throw new BusinessException("code", "Le code du privilège est obligatoire.");
+                throw BusinessException.onField("code", "privilege.error.codeRequired");
             }
             if (privilegeRepository.existsByCode(code)) {
-                throw new BusinessException("code", "Ce code de privilège existe déjà.");
+                throw BusinessException.onField("code", "privilege.error.codeUsed");
             }
             privilege = new Privilege();
             privilege.setCode(code);
         } else {
             privilege = privilegeRepository.findById(form.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Privilège introuvable."));
+                .orElseThrow(() -> new ResourceNotFoundException("privilege.error.notFound"));
         }
         privilege.setName(form.getName().trim());
         privilege.setDescription(form.getDescription());

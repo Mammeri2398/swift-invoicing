@@ -73,6 +73,21 @@ class InvoiceLookupTest {
     }
 
     @Test
+    void anonymousVisitorReadsThePageInTheBrowserLanguage() throws Exception {
+        mockMvc.perform(get("/invoices/lookup").param("number", issued.getInvoiceNumber()).header("Accept-Language", "en"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("Verify an invoice")))
+            .andExpect(content().string(containsString("Invoice verified as authentic")))
+            .andExpect(content().string(containsString("Issue date")))
+            .andExpect(content().string(not(containsString("Facture authentique"))));
+        mockMvc.perform(get("/invoices/lookup").param("number", "FA-1999-9999").param("lang", "ar"))
+            .andExpect(content().string(containsString("dir=\"rtl\"")))
+            .andExpect(content().string(containsString("لا توجد أي فاتورة تحمل الرقم")))
+            // Visitors without an account can switch language on the page
+            .andExpect(content().string(containsString("?lang=en")));
+    }
+
+    @Test
     void unknownNumberSaysSo() throws Exception {
         mockMvc.perform(get("/invoices/lookup").param("number", "FA-1999-9999"))
             .andExpect(content().string(containsString("Aucune facture ne porte le numéro")));

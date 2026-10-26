@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.dashboard;
 import com.swiftlabs.invoicing.client.Client;
 import com.swiftlabs.invoicing.client.ClientRepository;
 import com.swiftlabs.invoicing.client.ClientType;
+import com.swiftlabs.invoicing.common.Language;
 import com.swiftlabs.invoicing.invoice.Invoice;
 import com.swiftlabs.invoicing.invoice.InvoiceForm;
 import com.swiftlabs.invoicing.invoice.InvoiceLineForm;
@@ -122,6 +123,44 @@ class TurnoverTest {
             .andExpect(content().string(containsString("sur 1 000,00 DA")))
             .andExpect(content().string(containsString("Le plafond est atteint")))
             .andExpect(content().string(containsString("/invoices/export/xlsx?year=2026")));
+    }
+
+    @Test
+    void monthNamesFollowTheLanguage() {
+        assertThat(turnoverService.report(2026, Language.EN).getMonths().get(0))
+            .extracting(TurnoverReport.Month::name, TurnoverReport.Month::shortName).containsExactly("January", "Jan");
+        assertThat(turnoverService.report(2026, Language.FR).getMonths().get(6).shortName()).isEqualTo("Juil.");
+        assertThat(turnoverService.report(2026, Language.AR).getMonths().get(0).name()).isEqualTo("جانفي");
+    }
+
+    @Test
+    void pageIsInTheBrowserLanguage() throws Exception {
+        mockMvc.perform(get("/turnover").param("year", "2026").header("Accept-Language", "en"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("Financial year 2026")))
+            .andExpect(content().string(containsString("of 1 000,00 DA")))
+            .andExpect(content().string(containsString("The ceiling has been reached")))
+            .andExpect(content().string(containsString(">January<")))
+            .andExpect(content().string(containsString("3 invoices issued")));
+        mockMvc.perform(get("/turnover").param("year", "2026").header("Accept-Language", "ar"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("dir=\"rtl\"")))
+            .andExpect(content().string(containsString("السنة المالية 2026")))
+            .andExpect(content().string(containsString(">جانفي<")));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"VIEW_DASHBOARD", "CREATE_INVOICE"})
+    void dashboardIsInTheBrowserLanguage() throws Exception {
+        mockMvc.perform(get("/dashboard").param("year", "2026"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("Exercice 2026")))
+            .andExpect(content().string(containsString("Dernières factures")));
+        mockMvc.perform(get("/dashboard").param("year", "2026").header("Accept-Language", "en"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("Financial year 2026")))
+            .andExpect(content().string(containsString("Latest invoices")))
+            .andExpect(content().string(containsString("Total billed in 2026: <strong")));
     }
 
     @Test

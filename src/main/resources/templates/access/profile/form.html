@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page(${profile.id == null ? 'Nouveau profil' : 'Modifier le profil'}, ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page((${profile.id == null} ? #{profile.new} : #{profile.edit}), ~{::main}, ~{})}">
 <body>
 <main class="page-narrow">
-    <nav class="breadcrumb" aria-label="Fil d'Ariane">
-        <a th:href="@{/profiles}">Profils</a><span class="icon icon-xs">chevron_right</span>
-        <span class="text-primary" th:text="${profile.id == null ? 'Nouveau' : profile.name}">Nouveau</span>
+    <nav class="breadcrumb" th:aria-label="#{access.breadcrumb}" aria-label="Fil d'Ariane">
+        <a th:href="@{/profiles}" th:text="#{profile.list.title}">Profils</a><span class="icon icon-xs rtl-flip">chevron_right</span>
+        <span class="text-primary" th:text="${profile.id == null} ? #{access.new} : ${profile.name}">Nouveau</span>
     </nav>
     <div class="page-header">
-        <h1 class="page-title" th:text="${profile.id == null ? 'Nouveau profil' : 'Modifier le profil'}">Nouveau profil</h1>
+        <h1 class="page-title" th:text="${profile.id == null} ? #{profile.new} : #{profile.edit}">Nouveau profil</h1>
     </div>
 
     <form th:action="@{/profiles/save}" method="post" th:object="${profile}" class="card">
@@ -16,19 +16,20 @@
         <div class="card-body flex flex-col gap-4">
             <div th:replace="~{layout/fragments :: formErrors}"></div>
             <div class="field">
-                <label class="label" for="name">Nom du profil <span class="required">*</span></label>
+                <label class="label" for="name"><span><th:block th:text="#{profile.name}">Nom du profil</th:block> <span class="required">*</span></span></label>
                 <input class="input" th:errorclass="input-invalid" th:field="*{name}" type="text" required maxlength="100"/>
                 <p th:replace="~{layout/fragments :: fieldError('name')}"></p>
             </div>
             <div class="field">
-                <label class="label" for="description">Description <span class="optional">Optionnel</span></label>
+                <label class="label" for="description"><th:block th:text="#{profile.description}">Description</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
                 <input class="input" th:errorclass="input-invalid" th:field="*{description}" type="text" maxlength="500"/>
                 <p th:replace="~{layout/fragments :: fieldError('description')}"></p>
             </div>
             <fieldset class="field">
-                <legend class="label mb-1">Privilèges</legend>
-                <p class="hint mb-2">Au moins un utilisateur actif doit garder MANAGE_PROFILES.</p>
+                <legend class="label mb-1" th:text="#{profile.privileges}">Privilèges</legend>
+                <p class="hint mb-2" th:text="#{profile.privileges.hint}">Au moins un utilisateur actif doit garder MANAGE_PROFILES.</p>
                 <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <!--/* Privilege names come from the database (seeded in French) */-->
                     <label th:each="priv : ${allPrivileges}"
                            class="flex cursor-pointer items-start gap-3 rounded-lg bg-surface p-3 ring-1 ring-outline-variant/60 has-[:checked]:bg-primary-fixed/40 has-[:checked]:ring-primary">
                         <input type="checkbox" class="checkbox" name="privilegeIds" th:value="${priv.id}"
@@ -43,8 +44,8 @@
             </fieldset>
         </div>
         <div class="card-footer justify-end">
-            <a th:href="@{/profiles}" class="btn btn-secondary">Annuler</a>
-            <button type="submit" class="btn btn-primary"><span class="icon">save</span>Enregistrer</button>
+            <a th:href="@{/profiles}" class="btn btn-secondary" th:text="#{action.cancel}">Annuler</a>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span><th:block th:text="#{action.save}">Enregistrer</th:block></button>
         </div>
     </form>
 </main>

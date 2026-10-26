@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.access.user;
 
+import com.swiftlabs.invoicing.common.Language;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,6 +90,25 @@ class UserControllerTest {
             .andExpect(content().string(containsString("Mot de passe à changer")));
         mockMvc.perform(get("/users"))
             .andExpect(content().string(org.hamcrest.Matchers.not(containsString(temporary))));
+    }
+
+    @Test
+    void theAdministratorChoosesTheUsersLanguage() throws Exception {
+        // By default, the administrator's own language
+        mockMvc.perform(get("/users/new"))
+            .andExpect(content().string(containsString("<option value=\"FR\" lang=\"fr\" selected=\"selected\">Français</option>")));
+        mockMvc.perform(post("/users/save").with(csrf())
+                .param("username", "amina").param("email", "amina@example.test").param("profileId", "1").param("language", "AR"))
+            .andExpect(redirectedUrl("/users"));
+        User amina = userRepository.findByUsername("amina").orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(amina.getLanguage()).isEqualTo(Language.AR);
+        mockMvc.perform(get("/users")).andExpect(content().string(containsString("العربية")));
+
+        mockMvc.perform(post("/users/save").with(csrf())
+                .param("id", amina.getId().toString()).param("username", "amina").param("email", "amina@example.test")
+                .param("enabled", "true").param("profileId", "1").param("language", "EN"))
+            .andExpect(redirectedUrl("/users"));
+        org.assertj.core.api.Assertions.assertThat(userRepository.findByUsername("amina").orElseThrow().getLanguage()).isEqualTo(Language.EN);
     }
 
     @Test

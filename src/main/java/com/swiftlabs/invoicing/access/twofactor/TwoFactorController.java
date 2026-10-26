@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.access.twofactor;
 import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
 import com.swiftlabs.invoicing.access.auth.SessionService;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,9 +34,12 @@ public class TwoFactorController {
     private final TwoFactorService twoFactorService;
     private final SessionService sessionService;
     private final List<String> requiredFor;
+    private final Messages messages;
 
-    public TwoFactorController(TwoFactorService twoFactorService, SessionService sessionService, SecurityProperties properties) {
+    public TwoFactorController(TwoFactorService twoFactorService, SessionService sessionService, SecurityProperties properties,
+                               Messages messages) {
         this.twoFactorService = twoFactorService;
+        this.messages = messages;
         this.sessionService = sessionService;
         this.requiredFor = properties.twoFactor().requiredFor();
     }
@@ -78,12 +82,10 @@ public class TwoFactorController {
             // Sessions opened with the password alone end
             sessionService.expireSessions(principal.getUsername(), session.getId());
             redirectAttributes.addFlashAttribute("recoveryCodes", codes);
-            redirectAttributes.addFlashAttribute("success", change
-                ? "Double authentification déplacée sur votre nouveau téléphone."
-                : "Double authentification activée : le code de l'application vous sera demandé à chaque connexion.");
+            redirectAttributes.addFlashAttribute("success", messages.get(change ? "twoFactor.moved" : "twoFactor.enabled"));
             return "redirect:" + TwoFactorFilter.SETUP_URL;
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
             return "redirect:" + TwoFactorFilter.SETUP_URL + (change ? "?change=true" : "");
         }
     }
@@ -93,9 +95,9 @@ public class TwoFactorController {
                              RedirectAttributes redirectAttributes) {
         try {
             redirectAttributes.addFlashAttribute("recoveryCodes", twoFactorService.regenerateRecoveryCodes(principal.getId(), code));
-            redirectAttributes.addFlashAttribute("success", "Nouveaux codes de secours générés : les anciens ne fonctionnent plus.");
+            redirectAttributes.addFlashAttribute("success", messages.get("twoFactor.codesRegenerated"));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:" + TwoFactorFilter.SETUP_URL;
     }
@@ -104,15 +106,15 @@ public class TwoFactorController {
     public String disable(@AuthenticationPrincipal AppUserPrincipal principal, @RequestParam String code,
                           HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
         if (isRequired(principal)) {
-            redirectAttributes.addFlashAttribute("error", "La double authentification est obligatoire pour votre profil.");
+            redirectAttributes.addFlashAttribute("error", messages.get("twoFactor.requiredForProfile"));
             return "redirect:" + TwoFactorFilter.SETUP_URL;
         }
         try {
             twoFactorService.disable(principal.getId(), code);
             refreshPrincipal(principal.withTwoFactorEnabled(false), request, response);
-            redirectAttributes.addFlashAttribute("success", "Double authentification désactivée.");
+            redirectAttributes.addFlashAttribute("success", messages.get("twoFactor.disabled"));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:" + TwoFactorFilter.SETUP_URL;
     }

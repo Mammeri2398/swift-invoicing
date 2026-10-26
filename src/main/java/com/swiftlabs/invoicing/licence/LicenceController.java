@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.licence;
 
 import com.swiftlabs.invoicing.access.user.UserRepository;
+import com.swiftlabs.invoicing.common.Messages;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -20,10 +21,12 @@ public class LicenceController {
 
     private final LicenceService licenceService;
     private final UserRepository userRepository;
+    private final Messages messages;
 
-    public LicenceController(LicenceService licenceService, UserRepository userRepository) {
+    public LicenceController(LicenceService licenceService, UserRepository userRepository, Messages messages) {
         this.licenceService = licenceService;
         this.userRepository = userRepository;
+        this.messages = messages;
     }
 
     /** {@code ?readonly}: arrived here from a change refused by the read-only mode. */
@@ -41,10 +44,10 @@ public class LicenceController {
     public String activate(@RequestParam String key, RedirectAttributes redirectAttributes) {
         try {
             Licence licence = licenceService.activate(key);
-            redirectAttributes.addFlashAttribute("success", "Licence " + licence.id() + " activée pour " + licence.company() + " : "
-                + licence.users() + " utilisateur(s), jusqu'au " + licence.expires().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ".");
+            redirectAttributes.addFlashAttribute("success", messages.get("licence.activated", licence.id(), licence.company(),
+                String.valueOf(licence.users()), licence.expires().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
         } catch (InvalidLicenceException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:" + LicenceFilter.LICENCE_URL;
     }

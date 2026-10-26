@@ -15,7 +15,6 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,30 +90,30 @@ public class PaymentService {
     @Transactional
     public InvoicePayment record(Long invoiceId, PaymentForm form) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
-            .orElseThrow(() -> new ResourceNotFoundException("Facture introuvable (id=" + invoiceId + ")."));
+            .orElseThrow(() -> new ResourceNotFoundException("invoice.error.notFound", String.valueOf(invoiceId)));
         if (invoice.getKind() != DocumentKind.INVOICE || invoice.getStatus() != InvoiceStatus.ISSUED) {
-            throw new BusinessException("Seule une facture émise et pas encore payée peut recevoir un paiement.");
+            throw new BusinessException("invoice.payment.error.notPayable");
         }
         BigDecimal balance = balance(invoice);
         if (balance.signum() <= 0) {
-            throw new BusinessException("Cette facture ne laisse rien à payer.");
+            throw new BusinessException("invoice.payment.error.nothingLeft");
         }
         if (form.getAmount() == null || form.getAmount().signum() <= 0) {
-            throw new BusinessException("amount", "Le montant doit être supérieur à 0.");
+            throw BusinessException.onField("amount", "invoice.payment.error.amountPositive");
         }
         if (form.getAmount().compareTo(balance) > 0) {
-            throw new BusinessException("amount", "Le montant dépasse le solde de la facture (" + AmountUtils.format(balance) + ").");
+            throw BusinessException.onField("amount", "invoice.payment.error.amountTooHigh", AmountUtils.format(balance));
         }
         LocalDate today = LocalDate.now(clock);
         if (form.getPaidOn() == null || form.getPaidOn().isAfter(today)) {
-            throw new BusinessException("paidOn", "La date du paiement ne peut pas être dans le futur.");
+            throw BusinessException.onField("paidOn", "invoice.payment.error.future");
         }
         if (form.getPaidOn().isBefore(invoice.getIssueDate())) {
-            throw new BusinessException("paidOn", "La date du paiement ne peut pas précéder la facture.");
+            throw BusinessException.onField("paidOn", "invoice.payment.error.beforeInvoice");
         }
         InvoicePayment payment = paymentRepository.save(new InvoicePayment(invoice, AmountUtils.round2(form.getAmount()),
             form.getPaidOn(), form.getMethod(), form.getReference(), currentUsername(), LocalDateTime.now(clock)));
-        audit.record(invoice, InvoiceEvent.Action.PAYMENT, describe(payment));
+        audit.record(invoice, InvoiceEvent.Action.PAYMENT, InvoiceAudit.payment(payment));
         settleIfPaid(invoice);
         return payment;
     }
@@ -124,7 +123,7 @@ public class PaymentService {
     public Invoice delete(Long invoiceId, Long paymentId) {
         InvoicePayment payment = paymentRepository.findById(paymentId)
             .filter(p -> p.getInvoice().getId().equals(invoiceId))
-            .orElseThrow(() -> new ResourceNotFoundException("Paiement introuvable."));
+            .orElseThrow(() -> new ResourceNotFoundException("invoice.payment.error.notFound"));
         Invoice invoice = payment.getInvoice();
         paymentRepository.delete(payment);
         paymentRepository.flush();
@@ -132,7 +131,7 @@ public class PaymentService {
             invoice.setStatus(InvoiceStatus.ISSUED);
             invoice.setPaidAt(null);
         }
-        audit.record(invoice, InvoiceEvent.Action.PAYMENT_DELETED, describe(payment));
+        audit.record(invoice, InvoiceEvent.Action.PAYMENT_DELETED, InvoiceAudit.payment(payment));
         return invoice;
     }
 
@@ -183,21 +182,7 @@ public class PaymentService {
         return balances;
     }
 
-    private static String describe(InvoicePayment payment) {
-        StringBuilder text = new StringBuilder(AmountUtils.format(payment.getAmount()))
-            .append(" le ").append(payment.getPaidOn().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
-        if (payment.getMethod() != null) {
-            text.append(" (").append(methodLabel(payment.getMethod()));
-            if (payment.getReference() != null) {
-                text.append(", ").append(payment.getReference());
-            }
-            text.append(")");
-        } else if (payment.getReference() != null) {
-            text.append(" (").append(payment.getReference()).append(")");
-        }
-        return text.toString();
-    }
-
+    /** The method in the stored history details and in statements: lower case French ("chèque"). */
     static String methodLabel(PaymentMethod method) {
         return switch (method) {
             case CASH -> "espèces";

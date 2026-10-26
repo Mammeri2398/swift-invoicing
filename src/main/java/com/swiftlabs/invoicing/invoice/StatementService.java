@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.client.Client;
 import com.swiftlabs.invoicing.client.ClientService;
+import com.swiftlabs.invoicing.common.Messages;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import java.util.List;
  * Client statement (relevé de compte): what the client was invoiced and what they paid, over a
  * period, with the balance carried over from before it. Invoices are debits (net to pay); credit
  * notes and payments are credits. Cancelled invoices, drafts, quotes and pro formas do not appear.
+ * Line labels are in the current request's language (the statement is a page for the user).
  */
 @Service
 @Transactional(readOnly = true)
@@ -35,12 +37,14 @@ public class StatementService {
     private final InvoiceRepository invoiceRepository;
     private final InvoicePaymentRepository paymentRepository;
     private final ClientService clientService;
+    private final Messages messages;
 
     public StatementService(InvoiceRepository invoiceRepository, InvoicePaymentRepository paymentRepository,
-                            ClientService clientService) {
+                            ClientService clientService, Messages messages) {
         this.invoiceRepository = invoiceRepository;
         this.paymentRepository = paymentRepository;
         this.clientService = clientService;
+        this.messages = messages;
     }
 
     public Statement statement(Long clientId, LocalDate from, LocalDate to) {
@@ -49,18 +53,23 @@ public class StatementService {
         for (Invoice document : invoiceRepository.findByClientIdAndKindInAndStatusInOrderByIssueDateAscIdAsc(
                 clientId, DocumentKind.ACCOUNTING, List.of(InvoiceStatus.ISSUED, InvoiceStatus.PAID))) {
             if (document.isCreditNote()) {
-                movements.add(new Movement(document.getIssueDate(), 1, "Avoir sur la facture " + document.getOriginalInvoice().getInvoiceNumber(),
+                movements.add(new Movement(document.getIssueDate(), 1,
+                    messages.get("clientStatement.entry.creditNote", document.getOriginalInvoice().getInvoiceNumber()),
                     document, BigDecimal.ZERO, document.getTotalAmount()));
             } else {
-                movements.add(new Movement(document.getIssueDate(), 0, "Facture", document, document.getAmountDue(), BigDecimal.ZERO));
+                movements.add(new Movement(document.getIssueDate(), 0, messages.get("clientStatement.entry.invoice"), document, document.getAmountDue(), BigDecimal.ZERO));
             }
         }
         for (InvoicePayment payment : paymentRepository.findByClient(clientId)) {
             if (payment.getInvoice().getStatus() == InvoiceStatus.CANCELLED) {
                 continue;
             }
-            String label = "Paiement" + (payment.getMethod() != null ? " par " + PaymentService.methodLabel(payment.getMethod()) : "")
-                + (payment.getReference() != null ? " (" + payment.getReference() + ")" : "");
+            String label = payment.getMethod() != null
+                ? messages.get("clientStatement.entry.paymentBy", messages.get("clientStatement.method." + payment.getMethod().name()))
+                : messages.get("clientStatement.entry.payment");
+            if (payment.getReference() != null) {
+                label = messages.get("clientStatement.entry.withReference", label, payment.getReference());
+            }
             movements.add(new Movement(payment.getPaidOn(), 2, label, payment.getInvoice(), BigDecimal.ZERO, payment.getAmount()));
         }
         movements.sort(Comparator.comparing(Movement::date).thenComparingInt(Movement::order));

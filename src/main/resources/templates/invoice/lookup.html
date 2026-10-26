@@ -1,51 +1,53 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page('Vérifier une facture', ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page(#{invoiceLookup.title}, ~{::main}, ~{})}">
 <body>
 <main class="page-narrow">
     <div class="page-header">
         <div>
-            <p class="page-eyebrow">Vérification</p>
-            <h1 class="page-title">Vérifier une facture</h1>
-            <p class="page-subtitle">Saisissez le numéro imprimé sur la facture pour vérifier qu'elle a bien été émise.</p>
+            <p class="page-eyebrow" th:text="#{invoiceLookup.eyebrow}">Vérification</p>
+            <h1 class="page-title" th:text="#{invoiceLookup.title}">Vérifier une facture</h1>
+            <p class="page-subtitle" th:text="#{invoiceLookup.subtitle}">Saisissez le numéro imprimé sur la facture pour vérifier qu'elle a bien été émise.</p>
         </div>
     </div>
 
     <form th:action="@{/invoices/lookup}" method="get" class="card mb-6">
         <div class="card-body flex flex-col gap-3 sm:flex-row sm:items-end">
             <div class="field flex-1">
-                <label class="label" for="number">Numéro de facture</label>
+                <label class="label" for="number" th:text="#{invoiceLookup.number}">Numéro de facture</label>
                 <input class="input input-mono" id="number" name="number" type="text" th:value="${number}" placeholder="FA-2026-0001" required autofocus/>
             </div>
-            <button type="submit" class="btn btn-primary"><span class="icon">search</span>Vérifier</button>
+            <button type="submit" class="btn btn-primary"><span class="icon">search</span><th:block th:text="#{invoiceLookup.verify}">Vérifier</th:block></button>
         </div>
     </form>
 
     <th:block th:if="${number != null}">
         <div th:if="${verification == null}" class="alert alert-error">
             <span class="icon">error</span>
-            <span>Aucune facture ne porte le numéro <strong th:text="${number}">FA-2026-0001</strong>.</span>
+            <span><th:block th:text="#{invoiceLookup.notFound}">Aucune facture ne porte le numéro</th:block> <strong th:text="${number}">FA-2026-0001</strong><th:block th:text="#{invoiceLookup.notFound.end}">.</th:block></span>
         </div>
         <!-- Existence, status and date only: never the client or the amount -->
         <section th:if="${verification != null}" class="card">
             <div class="card-header">
                 <h2 class="card-title"><span class="icon icon-fill text-tertiary">verified</span>
-                    <th:block th:text="${verification.label + ' authentique'}">Facture authentique</th:block></h2>
+                    <th:block th:text="#{invoiceLookup.authentic(${@messages.label(verification.kind)})}">Facture authentique</th:block></h2>
                 <span th:replace="~{layout/fragments :: statusBadge(${verification.status})}"></span>
             </div>
             <dl class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div><dt class="hint">Numéro</dt><dd class="font-semibold" th:text="${verification.number}">FA-2026-0001</dd></div>
-                <div><dt class="hint">Date d'émission</dt><dd class="font-semibold" th:text="${#temporals.format(verification.issueDate, 'dd/MM/yyyy')}">01/01/2026</dd></div>
+                <div><dt class="hint" th:text="#{invoiceLookup.field.number}">Numéro</dt><dd class="font-semibold" th:text="${verification.number}">FA-2026-0001</dd></div>
+                <div><dt class="hint" th:text="#{invoiceLookup.field.issueDate}">Date d'émission</dt><dd class="font-semibold" th:text="${#temporals.format(verification.issueDate, 'dd/MM/yyyy')}">01/01/2026</dd></div>
             </dl>
             <div th:if="${verification.status.name() == 'CANCELLED'}" class="card-body pt-0">
-                <p class="alert alert-warning"><span class="icon">warning</span><span>Cette facture a été annulée par l'émetteur.</span></p>
+                <p class="alert alert-warning"><span class="icon">warning</span><span th:text="#{invoiceLookup.cancelled}">Cette facture a été annulée par l'émetteur.</span></p>
             </div>
             <div th:if="${invoiceId}" class="card-footer justify-end">
-                <a th:href="@{/invoices/{id}(id=${invoiceId})}" class="btn btn-ghost btn-sm">Ouvrir la facture<span class="icon">arrow_forward</span></a>
+                <a th:href="@{/invoices/{id}(id=${invoiceId})}" class="btn btn-ghost btn-sm"><th:block th:text="#{invoiceLookup.open}">Ouvrir la facture</th:block><span class="icon rtl-flip">arrow_forward</span></a>
             </div>
         </section>
-        <p class="hint mt-4">Pour toute question sur le contenu d'une facture, contactez directement son émetteur.</p>
+        <p class="hint mt-4" th:text="#{invoiceLookup.contact}">Pour toute question sur le contenu d'une facture, contactez directement son émetteur.</p>
     </th:block>
+    <!--/* Visitors without an account pick their language here; logged-in users have theirs in Mon compte */-->
+    <th:block th:if="${currentUser == null}"><nav th:replace="~{layout/fragments :: languageSwitch}"></nav></th:block>
 </main>
 </body>
 </html>

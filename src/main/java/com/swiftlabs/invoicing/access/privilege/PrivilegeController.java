@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.access.privilege;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import jakarta.validation.Valid;
@@ -22,9 +23,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class PrivilegeController {
 
     private final PrivilegeService privilegeService;
+    private final Messages messages;
 
-    public PrivilegeController(PrivilegeService privilegeService) {
+    public PrivilegeController(PrivilegeService privilegeService, Messages messages) {
         this.privilegeService = privilegeService;
+        this.messages = messages;
     }
 
     @GetMapping
@@ -42,7 +45,7 @@ public class PrivilegeController {
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
         Privilege privilege = privilegeService.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Privilège introuvable."));
+            .orElseThrow(() -> new ResourceNotFoundException("privilege.error.notFound"));
         model.addAttribute("privilege", PrivilegeForm.from(privilege));
         return "access/privilege/form";
     }
@@ -54,7 +57,7 @@ public class PrivilegeController {
         if (!result.hasErrors()) {
             try {
                 privilegeService.save(form);
-                redirectAttributes.addFlashAttribute("success", "Privilège enregistré.");
+                redirectAttributes.addFlashAttribute("success", messages.get("privilege.saved"));
                 return "redirect:/privileges";
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
@@ -67,9 +70,9 @@ public class PrivilegeController {
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             privilegeService.delete(id);
-            redirectAttributes.addFlashAttribute("success", "Privilège supprimé.");
+            redirectAttributes.addFlashAttribute("success", messages.get("privilege.deleted"));
         } catch (Exception ex) {
-            redirectAttributes.addFlashAttribute("error", "Impossible de supprimer ce privilège.");
+            redirectAttributes.addFlashAttribute("error", messages.get("privilege.error.deleteFailed"));
         }
         return "redirect:/privileges";
     }

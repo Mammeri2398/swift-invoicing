@@ -2,6 +2,8 @@ package com.swiftlabs.invoicing.backup;
 
 import com.swiftlabs.invoicing.access.auth.SessionService;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.Language;
+import com.swiftlabs.invoicing.common.Messages;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -33,15 +35,20 @@ public class BackupController {
 
     public static final String URL = "/settings/backups";
 
-    /** Typed by the user to confirm a restore: it replaces all the data. */
+    /**
+     * Typed by the user to confirm a restore (it replaces all the data): RESTAURER, or the word of the
+     * user's language (backup.restore.word).
+     */
     static final String RESTORE_CONFIRMATION = "RESTAURER";
 
     private final BackupService backupService;
     private final SessionService sessionService;
+    private final Messages messages;
 
-    public BackupController(BackupService backupService, SessionService sessionService) {
+    public BackupController(BackupService backupService, SessionService sessionService, Messages messages) {
         this.backupService = backupService;
         this.sessionService = sessionService;
+        this.messages = messages;
     }
 
     @GetMapping
@@ -53,7 +60,7 @@ public class BackupController {
         model.addAttribute("directory", backupService.directory().toString());
         model.addAttribute("settings", settings);
         model.addAttribute("failure", backupService.lastFailure());
-        model.addAttribute("confirmation", RESTORE_CONFIRMATION);
+        model.addAttribute("confirmation", messages.get("backup.restore.word"));
         return "backup/backups";
     }
 
@@ -61,9 +68,9 @@ public class BackupController {
     public String backupNow(RedirectAttributes redirectAttributes) {
         try {
             BackupFile backup = backupService.backup(BackupKind.MANUAL);
-            redirectAttributes.addFlashAttribute("success", "Sauvegarde faite : " + backup.name() + " (" + backup.displaySize() + ").");
+            redirectAttributes.addFlashAttribute("success", messages.get("backup.done", backup.name(), size(backup)));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:" + URL;
     }
@@ -73,9 +80,9 @@ public class BackupController {
                                RedirectAttributes redirectAttributes) {
         try {
             backupService.saveSettings(directory, keepCount);
-            redirectAttributes.addFlashAttribute("success", "Réglages des sauvegardes enregistrés.");
+            redirectAttributes.addFlashAttribute("success", messages.get("backup.settingsSaved"));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:" + URL;
     }
@@ -93,10 +100,9 @@ public class BackupController {
     public String importFile(@RequestParam(name = "file", required = false) MultipartFile file, RedirectAttributes redirectAttributes) {
         try {
             BackupFile backup = backupService.importFile(file);
-            redirectAttributes.addFlashAttribute("success", "Sauvegarde importée : " + backup.name()
-                + ". Elle peut maintenant être restaurée depuis la liste.");
+            redirectAttributes.addFlashAttribute("success", messages.get("backup.imported", backup.name()));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:" + URL;
     }
@@ -105,9 +111,9 @@ public class BackupController {
     public String delete(@PathVariable String name, RedirectAttributes redirectAttributes) {
         try {
             backupService.delete(name);
-            redirectAttributes.addFlashAttribute("success", "Sauvegarde supprimée : " + name + ".");
+            redirectAttributes.addFlashAttribute("success", messages.get("backup.deleted", name));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:" + URL;
     }
@@ -119,14 +125,14 @@ public class BackupController {
     @PostMapping("/{name}/restore")
     public String restore(@PathVariable String name, @RequestParam(defaultValue = "") String confirmation,
                           HttpServletRequest request, RedirectAttributes redirectAttributes) {
-        if (!RESTORE_CONFIRMATION.equals(confirmation.trim().toUpperCase())) {
-            redirectAttributes.addFlashAttribute("error", "Restauration annulée : tapez " + RESTORE_CONFIRMATION + " pour confirmer.");
+        if (!isRestoreConfirmed(confirmation)) {
+            redirectAttributes.addFlashAttribute("error", messages.get("backup.restoreCancelled", messages.get("backup.restore.word")));
             return "redirect:" + URL;
         }
         try {
             backupService.restore(name);
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
             return "redirect:" + URL;
         }
         sessionService.expireAll();
@@ -136,5 +142,24 @@ public class BackupController {
             session.invalidate();
         }
         return "redirect:/login?restored";
+    }
+
+    /** The confirmation word of any language: the user may have switched language since the page was shown. */
+    private boolean isRestoreConfirmed(String confirmation) {
+        String typed = confirmation.trim().toUpperCase();
+        if (RESTORE_CONFIRMATION.equals(typed)) {
+            return true;
+        }
+        for (Language language : Language.values()) {
+            if (messages.get(language, "backup.restore.word").toUpperCase().equals(typed)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String size(BackupFile backup) {
+        return backup.isMegabytes() ? messages.get("backup.size.mb", backup.sizeInMegabytes())
+            : messages.get("backup.size.kb", backup.sizeInKilobytes());
     }
 }

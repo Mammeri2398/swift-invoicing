@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.access.profile;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import jakarta.validation.Valid;
@@ -22,9 +23,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class ProfileController {
 
     private final ProfileService profileService;
+    private final Messages messages;
 
-    public ProfileController(ProfileService profileService) {
+    public ProfileController(ProfileService profileService, Messages messages) {
         this.profileService = profileService;
+        this.messages = messages;
     }
 
     @GetMapping
@@ -42,7 +45,7 @@ public class ProfileController {
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
         Profile profile = profileService.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Profil introuvable."));
+            .orElseThrow(() -> new ResourceNotFoundException("profile.error.notFound"));
         model.addAttribute("profile", ProfileForm.from(profile));
         return formView(model);
     }
@@ -54,7 +57,7 @@ public class ProfileController {
         if (!result.hasErrors()) {
             try {
                 profileService.save(form);
-                redirectAttributes.addFlashAttribute("success", "Profil enregistré.");
+                redirectAttributes.addFlashAttribute("success", messages.get("profile.saved"));
                 return "redirect:/profiles";
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
@@ -67,9 +70,9 @@ public class ProfileController {
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             profileService.delete(id);
-            redirectAttributes.addFlashAttribute("success", "Profil supprimé.");
+            redirectAttributes.addFlashAttribute("success", messages.get("profile.deleted"));
         } catch (Exception ex) {
-            redirectAttributes.addFlashAttribute("error", "Impossible de supprimer ce profil.");
+            redirectAttributes.addFlashAttribute("error", messages.get("profile.error.deleteFailed"));
         }
         return "redirect:/profiles";
     }

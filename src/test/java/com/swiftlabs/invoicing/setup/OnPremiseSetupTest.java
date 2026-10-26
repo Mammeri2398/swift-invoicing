@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.setup;
 
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
+import com.swiftlabs.invoicing.common.Language;
 import com.swiftlabs.invoicing.issuer.CompanyType;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
@@ -65,6 +66,9 @@ class OnPremiseSetupTest {
         mockMvc.perform(get("/setup"))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("Bienvenue dans Swift Invoicing")));
+        mockMvc.perform(get("/setup").header("Accept-Language", "en"))
+            .andExpect(content().string(containsString("Welcome to Swift Invoicing")))
+            .andExpect(content().string(containsString("The password must be between")));
 
         // Mistakes are shown on the form, nothing is created
         mockMvc.perform(post("/setup").with(csrf())
@@ -80,7 +84,8 @@ class OnPremiseSetupTest {
             .andExpect(model().attributeHasFieldErrors("setup", "legalForm"));
         assertThat(userRepository.count()).isZero();
 
-        mockMvc.perform(post("/setup").with(csrf())
+        // Set up in Arabic: the administrator works in Arabic
+        mockMvc.perform(post("/setup").with(csrf()).header("Accept-Language", "ar")
                 .param("adminUsername", "gerant").param("adminFirstName", "Nadia").param("adminEmail", "gerant@atlas.test")
                 .param("password", "Secret123").param("confirmPassword", "Secret123")
                 .param("companyType", "COMPANY").param("fullName", "Atlas Solutions").param("nif", "000016001234567")
@@ -91,6 +96,10 @@ class OnPremiseSetupTest {
         User admin = userRepository.findByUsername("gerant").orElseThrow();
         assertThat(admin.isMustChangePassword()).isFalse();
         assertThat(admin.getProfile().getName()).isEqualTo("Administrateur");
+        assertThat(admin.getLanguage()).isEqualTo(Language.AR);
+        // The rest of this test reads the French pages
+        admin.setLanguage(Language.FR);
+        admin = userRepository.save(admin);
         assertThat(passwordEncoder.matches("Secret123", admin.getPassword())).isTrue();
         assertThat(issuerService.getIssuer().getCompanyType()).isEqualTo(CompanyType.COMPANY);
         assertThat(issuerService.getIssuer().getFullName()).isEqualTo("Atlas Solutions");

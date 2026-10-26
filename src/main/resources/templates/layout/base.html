@@ -4,7 +4,7 @@
         <html th:replace="~{layout/base :: page('Title', ~{::main}, ~{::script})}">
     and only defines its <main> (and an optional page <script>; pass ~{} when there is none).
 */-->
-<html lang="fr" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, content, scripts)">
+<html lang="fr" th:lang="${#locale.language}" th:dir="${#locale.language == 'ar'} ? 'rtl' : 'ltr'" xmlns:th="http://www.thymeleaf.org" th:fragment="page(title, content, scripts)">
 <head th:replace="~{layout/fragments :: head(${title})}"></head>
 <body class="flex min-h-screen flex-col">
 

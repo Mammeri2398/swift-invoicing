@@ -54,24 +54,23 @@ public class ProfileService {
         String name = form.getName();
         List<Long> privilegeIds = form.getPrivilegeIds();
         if (name == null || name.trim().isEmpty()) {
-            throw new BusinessException("name", "Le nom du profil est obligatoire.");
+            throw BusinessException.onField("name", "profile.error.nameRequired");
         }
         String trimmedName = name.trim();
         Profile profile = id == null ? new Profile() : profileRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Profil introuvable."));
+            .orElseThrow(() -> new ResourceNotFoundException("profile.error.notFound"));
 
         Profile sameName = profileRepository.findByName(trimmedName);
         if (sameName != null && !sameName.getId().equals(profile.getId())) {
-            throw new BusinessException("name", "Ce nom de profil existe déjà.");
+            throw BusinessException.onField("name", "profile.error.nameUsed");
         }
 
         Set<Privilege> privileges = new HashSet<>(privilegeRepository.findAllById(privilegeIds));
         if (privileges.size() != new HashSet<>(privilegeIds).size()) {
-            throw new BusinessException("privilegeIds", "Privilège introuvable.");
+            throw BusinessException.onField("privilegeIds", "privilege.error.notFound");
         }
         if (profile.getId() != null && removesLastManageProfiles(profile, privileges)) {
-            throw new BusinessException("privilegeIds", "Au moins un utilisateur actif doit conserver le privilège "
-                + MANAGE_PROFILES + " : impossible de le retirer de ce profil.");
+            throw BusinessException.onField("privilegeIds", "profile.error.lastManageProfiles", MANAGE_PROFILES);
         }
 
         profile.setName(trimmedName);

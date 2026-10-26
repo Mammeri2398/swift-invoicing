@@ -165,6 +165,8 @@ class BackupTest {
         existing(LocalDateTime.now().minusDays(BackupAdvice.STALE_DAYS + 1), BackupKind.AUTO);
         mockMvc.perform(get("/clients").with(admin()))
             .andExpect(content().string(containsString("Aucune sauvegarde depuis plus de 3 jours.")));
+        mockMvc.perform(get("/clients").with(admin()).header("Accept-Language", "en"))
+            .andExpect(content().string(containsString("No backup for more than 3 days.")));
     }
 
     @Test
@@ -200,6 +202,9 @@ class BackupTest {
         mockMvc.perform(post("/settings/backups/" + file.getFileName() + "/restore").param("confirmation", "oui").with(admin()).with(csrf()))
             .andExpect(redirectedUrl("/settings/backups"))
             .andExpect(flash().attribute("error", "Restauration annulée : tapez RESTAURER pour confirmer."));
+        mockMvc.perform(post("/settings/backups/" + file.getFileName() + "/restore").param("confirmation", "no").with(admin()).with(csrf())
+                .header("Accept-Language", "en"))
+            .andExpect(flash().attribute("error", "Restore cancelled: type RESTORE to confirm."));
         verify(tools, never()).restore(any(), any(), any());
     }
 

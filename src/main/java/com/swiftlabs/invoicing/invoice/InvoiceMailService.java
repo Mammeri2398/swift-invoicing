@@ -22,7 +22,10 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 
-/** Sends an issued invoice to the client by email, with its PDF attached, and records it in the history. */
+/**
+ * Sends an issued invoice to the client by email, with its PDF attached, and records it in the history.
+ * The proposed subject and message are written to the client, hence always in French; errors are keys.
+ */
 @Service
 @Transactional(readOnly = true)
 public class InvoiceMailService {
@@ -69,7 +72,7 @@ public class InvoiceMailService {
         Invoice invoice = sendable(invoiceId);
         BigDecimal balance = paymentService.balance(invoice);
         if (invoice.getKind() != DocumentKind.INVOICE || invoice.getStatus() != InvoiceStatus.ISSUED || balance.signum() <= 0) {
-            throw new BusinessException("Cette facture ne laisse rien à payer : pas de relance à envoyer.");
+            throw new BusinessException("invoiceMail.error.nothingToPay");
         }
         InvoiceEmailForm form = new InvoiceEmailForm();
         form.setReminder(true);
@@ -95,7 +98,7 @@ public class InvoiceMailService {
     public void send(Long invoiceId, InvoiceEmailForm form) {
         Invoice invoice = sendable(invoiceId);
         if (!isEnabled()) {
-            throw new BusinessException("L'envoi d'emails n'est pas configuré : réglez le serveur d'envoi dans Réglages > Paramètres > Email.");
+            throw new BusinessException("invoiceMail.error.disabled");
         }
         try {
             JavaMailSender mailSender = mailGateway.sender();
@@ -116,10 +119,10 @@ public class InvoiceMailService {
                 new ByteArrayResource(pdfService.render(invoiceService.findWithLines(invoiceId))), "application/pdf");
             mailSender.send(message);
         } catch (MessagingException | UnsupportedEncodingException ex) {
-            throw new BusinessException("to", "Adresse email invalide.");
+            throw BusinessException.onField("to", "invoiceMail.error.invalidAddress");
         } catch (MailException | IOException ex) {
             log.error("Could not send invoice {} by email", invoice.getInvoiceNumber(), ex);
-            throw new BusinessException("L'email n'a pas pu être envoyé. Vérifiez la configuration du serveur mail, puis réessayez.");
+            throw new BusinessException("invoiceMail.error.sendFailed");
         }
         audit.record(invoice, form.isReminder() ? InvoiceEvent.Action.REMINDED : InvoiceEvent.Action.SENT,
             form.hasCc() ? form.getTo() + ", cc " + form.getCc() : form.getTo());
@@ -130,7 +133,7 @@ public class InvoiceMailService {
         Invoice invoice = invoiceService.findById(invoiceId);
         if (invoice.getStatus() != InvoiceStatus.ISSUED && invoice.getStatus() != InvoiceStatus.PAID
                 && invoice.getStatus() != InvoiceStatus.ACCEPTED) {
-            throw new BusinessException("Seule une facture émise ou payée peut être envoyée par email.");
+            throw new BusinessException("invoiceMail.error.notSendable");
         }
         return invoice;
     }

@@ -19,7 +19,8 @@
     });
 })();
 
-// <button data-toggle-password="inputId"> shows or hides a password field
+// <button data-toggle-password="inputId" data-label-show="..." data-label-hide="..."> shows or hides a password
+// field; the two labels (in the page's language) become the button's aria-label
 (function () {
     'use strict';
     document.addEventListener('click', function (event) {
@@ -31,7 +32,10 @@
         var visible = input.type === 'text';
         input.type = visible ? 'password' : 'text';
         button.querySelector('.icon').textContent = visible ? 'visibility' : 'visibility_off';
-        button.setAttribute('aria-label', visible ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
+        var label = button.getAttribute(visible ? 'data-label-show' : 'data-label-hide');
+        if (label) {
+            button.setAttribute('aria-label', label);
+        }
     });
 })();
 

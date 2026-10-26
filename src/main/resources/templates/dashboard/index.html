@@ -1,37 +1,37 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page('Tableau de bord', ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page(#{dashboard.title}, ~{::main}, ~{})}">
 <body>
 <main class="page" th:with="pct=${#numbers.formatDecimal(stats.percent, 1, 'WHITESPACE', 1, 'COMMA')}">
 
     <div class="page-header">
         <div>
-            <p class="page-eyebrow" th:text="${'Exercice ' + stats.year}">Exercice 2026</p>
-            <h1 class="page-title">Tableau de bord</h1>
+            <p class="page-eyebrow" th:text="#{dashboard.fiscalYear(${stats.year})}">Exercice 2026</p>
+            <h1 class="page-title" th:text="#{dashboard.title}">Tableau de bord</h1>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a th:href="@{/clients}" class="btn btn-secondary"><span class="icon">group</span>Clients</a>
+            <a th:href="@{/clients}" class="btn btn-secondary"><span class="icon">group</span><th:block th:text="#{nav.clients}">Clients</th:block></a>
             <a th:if="${currentUser != null and currentUser.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="btn btn-primary">
-                <span class="icon">add_circle</span>Nouvelle facture
+                <span class="icon">add_circle</span><th:block th:text="#{nav.newInvoice}">Nouvelle facture</th:block>
             </a>
         </div>
     </div>
 
     <!-- Turnover against the annual ceiling -->
     <section class="card relative mb-6">
-        <div class="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-secondary-fixed/30 blur-3xl"></div>
+        <div class="pointer-events-none absolute -end-20 -top-20 h-80 w-80 rounded-full bg-secondary-fixed/30 blur-3xl"></div>
         <div class="card-body relative flex flex-col gap-6 lg:p-8">
             <div class="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
                 <div class="max-w-xl">
                     <p class="text-body-sm text-on-surface-variant"
-                       th:text="${stats.ceilingApplies ? 'Chiffre d''affaires facturé (factures émises et payées)' : 'Chiffre d''affaires HT (factures émises et payées)'}">Chiffre d'affaires facturé (factures émises et payées)</p>
+                       th:text="${stats.ceilingApplies} ? #{dashboard.billed.ceiling} : #{dashboard.billed.company}">Chiffre d'affaires facturé (factures émises et payées)</p>
                     <p class="mt-1 text-display-lg tabular-nums text-on-surface" th:text="${amountUtils.format(stats.totalAmount)}">0,00 DA</p>
                 </div>
                 <div th:if="${stats.ceilingApplies}" class="flex items-center gap-6 rounded-xl bg-surface-container-low p-4">
                     <div>
-                        <p class="text-label-sm uppercase tracking-wider text-on-surface-variant">Plafond annuel</p>
+                        <p class="text-label-sm uppercase tracking-wider text-on-surface-variant" th:text="#{dashboard.ceiling}">Plafond annuel</p>
                         <p class="text-numeric-lg tabular-nums text-on-surface" th:text="${amountUtils.format(stats.ceiling)}">5 000 000,00 DA</p>
-                        <p class="mt-0.5 text-body-sm text-on-surface-variant">Reste : <strong class="text-on-surface" th:text="${amountUtils.format(stats.remaining)}">5 000 000,00 DA</strong></p>
+                        <p class="mt-0.5 text-body-sm text-on-surface-variant"><th:block th:text="#{dashboard.remaining}">Reste :</th:block> <strong class="text-on-surface" th:text="${amountUtils.format(stats.remaining)}">5 000 000,00 DA</strong></p>
                     </div>
                     <div class="relative flex h-16 w-16 shrink-0 items-center justify-center">
                         <svg class="h-full w-full -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
@@ -48,8 +48,8 @@
             <!-- Annual ceiling: auto-entrepreneurs only -->
             <div th:if="${stats.ceilingApplies}" class="flex flex-col gap-1.5">
                 <div class="flex justify-between text-label-sm">
-                    <span class="text-on-surface-variant">Progression vers le plafond</span>
-                    <span class="font-semibold text-primary" th:text="${pct + ' % consommé'}">0 % consommé</span>
+                    <span class="text-on-surface-variant" th:text="#{dashboard.progress}">Progression vers le plafond</span>
+                    <span class="font-semibold text-primary" th:text="#{dashboard.consumed(${pct})}">0 % consommé</span>
                 </div>
                 <div class="progress">
                     <div class="progress-bar" th:classappend="${stats.alert100} ? 'from-error to-error'"
@@ -60,18 +60,18 @@
             <div th:if="${stats.ceilingApplies and stats.alert100}" class="alert alert-error">
                 <span class="icon">warning</span>
                 <div>
-                    <p class="font-semibold">Plafond annuel atteint</p>
-                    <p>Le chiffre d'affaires de l'exercice atteint ou dépasse le plafond de
-                        <strong th:text="${amountUtils.format(stats.ceiling)}">5 000 000,00 DA</strong>.
+                    <p class="font-semibold" th:text="#{dashboard.alert100.title}">Plafond annuel atteint</p>
+                    <p th:utext="#{dashboard.alert100.text(${amountUtils.format(stats.ceiling)})}">Le chiffre d'affaires de l'exercice atteint ou dépasse le plafond de
+                        <strong>5 000 000,00 DA</strong>.
                         Le régime de l'auto-entrepreneur peut ne plus s'appliquer : rapprochez-vous de l'ANAE ou d'un expert-comptable.</p>
                 </div>
             </div>
             <div th:if="${stats.ceilingApplies and stats.warning80}" class="alert alert-warning">
                 <span class="icon">warning</span>
                 <div>
-                    <p class="font-semibold">Plus de 80 % du plafond annuel</p>
-                    <p><strong th:text="${pct + ' %'}">82 %</strong> du plafond est déjà facturé
-                        (<span th:text="${amountUtils.format(stats.totalAmount)}"></span> sur <span th:text="${amountUtils.format(stats.ceiling)}"></span>).</p>
+                    <p class="font-semibold" th:text="#{dashboard.warning80.title}">Plus de 80 % du plafond annuel</p>
+                    <p th:utext="#{dashboard.warning80.text(${pct}, ${amountUtils.format(stats.totalAmount)}, ${amountUtils.format(stats.ceiling)})}"><strong>82 %</strong> du plafond est déjà facturé
+                        (4 100 000,00 DA sur 5 000 000,00 DA).</p>
                 </div>
             </div>
         </div>
@@ -81,62 +81,61 @@
     <a th:unless="${overdue.isEmpty()}" th:href="@{/invoices(overdue=true)}" class="alert alert-error mb-6 transition-shadow hover:shadow-md"
 >
         <span class="icon">schedule</span>
-        <span class="flex-1"><strong th:text="${overdue.size() + ' facture(s) en retard'}">2 factures en retard</strong> :
-            <span th:text="${amountUtils.format(overdueTotal)}">0,00 DA</span> à encaisser, la plus ancienne échue depuis
-            <span th:text="${overdue[0].daysLate() + ' jour(s)'}">10 jours</span>. Voir et relancer</span>
-        <span class="icon">arrow_forward</span>
+        <span class="flex-1" th:utext="#{dashboard.overdue(${overdue.size()}, ${amountUtils.format(overdueTotal)}, ${overdue[0].daysLate()})}"><strong>2 factures en retard</strong> :
+            0,00 DA à encaisser, la plus ancienne échue depuis 10 jours. Voir et relancer</span>
+        <span class="icon rtl-flip">arrow_forward</span>
     </a>
 
     <!-- Key figures -->
     <section class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <a th:href="@{/invoices(status='ISSUED')}" class="stat transition-shadow hover:shadow-md">
             <div class="flex items-center justify-between">
-                <span class="stat-label">En attente de paiement</span>
+                <span class="stat-label" th:text="#{dashboard.unpaid}">En attente de paiement</span>
                 <span class="stat-icon bg-secondary-container/40 text-secondary"><span class="icon">schedule</span></span>
             </div>
             <div>
                 <p class="stat-value" th:text="${amountUtils.format(stats.unpaidAmount)}">0,00 DA</p>
-                <p class="text-body-sm text-on-surface-variant" th:text="${stats.unpaidCount + ' facture(s) émise(s) non payée(s)'}">0 facture</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="#{dashboard.unpaidCount(${stats.unpaidCount})}">0 facture</p>
             </div>
         </a>
         <a th:href="@{/invoices(status='DRAFT')}" class="stat transition-shadow hover:shadow-md">
             <div class="flex items-center justify-between">
-                <span class="stat-label">Brouillons</span>
+                <span class="stat-label" th:text="#{dashboard.drafts}">Brouillons</span>
                 <span class="stat-icon bg-surface-container-high text-outline"><span class="icon">edit_note</span></span>
             </div>
             <div>
                 <p class="stat-value" th:text="${stats.draftCount}">0</p>
-                <p class="text-body-sm text-on-surface-variant">Factures non émises</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="#{dashboard.draftsHint}">Factures non émises</p>
             </div>
         </a>
         <div th:if="${stats.ceilingApplies}" class="stat">
             <div class="flex items-center justify-between">
-                <span class="stat-label">Reste avant plafond</span>
+                <span class="stat-label" th:text="#{dashboard.remainingBeforeCeiling}">Reste avant plafond</span>
                 <span class="stat-icon"><span class="icon">trending_up</span></span>
             </div>
             <div>
                 <p class="stat-value" th:text="${amountUtils.format(stats.remaining)}">0,00 DA</p>
-                <p class="text-body-sm text-on-surface-variant" th:text="${'Alerte à ' + amountUtils.format(stats.warningThreshold)}">Alerte à 80 %</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="#{dashboard.alertAt(${amountUtils.format(stats.warningThreshold)})}">Alerte à 80 %</p>
             </div>
         </div>
         <a th:unless="${stats.ceilingApplies}" th:href="@{/turnover}" class="stat transition-shadow hover:shadow-md">
             <div class="flex items-center justify-between">
-                <span class="stat-label">Chiffre d'affaires</span>
+                <span class="stat-label" th:text="#{dashboard.turnover}">Chiffre d'affaires</span>
                 <span class="stat-icon"><span class="icon">bar_chart</span></span>
             </div>
             <div>
                 <p class="stat-value" th:text="${amountUtils.format(stats.totalAmount)}">0,00 DA</p>
-                <p class="text-body-sm text-on-surface-variant">HT, détail par mois et TVA</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="#{dashboard.turnoverHint}">HT, détail par mois et TVA</p>
             </div>
         </a>
         <a th:href="@{/clients}" class="stat transition-shadow hover:shadow-md">
             <div class="flex items-center justify-between">
-                <span class="stat-label">Clients</span>
+                <span class="stat-label" th:text="#{nav.clients}">Clients</span>
                 <span class="stat-icon bg-tertiary-fixed/30 text-tertiary"><span class="icon">domain</span></span>
             </div>
             <div>
                 <p class="stat-value" th:text="${stats.clientCount}">0</p>
-                <p class="text-body-sm text-on-surface-variant">Enregistrés</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="#{dashboard.clientsHint}">Enregistrés</p>
             </div>
         </a>
     </section>
@@ -144,19 +143,19 @@
     <!-- Recent invoices -->
     <section class="card">
         <div class="card-header">
-            <h2 class="card-title"><span class="icon">receipt_long</span>Dernières factures</h2>
-            <a th:href="@{/invoices}" class="btn btn-ghost btn-sm">Toutes les factures<span class="icon">arrow_forward</span></a>
+            <h2 class="card-title"><span class="icon">receipt_long</span><th:block th:text="#{dashboard.recent}">Dernières factures</th:block></h2>
+            <a th:href="@{/invoices}" class="btn btn-ghost btn-sm"><th:block th:text="#{dashboard.allInvoices}">Toutes les factures</th:block><span class="icon rtl-flip">arrow_forward</span></a>
         </div>
         <div class="table-wrap">
             <table class="table">
                 <thead>
                 <tr>
-                    <th scope="col">N° facture</th>
-                    <th scope="col">Client</th>
-                    <th scope="col">Émission</th>
-                    <th scope="col">Statut</th>
-                    <th scope="col" class="num">Montant</th>
-                    <th scope="col"><span class="sr-only">Actions</span></th>
+                    <th scope="col" th:text="#{dashboard.col.number}">N° facture</th>
+                    <th scope="col" th:text="#{dashboard.col.client}">Client</th>
+                    <th scope="col" th:text="#{dashboard.col.issued}">Émission</th>
+                    <th scope="col" th:text="#{dashboard.col.status}">Statut</th>
+                    <th scope="col" class="num" th:text="#{dashboard.col.amount}">Montant</th>
+                    <th scope="col"><span class="sr-only" th:text="#{dashboard.col.actions}">Actions</span></th>
                 </tr>
                 </thead>
                 <tbody>
@@ -166,17 +165,17 @@
                     <td class="text-on-surface-variant" th:text="${#temporals.format(inv.issueDate, 'dd/MM/yyyy')}">01/01/2026</td>
                     <td><span th:replace="~{layout/fragments :: statusBadge(${inv.status})}"></span></td>
                     <td class="num font-semibold" th:text="${amountUtils.format(inv.totalAmount)}">0,00 DA</td>
-                    <td class="text-right"><a th:href="@{/invoices/{id}(id=${inv.id})}" class="btn btn-ghost btn-sm">Voir</a></td>
+                    <td class="text-end"><a th:href="@{/invoices/{id}(id=${inv.id})}" class="btn btn-ghost btn-sm" th:text="#{action.view}">Voir</a></td>
                 </tr>
                 <tr th:if="${stats.recentInvoices.isEmpty()}">
-                    <td colspan="6" class="table-empty">Aucune facture pour le moment.</td>
+                    <td colspan="6" class="table-empty" th:text="#{dashboard.recentEmpty}">Aucune facture pour le moment.</td>
                 </tr>
                 </tbody>
             </table>
         </div>
         <div class="card-footer">
             <span th:text="${vatMention}">TVA non applicable</span>
-            <span>Total facturé <span th:text="${stats.year}">2026</span> : <strong class="text-on-surface" th:text="${amountUtils.format(stats.totalAmount)}">0,00 DA</strong></span>
+            <span th:utext="#{dashboard.totalBilled(${stats.year}, ${amountUtils.format(stats.totalAmount)})}">Total facturé 2026 : <strong class="text-on-surface">0,00 DA</strong></span>
         </div>
     </section>
 </main>

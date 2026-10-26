@@ -5,6 +5,7 @@
     var form = document.getElementById('invoice-form');
     var tbody = form.querySelector('#lines-table tbody');
     var template = document.getElementById('line-template');
+    // Amounts are written the French way in every language, as AmountUtils.format does
     var amountFormat = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     // Droit de timbre rules (InvoiceProperties.StampDuty), absent on a credit note
     var stampRules = form.getAttribute('data-stamp-duty') ? JSON.parse(form.getAttribute('data-stamp-duty')) : null;
@@ -82,7 +83,8 @@
             element.classList.toggle('flex', stamp > 0 && element.tagName === 'DIV');
         });
         form.querySelectorAll('[data-grand-label]').forEach(function (element) {
-            element.textContent = stamp > 0 ? 'Net à payer :' : element.getAttribute('data-label');
+            // Labels in the page's language (invoice/form.html)
+            element.textContent = element.getAttribute(stamp > 0 ? 'data-net-label' : 'data-label');
         });
         form.querySelectorAll('[data-grand-total]').forEach(function (element) {
             element.textContent = formatAmount(roundCents(totalWithTax + stamp));

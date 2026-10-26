@@ -11,7 +11,8 @@
         var professional = !checked || checked.value === 'PROFESSIONNEL';
         nif.required = professional;
         nifMark.hidden = !professional;
-        nameLabel.textContent = professional ? 'Raison sociale' : 'Nom complet';
+        // Labels in the user's language, from the template (data-label-professional / data-label-private)
+        nameLabel.textContent = professional ? nameLabel.dataset.labelProfessional : nameLabel.dataset.labelPrivate;
         form.querySelectorAll('[data-professional]').forEach(function (element) {
             // A class, not the hidden attribute: .field sets its own display
             element.classList.toggle('hidden', !professional);

@@ -28,9 +28,9 @@ public final class InvoiceVerification {
         return kind == DocumentKind.CREDIT_NOTE;
     }
 
-    /** "Facture", "Avoir", "Devis", "Facture pro forma". */
-    public String getLabel() {
-        return kind.getLabel();
+    /** Invoice, credit note, quote or pro forma (the page shows its label in the visitor's language). */
+    public DocumentKind getKind() {
+        return kind;
     }
 
     public String getNumber() {

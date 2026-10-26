@@ -5,6 +5,7 @@ import com.swiftlabs.invoicing.client.ClientRepository;
 import com.swiftlabs.invoicing.client.ClientService;
 import com.swiftlabs.invoicing.client.ClientType;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.config.ClockConfig;
 import com.swiftlabs.invoicing.config.InvoiceProperties;
 import com.swiftlabs.invoicing.issuer.IssuerService;
@@ -27,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 // Same database as the other tests (H2 in PostgreSQL mode): numbering uses PostgreSQL SQL
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({InvoiceService.class, IssuerService.class, ClientService.class, InvoiceAudit.class, DocumentSequenceRepository.class, PaymentService.class, ClockConfig.class})
+@Import({InvoiceService.class, IssuerService.class, ClientService.class, InvoiceAudit.class, DocumentSequenceRepository.class, PaymentService.class, ClockConfig.class, Messages.class})
 @EnableConfigurationProperties(InvoiceProperties.class)
 class InvoiceServiceTest {
 

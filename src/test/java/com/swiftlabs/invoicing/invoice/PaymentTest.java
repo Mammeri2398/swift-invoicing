@@ -29,8 +29,11 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 
 /** Partial payments, balances, overdue invoices, statements and reminders. */
 @SpringBootTest
@@ -109,6 +112,39 @@ class PaymentTest {
         assertThat(audit.history(invoice.getId())).extracting(InvoiceEvent::getAction, InvoiceEvent::getDetail)
             .contains(org.assertj.core.groups.Tuple.tuple(InvoiceEvent.Action.PAYMENT, "400,00 DA le 01/02/2026 (chèque, CHQ 0042)"));
         assertThatThrownBy(() -> pay(invoice, "1.00", LocalDate.of(2026, 3, 2))).hasMessageContaining("pas encore payée");
+    }
+
+    /** The page and its history in the reader's language; the stored details stay in French. */
+    @Test
+    void theInvoicePageFollowsTheReadersLanguage() throws Exception {
+        Invoice invoice = issued("1000.00", PaymentMethod.CHEQUE, null);
+        pay(invoice, "400.00", LocalDate.of(2026, 2, 1));
+        mockMvc.perform(get("/invoices/" + invoice.getId()))
+            .andExpect(content().string(containsString("Facture " + invoice.getInvoiceNumber())))
+            .andExpect(content().string(containsString("400,00 DA le 01/02/2026 (chèque, CHQ 0042)")));
+        mockMvc.perform(get("/invoices/" + invoice.getId()).header("Accept-Language", "en"))
+            .andExpect(content().string(containsString("Invoice " + invoice.getInvoiceNumber())))
+            .andExpect(content().string(containsString("Left to pay: 600,00 DA")))
+            .andExpect(content().string(containsString("Invoice issued")))
+            .andExpect(content().string(containsString("Payment received")))
+            .andExpect(content().string(containsString("400,00 DA on 01/02/2026 (Cheque, CHQ 0042)")))
+            .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Reste à payer"))));
+        mockMvc.perform(get("/invoices/" + invoice.getId()).header("Accept-Language", "ar"))
+            .andExpect(content().string(containsString("فاتورة " + invoice.getInvoiceNumber())))
+            .andExpect(content().string(containsString("المتبقي للدفع: 600,00 DA")))
+            .andExpect(content().string(containsString("400,00 DA في 01/02/2026 (صك, CHQ 0042)")));
+    }
+
+    @Test
+    void theInvoiceErrorsFollowTheReadersLanguage() throws Exception {
+        Invoice invoice = issued("1000.00", null, null);
+        mockMvc.perform(post("/invoices/" + invoice.getId() + "/cancel").with(csrf()).header("Accept-Language", "en"))
+            .andExpect(flash().attribute("success", "Invoice cancelled."));
+        mockMvc.perform(post("/invoices/" + invoice.getId() + "/cancel").with(csrf()).header("Accept-Language", "en"))
+            .andExpect(flash().attribute("error", "This invoice is already cancelled."));
+        mockMvc.perform(get("/invoices/new").header("Accept-Language", "en"))
+            .andExpect(content().string(containsString("New invoice")))
+            .andExpect(content().string(containsString("data-net-label=\"Net amount due:\"")));
     }
 
     @Test

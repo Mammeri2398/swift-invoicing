@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.access.auth;
 
 import com.swiftlabs.invoicing.access.privilege.Privilege;
 import com.swiftlabs.invoicing.access.user.User;
+import com.swiftlabs.invoicing.common.Language;
 
 import org.springframework.security.core.CredentialsContainer;
 import org.springframework.security.core.GrantedAuthority;
@@ -33,11 +34,12 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
     private final boolean twoFactorEnabled;
     private final String profileName;
     private final String displayName;
+    private final Language language;
     private final Set<GrantedAuthority> authorities;
 
     private AppUserPrincipal(Long id, String username, String passwordHash, boolean enabled, boolean locked,
                              boolean mustChangePassword, boolean twoFactorEnabled, String profileName,
-                             String displayName, Set<GrantedAuthority> authorities) {
+                             String displayName, Language language, Set<GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
         this.passwordHash = passwordHash;
@@ -47,6 +49,7 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
         this.twoFactorEnabled = twoFactorEnabled;
         this.profileName = profileName;
         this.displayName = displayName;
+        this.language = language;
         this.authorities = Set.copyOf(authorities);
     }
 
@@ -58,22 +61,27 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
             .collect(Collectors.toSet());
         return new AppUserPrincipal(user.getId(), user.getUsername(), user.getPassword(), user.isEnabled(),
             user.isLocked(now), user.isMustChangePassword(), user.isTotpEnabled(), user.getProfile().getName(),
-            user.getDisplayName(), authorities);
+            user.getDisplayName(), user.getLanguage(), authorities);
     }
 
     /** Same user once the forced password change is done. */
     public AppUserPrincipal withPasswordChanged() {
-        return new AppUserPrincipal(id, username, null, enabled, locked, false, twoFactorEnabled, profileName, displayName, authorities);
+        return new AppUserPrincipal(id, username, null, enabled, locked, false, twoFactorEnabled, profileName, displayName, language, authorities);
     }
 
     /** Same user once two-factor login has been turned on or off. */
     public AppUserPrincipal withTwoFactorEnabled(boolean enabled) {
-        return new AppUserPrincipal(id, username, null, this.enabled, locked, mustChangePassword, enabled, profileName, displayName, authorities);
+        return new AppUserPrincipal(id, username, null, this.enabled, locked, mustChangePassword, enabled, profileName, displayName, language, authorities);
     }
 
     /** Same user after editing their personal information. */
     public AppUserPrincipal withDisplayName(String displayName) {
-        return new AppUserPrincipal(id, username, null, enabled, locked, mustChangePassword, twoFactorEnabled, profileName, displayName, authorities);
+        return new AppUserPrincipal(id, username, null, enabled, locked, mustChangePassword, twoFactorEnabled, profileName, displayName, language, authorities);
+    }
+
+    /** Same user after choosing another language. */
+    public AppUserPrincipal withLanguage(Language language) {
+        return new AppUserPrincipal(id, username, null, enabled, locked, mustChangePassword, twoFactorEnabled, profileName, displayName, language, authorities);
     }
 
     public Long getId() {
@@ -87,6 +95,11 @@ public final class AppUserPrincipal implements UserDetails, CredentialsContainer
     /** The first name, or the username when it is not filled in. */
     public String getDisplayName() {
         return displayName;
+    }
+
+    /** The language of the interface for this user. */
+    public Language getLanguage() {
+        return language;
     }
 
     public boolean isMustChangePassword() {

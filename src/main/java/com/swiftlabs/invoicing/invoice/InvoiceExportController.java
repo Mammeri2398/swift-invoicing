@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.invoice;
 
+import com.swiftlabs.invoicing.common.Messages;
+
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -33,12 +35,15 @@ public class InvoiceExportController {
     private final InvoiceExport export;
     private final PaymentService paymentService;
     private final Clock clock;
+    private final Messages messages;
 
-    public InvoiceExportController(InvoiceService invoiceService, InvoiceExport export, PaymentService paymentService, Clock clock) {
+    public InvoiceExportController(InvoiceService invoiceService, InvoiceExport export, PaymentService paymentService, Clock clock,
+                                   Messages messages) {
         this.paymentService = paymentService;
         this.invoiceService = invoiceService;
         this.export = export;
         this.clock = clock;
+        this.messages = messages;
     }
 
     @GetMapping("/csv")
@@ -64,9 +69,9 @@ public class InvoiceExportController {
             .body(body);
     }
 
-    /** e.g. factures-2026-export-2026-10-24.xlsx */
+    /** e.g. factures-2026-export-2026-10-24.xlsx (invoices-... in English: the prefix is ASCII in every language) */
     private String fileName(InvoiceFilter filter, String extension) {
         String year = filter.getYear() != null ? "-" + filter.getYear() : "";
-        return "factures" + year + "-export-" + LocalDate.now(clock) + "." + extension;
+        return messages.get("invoiceExport.fileName") + year + "-export-" + LocalDate.now(clock) + "." + extension;
     }
 }

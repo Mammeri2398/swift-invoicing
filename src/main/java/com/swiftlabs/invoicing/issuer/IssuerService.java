@@ -33,28 +33,28 @@ public class IssuerService {
 
     public Issuer getIssuer() {
         return issuerRepository.findById(ISSUER_ID).orElseThrow(() ->
-            new BusinessException("Profil émetteur introuvable. Veuillez le configurer dans les paramètres."));
+            new BusinessException("issuer.error.notFound"));
     }
 
     @Transactional
     public Issuer save(IssuerForm form) {
         // Validate before touching the managed row, so a rejected form never gets flushed
         CompanyType type = form.getCompanyType() != null ? form.getCompanyType() : CompanyType.AUTO_ENTREPRENEUR;
-        requireText("fullName", form.getFullName(), type.isCompany() ? "La raison sociale est obligatoire." : "Le nom complet est obligatoire.");
-        requireText("nif", form.getNif(), "Le NIF est obligatoire.");
+        requireText("fullName", form.getFullName(), type.isCompany() ? "issuer.error.companyNameRequired" : "issuer.error.fullNameRequired");
+        requireText("nif", form.getNif(), "issuer.error.nifRequired");
         // Identifiers required on invoices, by legal status (décret exécutif 05-468)
         if (type.isCompany()) {
-            requireText("legalForm", form.getLegalForm(), "La forme juridique est obligatoire pour une société.");
+            requireText("legalForm", form.getLegalForm(), "issuer.error.legalFormRequired");
             if (form.getShareCapital() == null) {
-                throw new BusinessException("shareCapital", "Le capital social est obligatoire pour une société.");
+                throw BusinessException.onField("shareCapital", "issuer.error.shareCapitalRequired");
             }
-            requireText("rcNumber", form.getRcNumber(), "Le numéro de registre du commerce est obligatoire pour une société.");
-            requireText("taxArticle", form.getTaxArticle(), "L'article d'imposition est obligatoire pour une société.");
+            requireText("rcNumber", form.getRcNumber(), "issuer.error.rcRequired");
+            requireText("taxArticle", form.getTaxArticle(), "issuer.error.taxArticleRequired");
         } else {
-            requireText("aeCardNumber", form.getAeCardNumber(), "Le numéro de carte auto-entrepreneur est obligatoire.");
+            requireText("aeCardNumber", form.getAeCardNumber(), "issuer.error.aeCardRequired");
         }
         if (form.getAnnualCeiling() == null || form.getAnnualCeiling().signum() <= 0) {
-            throw new BusinessException("annualCeiling", "Le plafond annuel doit être supérieur à 0.");
+            throw BusinessException.onField("annualCeiling", "issuer.error.ceilingPositive");
         }
 
         // The logo is not on this form: it is kept
@@ -87,14 +87,14 @@ public class IssuerService {
     @Transactional
     public void updateLogo(byte[] data) {
         if (data == null || data.length == 0) {
-            throw new BusinessException("Veuillez choisir une image.");
+            throw new BusinessException("issuer.error.logoMissing");
         }
         if (data.length > MAX_LOGO_BYTES) {
-            throw new BusinessException("Le logo ne doit pas dépasser " + (MAX_LOGO_BYTES / 1024) + " Ko.");
+            throw new BusinessException("issuer.error.logoTooBig", String.valueOf(MAX_LOGO_BYTES / 1024));
         }
         String contentType = detectImageType(data);
         if (contentType == null) {
-            throw new BusinessException("Format non accepté : utilisez une image PNG ou JPEG.");
+            throw new BusinessException("issuer.error.logoFormat");
         }
         checkDecodableWithinLimits(data);
         getIssuer().replaceLogo(data, contentType);
@@ -108,20 +108,20 @@ public class IssuerService {
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
             if (!readers.hasNext()) {
-                throw new BusinessException("Ce fichier n'est pas une image valide.");
+                throw new BusinessException("issuer.error.logoInvalid");
             }
             ImageReader reader = readers.next();
             try {
                 reader.setInput(input);
                 if (reader.getWidth(0) > MAX_LOGO_PIXELS || reader.getHeight(0) > MAX_LOGO_PIXELS) {
-                    throw new BusinessException("Le logo ne doit pas dépasser " + MAX_LOGO_PIXELS + " × " + MAX_LOGO_PIXELS + " pixels.");
+                    throw new BusinessException("issuer.error.logoTooLarge", String.valueOf(MAX_LOGO_PIXELS));
                 }
                 reader.read(0);
             } finally {
                 reader.dispose();
             }
         } catch (IOException ex) {
-            throw new BusinessException("Ce fichier n'est pas une image valide.");
+            throw new BusinessException("issuer.error.logoInvalid");
         }
     }
 
@@ -145,9 +145,9 @@ public class IssuerService {
         return data.length >= prefix.length && Arrays.equals(Arrays.copyOf(data, prefix.length), prefix);
     }
 
-    private void requireText(String field, String value, String message) {
+    private void requireText(String field, String value, String code) {
         if (value == null || value.trim().isEmpty()) {
-            throw new BusinessException(field, message);
+            throw BusinessException.onField(field, code);
         }
     }
 }

@@ -36,11 +36,25 @@ public record BackupFile(String name, LocalDateTime createdAt, BackupKind kind, 
             BackupKind.fromSuffix(matcher.group(2)), size));
     }
 
-    /** Size for people: 512 Ko, 3,4 Mo. */
+    /** Size for people, in French (logs): 512 Ko, 3,4 Mo. Pages use backup.size.kb / backup.size.mb. */
     public String displaySize() {
-        if (size < 1024 * 1024) {
-            return Math.max(1, Math.round(size / 1024.0)) + " Ko";
+        if (!isMegabytes()) {
+            return sizeInKilobytes() + " Ko";
         }
-        return String.format(java.util.Locale.FRANCE, "%.1f Mo", size / (1024.0 * 1024.0));
+        return String.format(java.util.Locale.FRANCE, "%.1f Mo", sizeInMegabytes());
+    }
+
+    /** At least 1 MB: shown in MB, otherwise in KB. */
+    public boolean isMegabytes() {
+        return size >= 1024 * 1024;
+    }
+
+    /** Whole kilobytes (at least 1), as text so that it is never formatted with a thousands separator. */
+    public String sizeInKilobytes() {
+        return String.valueOf(Math.max(1, Math.round(size / 1024.0)));
+    }
+
+    public double sizeInMegabytes() {
+        return size / (1024.0 * 1024.0);
     }
 }

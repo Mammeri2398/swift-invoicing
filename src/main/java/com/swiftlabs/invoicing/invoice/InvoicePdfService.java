@@ -20,6 +20,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.Locale;
 
 /** Renders the invoice/pdf Thymeleaf template to a PDF document. */
 @Service
@@ -52,7 +53,8 @@ public class InvoicePdfService {
     /** The invoice must have its lines loaded (see {@link InvoiceService#findWithLines}). */
     public byte[] render(Invoice invoice) throws IOException {
         Issuer issuer = issuerService.getIssuer();
-        Context context = new Context();
+        // A document for the client: always in French, whatever the language of the user who prints it
+        Context context = new Context(Locale.FRENCH);
         context.setVariable("invoice", invoice);
         context.setVariable("vatMention", properties.vatMention());
         context.setVariable("issuer", IssuerDetails.of(invoice, issuer));

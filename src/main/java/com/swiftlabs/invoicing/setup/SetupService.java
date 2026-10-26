@@ -6,6 +6,7 @@ import com.swiftlabs.invoicing.access.user.PasswordPolicy;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.Language;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import org.slf4j.Logger;
@@ -59,19 +60,22 @@ public class SetupService {
         return !done;
     }
 
-    /** Creates the administrator and saves the company profile, in one transaction. */
+    /**
+     * Creates the administrator and saves the company profile, in one transaction. The administrator
+     * works in the language the setup page was shown in.
+     */
     @Transactional
-    public synchronized User complete(SetupForm form) {
+    public synchronized User complete(SetupForm form, Language language) {
         if (!isSetupNeeded()) {
-            throw new BusinessException("L'installation est déjà terminée.");
+            throw new BusinessException("setup.error.alreadyDone");
         }
         if (!form.getPassword().equals(form.getConfirmPassword())) {
-            throw new BusinessException("confirmPassword", "Les deux mots de passe ne correspondent pas.");
+            throw BusinessException.onField("confirmPassword", "setup.error.passwordMismatch");
         }
         try {
             passwordPolicy.validate(form.getPassword(), form.getAdminUsername());
         } catch (BusinessException ex) {
-            throw new BusinessException("password", ex.getMessage());
+            throw BusinessException.onField("password", ex.getCode(), ex.getArgs());
         }
         // Same checks as the Paramètres page (identifiers required by legal status)
         issuerService.save(form.toIssuerForm());
@@ -85,6 +89,7 @@ public class SetupService {
         admin.setFirstName(form.getAdminFirstName());
         admin.setEmail(form.getAdminEmail().trim());
         admin.setProfile(profile);
+        admin.setLanguage(language);
         admin.changePassword(passwordEncoder.encode(form.getPassword()), LocalDateTime.now(clock));
         User saved = userRepository.save(admin);
         done = true;

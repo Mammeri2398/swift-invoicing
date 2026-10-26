@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.dashboard;
 
+import com.swiftlabs.invoicing.common.Messages;
+
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,10 +16,12 @@ public class TurnoverController {
 
     private final TurnoverService turnoverService;
     private final Clock clock;
+    private final Messages messages;
 
-    public TurnoverController(TurnoverService turnoverService, Clock clock) {
+    public TurnoverController(TurnoverService turnoverService, Clock clock, Messages messages) {
         this.turnoverService = turnoverService;
         this.clock = clock;
+        this.messages = messages;
     }
 
     @GetMapping("/turnover")
@@ -25,7 +29,7 @@ public class TurnoverController {
     public String turnover(@RequestParam(name = "year", required = false) Integer year, Model model) {
         int currentYear = LocalDate.now(clock).getYear();
         int y = year != null ? year : currentYear;
-        model.addAttribute("report", turnoverService.report(y));
+        model.addAttribute("report", turnoverService.report(y, messages.current()));
         model.addAttribute("years", turnoverService.years(currentYear));
         return "dashboard/turnover";
     }

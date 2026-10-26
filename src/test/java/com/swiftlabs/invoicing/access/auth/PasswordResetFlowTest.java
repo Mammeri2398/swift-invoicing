@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.access.auth;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
+import com.swiftlabs.invoicing.common.Language;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,10 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -179,6 +183,28 @@ class PasswordResetFlowTest {
         User reloaded = userRepository.findById(user.getId()).orElseThrow();
         assertThat(passwordEncoder.matches("OldPass123", reloaded.getPassword())).isTrue();
         assertThat(tokensOfUser()).hasSize(1);
+    }
+
+    @Test
+    void theEmailIsInTheUsersLanguageAndThePagesInTheBrowsers() throws Exception {
+        user.setLanguage(Language.EN);
+        mockMvc.perform(get("/forgot-password").header("Accept-Language", "en"))
+            .andExpect(content().string(containsString("we will send you a link valid for")));
+
+        clearInvocations(mailSender);
+        mockMvc.perform(post("/forgot-password/send").with(csrf()).header("Accept-Language", "en").param("email", user.getEmail()))
+            .andExpect(flash().attribute("message", "If this email address exists, a password reset link has been sent to it."));
+        ArgumentCaptor<SimpleMailMessage> sent = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(sent.capture());
+        assertThat(sent.getValue().getSubject()).isEqualTo("Reset your password - Swift Invoicing");
+        assertThat(sent.getValue().getText()).startsWith("Hello reset-user,").contains("minutes and can only be used once");
+
+        // A French-speaking user gets it in French, whatever the language of the page
+        user.setLanguage(Language.FR);
+        clearInvocations(mailSender);
+        mockMvc.perform(post("/forgot-password/send").with(csrf()).header("Accept-Language", "en").param("email", user.getEmail()));
+        verify(mailSender).send(sent.capture());
+        assertThat(sent.getValue().getSubject()).isEqualTo("Réinitialisation de votre mot de passe - Swift Invoicing");
     }
 
     @Test

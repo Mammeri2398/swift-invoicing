@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.access.user;
 import com.swiftlabs.invoicing.access.profile.Profile;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.Language;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 import com.swiftlabs.invoicing.licence.LicenceService;
 
@@ -54,10 +55,10 @@ public class UserService {
     public NewAccount create(UserForm form) {
         Profile profile = requireProfile(form.getProfileId());
         if (userRepository.existsByUsername(form.getUsername())) {
-            throw new BusinessException("username", "Ce nom d'utilisateur existe déjà.");
+            throw BusinessException.onField("username", "user.error.usernameUsed");
         }
         if (userRepository.existsByEmail(form.getEmail())) {
-            throw new BusinessException("email", "Cet email est déjà utilisé.");
+            throw BusinessException.onField("email", "user.error.emailUsed");
         }
         // The licence limits the number of active accounts
         licenceService.checkUserLimit(userRepository.countByEnabledTrue() + 1);
@@ -68,6 +69,7 @@ public class UserService {
         user.setLastName(form.getLastName());
         user.setEmail(form.getEmail());
         user.setProfile(profile);
+        user.setLanguage(form.getLanguage());
         user.setEnabled(true);
         user.assignTemporaryPassword(passwordEncoder.encode(temporaryPassword), now());
         return new NewAccount(userRepository.save(user), temporaryPassword);
@@ -79,10 +81,10 @@ public class UserService {
         User existing = require(form.getId());
         Profile profile = requireProfile(form.getProfileId());
         if (!form.getEmail().equals(existing.getEmail()) && userRepository.existsByEmail(form.getEmail())) {
-            throw new BusinessException("email", "Cet email est déjà utilisé.");
+            throw BusinessException.onField("email", "user.error.emailUsed");
         }
         if (!form.isEnabled() && Objects.equals(existing.getId(), actingUserId)) {
-            throw new BusinessException("enabled", "Vous ne pouvez pas désactiver votre propre compte.");
+            throw BusinessException.onField("enabled", "user.error.disableSelf");
         }
         if (form.isEnabled() && !existing.isEnabled()) {
             licenceService.checkUserLimit(userRepository.countByEnabledTrue() + 1);
@@ -92,6 +94,9 @@ public class UserService {
         existing.setEmail(form.getEmail());
         existing.setEnabled(form.isEnabled());
         existing.setProfile(profile);
+        if (form.getLanguage() != null) {
+            existing.setLanguage(form.getLanguage());
+        }
         return userRepository.save(existing);
     }
 
@@ -100,11 +105,19 @@ public class UserService {
     public User updateOwnDetails(Long userId, String firstName, String lastName, String email) {
         User user = require(userId);
         if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(email)) {
-            throw new BusinessException("email", "Cet email est déjà utilisé.");
+            throw BusinessException.onField("email", "user.error.emailUsed");
         }
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setEmail(email);
+        return user;
+    }
+
+    /** The language of the interface chosen by the user (Mon compte). */
+    @Transactional
+    public User updateOwnLanguage(Long userId, Language language) {
+        User user = require(userId);
+        user.setLanguage(language);
         return user;
     }
 
@@ -113,10 +126,10 @@ public class UserService {
     public void changeOwnPassword(Long userId, String currentPassword, String newPassword) {
         User user = require(userId);
         if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword())) {
-            throw new BusinessException("currentPassword", "Le mot de passe actuel est incorrect.");
+            throw BusinessException.onField("currentPassword", "user.error.wrongCurrentPassword");
         }
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
-            throw new BusinessException("newPassword", "Le nouveau mot de passe doit être différent de l'actuel.");
+            throw BusinessException.onField("newPassword", "user.error.samePassword");
         }
         setPassword(user, newPassword);
     }
@@ -139,7 +152,7 @@ public class UserService {
     @Transactional
     public void delete(Long id, Long actingUserId) {
         if (Objects.equals(id, actingUserId)) {
-            throw new BusinessException("Vous ne pouvez pas supprimer votre propre compte.");
+            throw new BusinessException("user.error.deleteSelf");
         }
         userRepository.delete(require(id));
     }
@@ -151,15 +164,15 @@ public class UserService {
 
     private User require(Long id) {
         return userRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable."));
+            .orElseThrow(() -> new ResourceNotFoundException("user.error.notFound"));
     }
 
     private Profile requireProfile(Long profileId) {
         if (profileId == null) {
-            throw new BusinessException("profileId", "Un profil doit être attribué à l'utilisateur.");
+            throw BusinessException.onField("profileId", "user.error.profileRequired");
         }
         return profileRepository.findById(profileId)
-            .orElseThrow(() -> new BusinessException("profileId", "Profil introuvable."));
+            .orElseThrow(() -> BusinessException.onField("profileId", "user.error.profileNotFound"));
     }
 
     private LocalDateTime now() {

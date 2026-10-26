@@ -1,59 +1,59 @@
 <!DOCTYPE html>
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout/base :: page('Licence', ~{::main}, ~{})}">
+      th:replace="~{layout/base :: page(#{licence.title}, ~{::main}, ~{})}">
 <body>
 <main class="page-narrow" th:with="canEdit=${currentUser != null and currentUser.can('EDIT_ISSUER')}, s=${licence}, l=${licence.licence}">
     <div class="page-header">
         <div>
-            <p class="page-eyebrow">Réglages</p>
-            <h1 class="page-title">Licence</h1>
+            <p class="page-eyebrow" th:text="#{settings.eyebrow.settings}">Réglages</p>
+            <h1 class="page-title" th:text="#{licence.title}">Licence</h1>
         </div>
         <span th:switch="${s.state.name()}">
-            <span th:case="'VALID'" class="badge badge-success"><span class="icon icon-sm">verified</span>Active</span>
-            <span th:case="'EXPIRING'" class="badge badge-info">Expire bientôt</span>
-            <span th:case="'TRIAL'" class="badge badge-info">Essai</span>
-            <span th:case="'GRACE'" class="badge badge-danger">Expirée (délai de grâce)</span>
-            <span th:case="'NOT_REQUIRED'" class="badge badge-neutral">Non requise</span>
-            <span th:case="*" class="badge badge-danger">Lecture seule</span>
+            <span th:case="'VALID'" class="badge badge-success"><span class="icon icon-sm">verified</span><th:block th:text="#{licence.state.valid}">Active</th:block></span>
+            <span th:case="'EXPIRING'" class="badge badge-info" th:text="#{licence.state.expiring}">Expire bientôt</span>
+            <span th:case="'TRIAL'" class="badge badge-info" th:text="#{licence.state.trial}">Essai</span>
+            <span th:case="'GRACE'" class="badge badge-danger" th:text="#{licence.state.grace}">Expirée (délai de grâce)</span>
+            <span th:case="'NOT_REQUIRED'" class="badge badge-neutral" th:text="#{licence.state.notRequired}">Non requise</span>
+            <span th:case="*" class="badge badge-danger" th:text="#{settings.readOnly}">Lecture seule</span>
         </span>
     </div>
 
     <div th:if="${refused}" class="alert alert-error mb-6">
         <span class="icon">lock</span>
-        <span>Cette action n'est pas possible : l'application est en lecture seule. Vos données restent consultables et exportables.</span>
+        <span th:text="#{licence.refused}">Cette action n'est pas possible : l'application est en lecture seule. Vos données restent consultables et exportables.</span>
     </div>
     <div th:if="${s.message != null}" class="alert mb-6" th:classappend="${s.urgent} ? 'alert-error' : 'alert-info'">
         <span class="icon">workspace_premium</span><span th:text="${s.message}">Message</span>
     </div>
 
     <section th:unless="${s.state.name() == 'NOT_REQUIRED'}" class="card mb-6">
-        <div class="card-header"><h2 class="card-title"><span class="icon">workspace_premium</span>Votre licence</h2></div>
+        <div class="card-header"><h2 class="card-title"><span class="icon">workspace_premium</span><th:block th:text="#{licence.yours}">Votre licence</th:block></h2></div>
         <dl class="card-body divide-y divide-surface-container text-body-md">
             <th:block th:if="${l != null}">
-                <div class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant">Numéro</dt><dd class="font-mono" th:text="${l.id}">LIC-2026-0001</dd></div>
-                <div class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant">Entreprise</dt><dd class="text-right" th:text="${l.company}">Atlas</dd></div>
-                <div class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant">NIF</dt><dd class="font-mono" th:text="${l.nif}">NIF</dd></div>
-                <div class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant">Valable jusqu'au</dt>
+                <div class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant" th:text="#{licence.number}">Numéro</dt><dd class="font-mono" th:text="${l.id}">LIC-2026-0001</dd></div>
+                <div class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant" th:text="#{licence.company}">Entreprise</dt><dd class="text-end" th:text="${l.company}">Atlas</dd></div>
+                <div class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant" th:text="#{licence.nif}">NIF</dt><dd class="font-mono" th:text="${l.nif}">NIF</dd></div>
+                <div class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant" th:text="#{licence.validUntil}">Valable jusqu'au</dt>
                     <dd class="font-semibold" th:text="${#temporals.format(l.expires, 'dd/MM/yyyy')}">31/10/2027</dd></div>
             </th:block>
-            <div th:if="${l == null}" class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant">Licence</dt>
-                <dd th:text="${s.state.name() == 'TRIAL' ? 'Version d''essai' : 'Aucune'}">Version d'essai</dd></div>
-            <div class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant">Utilisateurs actifs</dt>
-                <dd class="font-semibold" th:text="${activeUsers + ' sur ' + maxUsers}">1 sur 3</dd></div>
+            <div th:if="${l == null}" class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant" th:text="#{licence.title}">Licence</dt>
+                <dd th:text="${s.state.name() == 'TRIAL'} ? #{licence.trialVersion} : #{licence.none}">Version d'essai</dd></div>
+            <div class="flex justify-between gap-3 py-2"><dt class="text-on-surface-variant" th:text="#{licence.activeUsers}">Utilisateurs actifs</dt>
+                <dd class="font-semibold" th:text="#{licence.activeUsers.count(${'' + activeUsers}, ${'' + maxUsers})}">1 sur 3</dd></div>
         </dl>
     </section>
 
     <form th:if="${canEdit and s.state.name() != 'NOT_REQUIRED'}" th:action="@{/settings/licence}" method="post" class="card">
-        <div class="card-header"><h2 class="card-title"><span class="icon">key</span>Activer une clé</h2></div>
+        <div class="card-header"><h2 class="card-title"><span class="icon">key</span><th:block th:text="#{licence.activate.title}">Activer une clé</th:block></h2></div>
         <div class="card-body flex flex-col gap-3">
-            <label class="label" for="key">Clé de licence</label>
+            <label class="label" for="key" th:text="#{licence.key}">Clé de licence</label>
             <textarea class="input font-mono text-body-sm" id="key" name="key" rows="4" required spellcheck="false"
                       placeholder="SWIFT-…"></textarea>
-            <p class="hint">Collez la clé reçue de l'éditeur (une nouvelle clé remplace l'ancienne, pour un renouvellement ou plus
+            <p class="hint" th:text="#{licence.key.hint}">Collez la clé reçue de l'éditeur (une nouvelle clé remplace l'ancienne, pour un renouvellement ou plus
                 d'utilisateurs). Elle est liée au NIF de votre profil émetteur.</p>
         </div>
         <div class="card-footer justify-end">
-            <button type="submit" class="btn btn-primary"><span class="icon">check</span>Activer</button>
+            <button type="submit" class="btn btn-primary"><span class="icon">check</span><th:block th:text="#{licence.activate}">Activer</th:block></button>
         </div>
     </form>
 </main>

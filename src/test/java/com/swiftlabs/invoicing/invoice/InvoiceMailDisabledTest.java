@@ -57,7 +57,7 @@ class InvoiceMailDisabledTest {
 
         mockMvc.perform(get("/invoices/" + issued.getId() + "/email"))
             .andExpect(status().isOk())
-            .andExpect(content().string(containsString("L'envoi d'emails n'est pas configuré")))
+            .andExpect(content().string(containsString("L&#39;envoi d&#39;emails n&#39;est pas configuré")))
             .andExpect(content().string(containsString("disabled=\"disabled\"")));
         mockMvc.perform(post("/invoices/" + issued.getId() + "/email/send").with(csrf())
                 .param("to", "client@example.test").param("subject", "x").param("message", "x"))

@@ -31,7 +31,7 @@ public class ClientService {
 
     public Client findById(Long id) {
         return clientRepository.findById(id).orElseThrow(() ->
-            new ResourceNotFoundException("Client introuvable (id=" + id + ")."));
+            new ResourceNotFoundException("client.error.notFound", String.valueOf(id)));
     }
 
     @Transactional
@@ -39,7 +39,7 @@ public class ClientService {
         // Update the stored client so fields not on the form (createdAt) are kept
         Client client = form.getId() != null ? findById(form.getId()) : new Client();
         if (form.getType() == null) {
-            throw new BusinessException("type", "Le type de client est obligatoire.");
+            throw BusinessException.onField("type", "client.error.typeRequired");
         }
         client.setType(form.getType());
         client.setName(form.getName());
@@ -62,15 +62,14 @@ public class ClientService {
         Client client = findById(id);
         long invoices = invoiceRepository.countByClientId(client.getId());
         if (invoices > 0) {
-            throw new BusinessException(
-                "Impossible de supprimer ce client : il possède " + invoices + " facture(s) liée(s).");
+            throw new BusinessException("client.error.hasInvoices", invoices);
         }
         clientRepository.delete(client);
     }
 
     private void validate(Client client) {
         if (client.getType() == ClientType.PROFESSIONNEL && (client.getNif() == null || client.getNif().trim().isEmpty())) {
-            throw new BusinessException("nif", "Le NIF est obligatoire pour un client professionnel.");
+            throw BusinessException.onField("nif", "client.error.nifRequired");
         }
     }
 }

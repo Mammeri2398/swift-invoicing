@@ -119,6 +119,25 @@ class InvoiceExportTest {
     }
 
     @Test
+    void exportsFollowTheUserLanguageButKeepTheirNumberFormats() throws Exception {
+        MvcResult csvResult = mockMvc.perform(get("/invoices/export/csv").param("year", "2026").header("Accept-Language", "en"))
+            .andExpect(header().string("Content-Disposition", containsString("invoices-2026-export-")))
+            .andReturn();
+        String csv = new String(csvResult.getResponse().getContentAsByteArray(), StandardCharsets.UTF_8);
+        assertThat(csv).startsWith("\uFEFFInvoice no.;Status;Issue date;");
+        assertThat(csv.split("\r\n")[1]).startsWith(issued.getInvoiceNumber() + ";Paid;10/03/2026;;\"Atlas; \"\"Services\"\"\";;CCP transfer;1500,50;");
+
+        MvcResult xlsxResult = mockMvc.perform(get("/invoices/export/xlsx").param("status", "PAID").header("Accept-Language", "ar"))
+            .andReturn();
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(xlsxResult.getResponse().getContentAsByteArray()))) {
+            Sheet sheet = workbook.getSheet("الفواتير");
+            assertThat(sheet).isNotNull();
+            assertThat(sheet.getRow(0).getCell(0).getStringCellValue()).isEqualTo("رقم الفاتورة");
+            assertThat(sheet.getRow(1).getCell(7).getNumericCellValue()).isEqualTo(1500.50);
+        }
+    }
+
+    @Test
     @WithMockUser(authorities = "VIEW_CLIENTS")
     void exportsNeedTheRightToViewInvoices() throws Exception {
         mockMvc.perform(get("/invoices/export/csv")).andExpect(status().isForbidden());

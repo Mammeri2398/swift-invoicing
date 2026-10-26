@@ -2,6 +2,8 @@ package com.swiftlabs.invoicing.access.user;
 
 import com.swiftlabs.invoicing.access.profile.Profile;
 
+import com.swiftlabs.invoicing.common.Language;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -67,6 +69,10 @@ public class User {
     /** Base32 secret shared with the authenticator app; null until two-factor login is set up. */
     @Column(name = "totp_secret", length = 64)
     private String totpSecret;
+
+    /** Language of the interface for this user: fr, en or ar (see Language). */
+    @Column(name = "language", nullable = false, length = 5)
+    private String language = Language.FR.getCode();
 
     @Column(name = "totp_enabled", nullable = false)
     private boolean totpEnabled;
@@ -214,6 +220,14 @@ public class User {
     public String getFullName() {
         String full = ((firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "")).trim();
         return full.isEmpty() ? username : full;
+    }
+
+    public Language getLanguage() {
+        return Language.of(language);
+    }
+
+    public void setLanguage(Language language) {
+        this.language = (language == null ? Language.FR : language).getCode();
     }
 
     private static String blankToNull(String value) {

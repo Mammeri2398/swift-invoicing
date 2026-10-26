@@ -14,8 +14,9 @@ public final class TurnoverReport {
     /**
      * One month, all HT: {@code paid} and {@code pending} are invoices by status, {@code credited} the
      * credit notes issued that month, {@code billed} = paid + pending - credited; {@code vat} net of credit notes.
+     * {@code name} and {@code shortName} (chart labels) are in the user's language.
      */
-    public record Month(int number, String name, long invoiceCount, BigDecimal billed, BigDecimal paid,
+    public record Month(int number, String name, String shortName, long invoiceCount, BigDecimal billed, BigDecimal paid,
                         BigDecimal pending, BigDecimal credited, BigDecimal vat, long cancelledCount,
                         BigDecimal cancelledAmount, BigDecimal cumulative, boolean overCeiling) {
     }

@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.backup;
 
+import com.swiftlabs.invoicing.common.Messages;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -20,10 +22,12 @@ public class BackupAdvice {
 
     private final BackupService backupService;
     private final Clock clock;
+    private final Messages messages;
 
-    public BackupAdvice(BackupService backupService, Clock clock) {
+    public BackupAdvice(BackupService backupService, Clock clock, Messages messages) {
         this.backupService = backupService;
         this.clock = clock;
+        this.messages = messages;
     }
 
     @ModelAttribute("backupWarning")
@@ -33,15 +37,16 @@ public class BackupAdvice {
             return null;
         }
         try {
-            if (backupService.lastFailure() != null) {
-                return "Problème de sauvegarde : " + backupService.lastFailure().message();
+            BackupService.Failure failure = backupService.lastFailure();
+            if (failure != null) {
+                return messages.get("backup.warning", messages.of(failure.error()));
             }
             LocalDateTime staleBefore = LocalDateTime.now(clock).minusDays(STALE_DAYS);
             Optional<BackupFile> latest = backupService.latest();
             if (latest.isEmpty()) {
-                return "Aucune sauvegarde n'a encore été faite.";
+                return messages.get("backup.warning.none");
             }
-            return latest.get().createdAt().isAfter(staleBefore) ? null : "Aucune sauvegarde depuis plus de " + STALE_DAYS + " jours.";
+            return latest.get().createdAt().isAfter(staleBefore) ? null : messages.get("backup.warning.stale", String.valueOf(STALE_DAYS));
         } catch (RuntimeException ex) {
             // Never break a page over the warning
             return null;

@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.dashboard;
 
+import com.swiftlabs.invoicing.common.Language;
 import com.swiftlabs.invoicing.invoice.DocumentKind;
 import com.swiftlabs.invoicing.invoice.InvoiceService;
 import com.swiftlabs.invoicing.invoice.InvoiceStatus;
@@ -29,7 +30,13 @@ public class TurnoverService {
         this.issuerService = issuerService;
     }
 
+    /** The report of a year, month names in French (outside a web request: no user language). */
     public TurnoverReport report(int year) {
+        return report(year, Language.FR);
+    }
+
+    /** The report of a year, with the month names in the given language. */
+    public TurnoverReport report(int year, Language language) {
         List<MonthlyTotal> totals = invoiceService.monthlyTotals(year);
         Issuer issuer = issuerService.getIssuer();
         BigDecimal ceiling = issuer.getAnnualCeiling();
@@ -66,7 +73,8 @@ public class TurnoverService {
             BigDecimal billed = paid.add(pending).subtract(credited);
             cumulative = cumulative.add(billed);
             boolean overCeiling = !issuer.isCompany() && cumulative.compareTo(ceiling) >= 0 && billed.signum() > 0;
-            months.add(new TurnoverReport.Month(m, monthName(m), count, billed, paid, pending, credited, vat,
+            months.add(new TurnoverReport.Month(m, monthName(m, TextStyle.FULL_STANDALONE, language),
+                monthName(m, TextStyle.SHORT_STANDALONE, language), count, billed, paid, pending, credited, vat,
                 cancelledCount, cancelled, cumulative, overCeiling));
         }
         return new TurnoverReport(year, months, ceiling, issuer.isCompany());
@@ -81,8 +89,10 @@ public class TurnoverService {
         return years;
     }
 
-    private static String monthName(int month) {
-        String name = Month.of(month).getDisplayName(TextStyle.FULL_STANDALONE, Locale.FRENCH);
-        return Character.toUpperCase(name.charAt(0)) + name.substring(1);
+    /** "Janvier" / "Janv.", "January" / "Jan", "جانفي" (ar-DZ: the month names used in Algeria). */
+    private static String monthName(int month, TextStyle style, Language language) {
+        Locale locale = language.getLocale();
+        String name = Month.of(month).getDisplayName(style, locale);
+        return name.substring(0, 1).toUpperCase(locale) + name.substring(1);
     }
 }

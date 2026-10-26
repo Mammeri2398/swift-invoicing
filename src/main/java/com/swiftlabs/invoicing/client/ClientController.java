@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.client;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.invoice.PaymentService;
 
 import jakarta.validation.Valid;
@@ -22,10 +23,12 @@ public class ClientController {
 
     private final ClientService clientService;
     private final PaymentService paymentService;
+    private final Messages messages;
 
-    public ClientController(ClientService clientService, PaymentService paymentService) {
+    public ClientController(ClientService clientService, PaymentService paymentService, Messages messages) {
         this.paymentService = paymentService;
         this.clientService = clientService;
+        this.messages = messages;
     }
 
     @GetMapping
@@ -59,7 +62,7 @@ public class ClientController {
         if (!result.hasErrors()) {
             try {
                 clientService.save(form);
-                redirectAttributes.addFlashAttribute("success", "Client enregistré.");
+                redirectAttributes.addFlashAttribute("success", messages.get("client.saved"));
                 return "redirect:/clients";
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
@@ -73,9 +76,9 @@ public class ClientController {
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             clientService.delete(id);
-            redirectAttributes.addFlashAttribute("success", "Client supprimé.");
+            redirectAttributes.addFlashAttribute("success", messages.get("client.deleted"));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", ex.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.of(ex));
         }
         return "redirect:/clients";
     }

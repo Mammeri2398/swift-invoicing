@@ -19,7 +19,7 @@ public class LicenceAdvice {
             return licenceService.status();
         } catch (RuntimeException ex) {
             // Never break a page (error pages included) over the banner
-            return new LicenceStatus(LicenceStatus.State.NOT_REQUIRED, null, 0, null);
+            return new LicenceStatus(LicenceStatus.State.NOT_REQUIRED, null, 0);
         }
     }
 }

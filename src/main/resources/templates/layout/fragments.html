@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <body>
 
 <!--/* <head> shared by every layout */-->
 <head th:fragment="head(title)">
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title th:text="${title} + ' — Swift Invoicing'">Swift Invoicing</title>
+    <title th:text="#{app.title(${title})}">Swift Invoicing</title>
     <link rel="stylesheet" th:href="@{/css/app.css}"/>
     <link rel="preload" th:href="@{/fonts/material-symbols-outlined.woff2}" as="font" type="font/woff2" crossorigin/>
 </head>
@@ -23,7 +23,7 @@
                 <span class="hidden flex-col leading-tight sm:flex">
                     <span class="text-title-sm text-primary">Swift Invoicing</span>
                     <span class="text-label-sm uppercase tracking-wider text-on-surface-variant"
-                          th:text="${companyType?.company} ? 'Gestion de facturation' : 'Auto-entrepreneur ANAE'">Auto-entrepreneur ANAE</span>
+                          th:text="${companyType?.company} ? #{app.tagline.company} : #{app.tagline.autoEntrepreneur}">Auto-entrepreneur ANAE</span>
                 </span>
             </a>
             <nav class="hidden items-center gap-1 xl:flex" th:if="${u != null}">
@@ -34,9 +34,9 @@
                     <summary class="nav-link inline-flex cursor-pointer list-none items-center gap-0.5"
                              th:classappend="${#strings.startsWith(currentPath, '/settings') or #strings.startsWith(currentPath, '/users')
                                                or #strings.startsWith(currentPath, '/profiles') or #strings.startsWith(currentPath, '/privileges')} ? 'active'">
-                        Réglages<span class="icon icon-sm">expand_more</span>
+                        <th:block th:text="#{nav.settings}">Réglages</th:block><span class="icon icon-sm">expand_more</span>
                     </summary>
-                    <div class="absolute left-0 mt-2 flex w-48 flex-col gap-1 rounded-xl bg-surface-container-lowest p-2 shadow-lg">
+                    <div class="absolute start-0 mt-2 flex w-48 flex-col gap-1 rounded-xl bg-surface-container-lowest p-2 shadow-lg">
                         <th:block th:replace="~{layout/fragments :: adminLinks}"></th:block>
                     </div>
                 </details>
@@ -46,28 +46,28 @@
         <div class="flex shrink-0 items-center gap-3" th:if="${u != null}">
             <!--/* Icons only: with the full navigation, the bar has no room for a search box or a labelled button */-->
             <a th:if="${u.can('VIEW_INVOICES')}" th:href="@{/invoices#search}" class="btn-icon hidden sm:inline-flex"
-               title="Rechercher une facture" aria-label="Rechercher une facture"><span class="icon">search</span></a>
+               th:title="#{nav.searchInvoice}" th:aria-label="#{nav.searchInvoice}"><span class="icon">search</span></a>
             <a th:if="${u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="btn btn-primary btn-sm hidden sm:inline-flex"
-               title="Nouvelle facture" aria-label="Nouvelle facture"><span class="icon">add</span></a>
-            <a th:href="@{/account}" class="hidden max-w-[9rem] flex-col whitespace-nowrap rounded-lg px-2 py-1 text-right leading-tight hover:bg-surface-container md:flex"
+               th:title="#{nav.newInvoice}" th:aria-label="#{nav.newInvoice}"><span class="icon">add</span></a>
+            <a th:href="@{/account}" class="hidden max-w-[9rem] flex-col whitespace-nowrap rounded-lg px-2 py-1 text-end leading-tight hover:bg-surface-container md:flex"
                th:classappend="${#strings.startsWith(currentPath, '/account')} ? 'bg-surface-container-high'"
-               th:title="${u.username + ' (' + u.profileName + ') - Mon compte'}">
+               th:title="#{nav.accountTitle(${u.username}, ${u.profileName})}">
                 <span class="truncate text-label-md text-on-surface" th:text="${u.displayName}">Karim</span>
                 <span class="truncate text-label-sm text-on-surface-variant" th:text="${u.profileName}">Administrateur</span>
             </a>
             <form th:action="@{/perform-logout}" method="post">
-                <button type="submit" class="btn-icon danger" title="Se déconnecter" aria-label="Se déconnecter">
+                <button type="submit" class="btn-icon danger" th:title="#{nav.logout}" th:aria-label="#{nav.logout}">
                     <span class="icon">logout</span>
                 </button>
             </form>
             <!--/* Small screens: same links in a disclosure menu (no JavaScript needed) */-->
             <details class="relative xl:hidden" data-dropdown>
-                <summary class="btn-icon list-none cursor-pointer" aria-label="Menu"><span class="icon">menu</span></summary>
-                <nav class="absolute right-0 mt-2 flex w-56 flex-col gap-1 rounded-xl bg-surface-container-lowest p-2 shadow-lg">
+                <summary class="btn-icon list-none cursor-pointer" th:aria-label="#{nav.menu}"><span class="icon">menu</span></summary>
+                <nav class="absolute end-0 mt-2 flex w-56 flex-col gap-1 rounded-xl bg-surface-container-lowest p-2 shadow-lg">
                     <th:block th:replace="~{layout/fragments :: navLinks}"></th:block>
                     <th:block th:replace="~{layout/fragments :: adminLinks}"></th:block>
-                    <a th:if="${u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="nav-link sm:hidden">Nouvelle facture</a>
-                    <a th:href="@{/account}" class="nav-link">Mon compte</a>
+                    <a th:if="${u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="nav-link sm:hidden" th:text="#{nav.newInvoice}">Nouvelle facture</a>
+                    <a th:href="@{/account}" class="nav-link" th:text="#{nav.account}">Mon compte</a>
                 </nav>
             </details>
         </div>
@@ -78,33 +78,33 @@
        Quotes are shown at /invoices/{id} like invoices: their pages set navSection = 'quotes'. */-->
 <th:block th:fragment="navLinks" th:with="u=${currentUser}, p=${currentPath}">
     <a th:if="${u.can('VIEW_DASHBOARD')}" th:href="@{/}" class="nav-link"
-       th:classappend="${p == '/' or p == '/dashboard'} ? 'active'">Tableau de bord</a>
+       th:classappend="${p == '/' or p == '/dashboard'} ? 'active'" th:text="#{nav.dashboard}">Tableau de bord</a>
     <a th:if="${u.can('VIEW_INVOICES')}" th:href="@{/invoices}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/invoices') and p != '/invoices/lookup' and navSection != 'quotes'} ? 'active'">Factures</a>
+       th:classappend="${#strings.startsWith(p, '/invoices') and p != '/invoices/lookup' and navSection != 'quotes'} ? 'active'" th:text="#{nav.invoices}">Factures</a>
     <a th:if="${u.can('VIEW_INVOICES')}" th:href="@{/quotes}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/quotes') or navSection == 'quotes'} ? 'active'">Devis</a>
+       th:classappend="${#strings.startsWith(p, '/quotes') or navSection == 'quotes'} ? 'active'" th:text="#{nav.quotes}">Devis</a>
     <a th:if="${u.can('VIEW_DASHBOARD')}" th:href="@{/turnover}" class="nav-link"
-       th:classappend="${p == '/turnover'} ? 'active'">Chiffre d'affaires</a>
+       th:classappend="${p == '/turnover'} ? 'active'" th:text="#{nav.turnover}">Chiffre d'affaires</a>
     <a th:if="${u.can('VIEW_CLIENTS')}" th:href="@{/clients}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/clients')} ? 'active'">Clients</a>
+       th:classappend="${#strings.startsWith(p, '/clients')} ? 'active'" th:text="#{nav.clients}">Clients</a>
 </th:block>
 
 <!--/* Settings and administration links: the "Réglages" dropdown on wide screens, part of the list in the mobile menu */-->
 <th:block th:fragment="adminLinks" th:with="u=${currentUser}, p=${currentPath}">
     <a th:if="${u.can('VIEW_ISSUER')}" th:href="@{/settings/issuer}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/settings/issuer')} ? 'active'">Paramètres</a>
+       th:classappend="${#strings.startsWith(p, '/settings/issuer')} ? 'active'" th:text="#{nav.issuer}">Paramètres</a>
     <a th:if="${u.can('VIEW_ISSUER')}" th:href="@{/settings/mail}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/settings/mail')} ? 'active'">Email</a>
+       th:classappend="${#strings.startsWith(p, '/settings/mail')} ? 'active'" th:text="#{nav.mail}">Email</a>
     <a th:if="${u.can('VIEW_ISSUER') and licence != null and licence.state.name() != 'NOT_REQUIRED'}" th:href="@{/settings/licence}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/settings/licence')} ? 'active'">Licence</a>
+       th:classappend="${#strings.startsWith(p, '/settings/licence')} ? 'active'" th:text="#{nav.licence}">Licence</a>
     <a th:if="${u.can('MANAGE_BACKUPS')}" th:href="@{/settings/backups}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/settings/backups')} ? 'active'">Sauvegardes</a>
+       th:classappend="${#strings.startsWith(p, '/settings/backups')} ? 'active'" th:text="#{nav.backups}">Sauvegardes</a>
     <a th:if="${u.can('MANAGE_USERS')}" th:href="@{/users}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/users')} ? 'active'">Utilisateurs</a>
+       th:classappend="${#strings.startsWith(p, '/users')} ? 'active'" th:text="#{nav.users}">Utilisateurs</a>
     <a th:if="${u.can('MANAGE_PROFILES')}" th:href="@{/profiles}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/profiles')} ? 'active'">Profils</a>
+       th:classappend="${#strings.startsWith(p, '/profiles')} ? 'active'" th:text="#{nav.profiles}">Profils</a>
     <a th:if="${u.can('MANAGE_PRIVILEGES')}" th:href="@{/privileges}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/privileges')} ? 'active'">Privilèges</a>
+       th:classappend="${#strings.startsWith(p, '/privileges')} ? 'active'" th:text="#{nav.privileges}">Privilèges</a>
 </th:block>
 
 <!--/* On-premise licence: trial, renewal soon, grace period, read-only (see LicenceStatus) */-->
@@ -112,7 +112,7 @@
      class="print:hidden" th:classappend="${licence.urgent} ? 'bg-error-container text-on-error-container' : 'bg-secondary-container/50 text-on-surface'">
     <div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2 text-body-sm sm:px-6 lg:px-12">
         <span class="inline-flex items-center gap-2"><span class="icon icon-sm">workspace_premium</span><span th:text="${licence.message}">Licence</span></span>
-        <a th:if="${currentUser.can('VIEW_ISSUER')}" th:href="@{/settings/licence}" class="font-semibold underline">Licence</a>
+        <a th:if="${currentUser.can('VIEW_ISSUER')}" th:href="@{/settings/licence}" class="font-semibold underline" th:text="#{nav.licence}">Licence</a>
     </div>
 </div>
 
@@ -121,7 +121,7 @@
      class="bg-error-container text-on-error-container print:hidden">
     <div class="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-2 text-body-sm sm:px-6 lg:px-12">
         <span class="inline-flex items-center gap-2"><span class="icon icon-sm">backup</span><span th:text="${backupWarning}">Sauvegarde</span></span>
-        <a th:href="@{/settings/backups}" class="font-semibold underline">Sauvegardes</a>
+        <a th:href="@{/settings/backups}" class="font-semibold underline" th:text="#{nav.backups}">Sauvegardes</a>
     </div>
 </div>
 
@@ -136,28 +136,37 @@
     <div th:if="${success}" class="alert alert-success" role="status">
         <span class="icon">verified</span>
         <span class="flex-1" th:text="${success}">Opération réussie.</span>
-        <button type="button" class="btn-icon -my-1" data-dismiss aria-label="Fermer"><span class="icon">close</span></button>
+        <button type="button" class="btn-icon -my-1" data-dismiss th:aria-label="#{action.close}"><span class="icon">close</span></button>
     </div>
     <div th:if="${message}" class="alert alert-info" role="status">
         <span class="icon">info</span>
         <span class="flex-1" th:text="${message}">Information.</span>
-        <button type="button" class="btn-icon -my-1" data-dismiss aria-label="Fermer"><span class="icon">close</span></button>
+        <button type="button" class="btn-icon -my-1" data-dismiss th:aria-label="#{action.close}"><span class="icon">close</span></button>
     </div>
     <div th:if="${error}" class="alert alert-error" role="alert">
         <span class="icon">error</span>
         <span class="flex-1" th:text="${error}">Une erreur est survenue.</span>
-        <button type="button" class="btn-icon -my-1" data-dismiss aria-label="Fermer"><span class="icon">close</span></button>
+        <button type="button" class="btn-icon -my-1" data-dismiss th:aria-label="#{action.close}"><span class="icon">close</span></button>
     </div>
 </div>
 
 <footer th:fragment="footer" class="mt-10 bg-surface-container-low print:hidden">
     <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-body-sm text-on-surface-variant sm:flex-row sm:px-6 lg:px-12">
-        <span th:text="${'Swift Invoicing — ' + (companyType?.company ? 'Gestion de facturation' : 'Auto-entrepreneur (ANAE)') + ' · Algérie · Montants en DZD'}">Swift Invoicing — Auto-entrepreneur (ANAE) · Algérie · Montants en DZD</span>
+        <span th:text="#{app.footer(${companyType?.company} ? #{app.tagline.company} : #{app.footer.autoEntrepreneur})}">Swift Invoicing — Auto-entrepreneur (ANAE) · Algérie · Montants en DZD</span>
         <a th:href="@{/invoices/lookup}" class="inline-flex items-center gap-1 hover:text-primary">
-            <span class="icon icon-sm">verified_user</span>Vérifier une facture
+            <span class="icon icon-sm">verified_user</span><th:block th:text="#{app.footer.verify}">Vérifier une facture</th:block>
         </a>
     </div>
 </footer>
+
+<!--/* Language choice of the pages before login (?lang= is kept in a cookie, see UserLocaleResolver) */-->
+<nav th:fragment="languageSwitch" class="mt-6 flex items-center justify-center gap-1 text-body-sm" th:aria-label="#{language.label}">
+    <th:block th:each="lang : ${T(com.swiftlabs.invoicing.common.Language).values()}">
+        <a th:href="@{''(lang=${lang.code})}" th:lang="${lang.code}" th:text="${lang.nativeName}"
+           class="rounded-lg px-2 py-1 hover:bg-surface-container"
+           th:classappend="${#locale.language == lang.code} ? 'font-semibold text-primary' : 'text-on-surface-variant'">Français</a>
+    </th:block>
+</nav>
 
 <!--/* Form errors, used inside a <form th:object="...">.
        Field: <p th:replace="~{layout/fragments :: fieldError('name')}"></p>
@@ -168,48 +177,33 @@
     <span class="icon">error</span>
     <div class="flex flex-col gap-1">
         <p th:each="message : ${#fields.globalErrors()}" th:text="${message}">Erreur</p>
-        <p th:if="${#fields.hasErrors('*')}">Corrigez les champs signalés.</p>
+        <p th:if="${#fields.hasErrors('*')}" th:text="#{form.fixFields}">Corrigez les champs signalés.</p>
     </div>
 </div>
 
 <!--/* Pagination: ~{layout/fragments :: pagination(${page}, ${pageLinks})} */-->
 <nav th:fragment="pagination(page, links)" th:if="${page.totalPages > 1}" class="flex items-center gap-1" aria-label="Pagination">
-    <a th:if="${page.hasPrevious()}" th:href="${links.to(page.number - 1)}" class="btn-icon" aria-label="Page précédente"><span class="icon">chevron_left</span></a>
-    <span th:unless="${page.hasPrevious()}" class="btn-icon pointer-events-none opacity-30"><span class="icon">chevron_left</span></span>
-    <span class="px-2 tabular-nums" th:text="${'Page ' + (page.number + 1) + ' sur ' + page.totalPages}">Page 1 sur 3</span>
-    <a th:if="${page.hasNext()}" th:href="${links.to(page.number + 1)}" class="btn-icon" aria-label="Page suivante"><span class="icon">chevron_right</span></a>
-    <span th:unless="${page.hasNext()}" class="btn-icon pointer-events-none opacity-30"><span class="icon">chevron_right</span></span>
+    <a th:if="${page.hasPrevious()}" th:href="${links.to(page.number - 1)}" class="btn-icon" th:aria-label="#{pagination.previous}"><span class="icon rtl-flip">chevron_left</span></a>
+    <span th:unless="${page.hasPrevious()}" class="btn-icon pointer-events-none opacity-30"><span class="icon rtl-flip">chevron_left</span></span>
+    <span class="px-2 tabular-nums" th:text="#{pagination.position(${page.number + 1}, ${page.totalPages})}">Page 1 sur 3</span>
+    <a th:if="${page.hasNext()}" th:href="${links.to(page.number + 1)}" class="btn-icon" th:aria-label="#{pagination.next}"><span class="icon rtl-flip">chevron_right</span></a>
+    <span th:unless="${page.hasNext()}" class="btn-icon pointer-events-none opacity-30"><span class="icon rtl-flip">chevron_right</span></span>
 </nav>
 
 <!--/* Invoice status badge: ~{layout/fragments :: statusBadge(${invoice.status})} */-->
-<span th:fragment="statusBadge(status)" class="badge" th:switch="${status.name()}"
+<span th:fragment="statusBadge(status)" class="badge"
       th:classappend="${status.name() == 'PAID'} ? 'badge-success' : (${status.name() == 'ISSUED'} ? 'badge-info' : (${status.name() == 'CANCELLED'} ? 'badge-danger' : 'badge-neutral'))">
-    <th:block th:case="'DRAFT'">Brouillon</th:block>
-    <th:block th:case="'ISSUED'">Émise</th:block>
-    <th:block th:case="'PAID'">Payée</th:block>
-    <th:block th:case="'CANCELLED'">Annulée</th:block>
-    <th:block th:case="*" th:text="${status.name()}">Autre</th:block>
+    <th:block th:text="${@messages.label(status)}">Brouillon</th:block>
 </span>
 
 <!--/* Quote status badge (a "devis" is masculine): ~{layout/fragments :: quoteStatusBadge(${quote.status})} */-->
-<span th:fragment="quoteStatusBadge(status)" class="badge" th:switch="${status.name()}"
+<span th:fragment="quoteStatusBadge(status)" class="badge"
       th:classappend="${status.name() == 'ACCEPTED'} ? 'badge-success' : (${status.name() == 'ISSUED'} ? 'badge-info' : (${status.name() == 'REFUSED' or status.name() == 'CANCELLED'} ? 'badge-danger' : 'badge-neutral'))">
-    <th:block th:case="'DRAFT'">Brouillon</th:block>
-    <th:block th:case="'ISSUED'">Émis</th:block>
-    <th:block th:case="'ACCEPTED'">Accepté</th:block>
-    <th:block th:case="'REFUSED'">Refusé</th:block>
-    <th:block th:case="'CANCELLED'">Annulé</th:block>
-    <th:block th:case="*" th:text="${status.name()}">Autre</th:block>
+    <th:block th:text="#{${'quoteStatus.' + status.name()}}">Brouillon</th:block>
 </span>
 
 <!--/* Payment method label: ~{layout/fragments :: paymentMethod(${invoice.paymentMethod.name()})} */-->
-<th:block th:fragment="paymentMethod(code)" th:switch="${code}">
-    <th:block th:case="'CASH'">Espèces</th:block>
-    <th:block th:case="'BANK_TRANSFER'">Virement bancaire</th:block>
-    <th:block th:case="'CHEQUE'">Chèque</th:block>
-    <th:block th:case="'CCP'">Virement CCP</th:block>
-    <th:block th:case="*" th:text="${code}">Autre</th:block>
-</th:block>
+<th:block th:fragment="paymentMethod(code)" th:text="#{${'enum.PaymentMethod.' + code}}">Espèces</th:block>
 
 </body>
 </html>

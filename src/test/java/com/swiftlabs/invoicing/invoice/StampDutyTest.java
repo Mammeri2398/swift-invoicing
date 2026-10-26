@@ -124,8 +124,8 @@ class StampDutyTest {
             stripper.setSortByPosition(true);
             text = stripper.getText(pdf);
         }
-        assertThat(text).contains("Total 1 000,00 DA").contains("Droit de timbre 10,00 DA").contains("Net à payer 1 010,00 DA")
-            .contains("à la somme de : mille dix dinars algériens");
+        assertThat(text).contains("Sous-total 1 000,00 DA").contains("Droit de timbre (espèces) 10,00 DA").contains("Net à payer 1 010,00 DA")
+            .contains("à la somme de : mille dix").contains("dinars algériens.");
         mockMvc.perform(get("/invoices/" + issued.getId()))
             .andExpect(content().string(containsString("Droit de timbre")))
             .andExpect(content().string(containsString("Net à payer :")))

@@ -106,7 +106,7 @@ class InvoicePdfTest {
     @Test
     void headerPrintsAddressAndCityOnce() throws IOException {
         String text = text(invoiceService.issue(draft().getId()));
-        assertThat(text).contains("12 rue Didouche Mourad, Alger");
+        assertThat(text).contains("12 rue Didouche Mourad").contains("Alger, Algérie");
         assertThat(occurrences(text, "12 rue Didouche Mourad")).isEqualTo(1);
         assertThat(text).contains("0555 12 34 56").contains("karim@example.dz");
     }
@@ -130,7 +130,7 @@ class InvoicePdfTest {
     void linesPaymentAndAccentsAreRendered() throws IOException {
         String text = text(invoiceService.issue(draft().getId()));
         assertThat(text).contains("Développement").contains("jour").contains("30 000,00 DA");
-        assertThat(text).contains("Date d'émission : 04/05/2026");
+        assertThat(text).contains("DATE DE FACTURE").contains("04/05/2026");
         assertThat(text).contains("Virement bancaire").contains("CCP 0021458992 clé 45");
         // Client without NIF (empty string): only the issuer's NIF is printed
         assertThat(occurrences(text, "NIF :")).isEqualTo(1);

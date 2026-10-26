@@ -19,6 +19,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Locale;
 
@@ -63,6 +64,8 @@ public class InvoicePdfService {
             ? "data:" + issuer.getLogoContentType() + ";base64," + Base64.getEncoder().encodeToString(issuer.getLogoData())
             : null);
         context.setVariable("amountUtils", new AmountUtils());
+        context.setVariable("initials", initials(issuer.getFullName()));
+        context.setVariable("paymentTerms", paymentTerms(invoice));
         context.setVariable("amountInWords", new AmountInWords());
 
         String html = templateEngine.process("invoice/pdf", context);
@@ -81,5 +84,31 @@ public class InvoicePdfService {
         builder.toStream(out);
         builder.run();
         return out.toByteArray();
+    }
+
+    /** Shown in place of a logo: "Amine Mansouri" -> "AM", "Numidia" -> "N". */
+    static String initials(String name) {
+        if (name == null || name.isBlank()) {
+            return "";
+        }
+        StringBuilder initials = new StringBuilder();
+        for (String word : name.trim().split("\\s+")) {
+            if (initials.length() < 2 && Character.isLetter(word.charAt(0))) {
+                initials.append(Character.toUpperCase(word.charAt(0)));
+            }
+        }
+        return initials.toString();
+    }
+
+    /** "30 jours" between the issue and due dates; "À réception" without a later due date. */
+    static String paymentTerms(Invoice invoice) {
+        if (invoice.isCreditNote()) {
+            return "—";
+        }
+        long days = invoice.getDueDate() == null ? 0 : ChronoUnit.DAYS.between(invoice.getIssueDate(), invoice.getDueDate());
+        if (days <= 0) {
+            return invoice.isOffer() ? "—" : "À réception";
+        }
+        return days + (days == 1 ? " jour" : " jours");
     }
 }

@@ -147,11 +147,11 @@ class CompanyModeTest {
             text = stripper.getText(pdf);
         }
         // The header prints the legal status in capitals, as for an auto-entrepreneur
-        assertThat(text).contains("SARL AU CAPITAL DE 100 000,00 DA")
-            .contains("RC : 16/00-1234567B21").contains("AI : 16012345678")
-            .contains("Total HT 1 500,00 DA").contains("TVA 19 % 190,00 DA").contains("TVA 9 % 45,00 DA")
-            .contains("Total TTC 1 735,00 DA")
-            .contains("mille sept cent trente-cinq")
+        assertThat(text).contains("SARL au capital de 100 000,00 DA")
+            .contains("RC : 16/00-1234567B21").contains("Article d'imposition : 16012345678")
+            .contains("Sous-total hors taxes 1 500,00 DA").contains("TVA 19 % 190,00 DA").contains("TVA 9 % 45,00 DA")
+            .contains("Total TTC à payer 1 735,00 DA")
+            .contains("à la somme de : mille sept").contains("cent trente-cinq dinars algériens")
             .doesNotContain("TVA non applicable").doesNotContain("Auto-entrepreneur");
     }
 

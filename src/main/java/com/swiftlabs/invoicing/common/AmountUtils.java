@@ -66,6 +66,11 @@ public final class AmountUtils {
     }
 
     public static String format(BigDecimal amount) {
+        return formatNumber(amount) + " DA";
+    }
+
+    /** An amount without the currency, for a column whose heading says "(DA)": "45 000,00". */
+    public static String formatNumber(BigDecimal amount) {
         if (amount == null) {
             amount = BigDecimal.ZERO;
         }
@@ -74,6 +79,6 @@ public final class AmountUtils {
         symbols.setDecimalSeparator(',');
         DecimalFormat df = new DecimalFormat("#,##0.00", symbols);
         df.setGroupingUsed(true);
-        return df.format(amount) + " DA";
+        return df.format(amount);
     }
 }

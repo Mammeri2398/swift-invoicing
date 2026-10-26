@@ -179,8 +179,8 @@ class QuoteTest {
             stripper.setSortByPosition(true);
             text = stripper.getText(pdf);
         }
-        assertThat(text).contains("DEVIS").contains("DV-2026-0001").contains("Valable jusqu'au : 01/07/2026")
-            .contains("Arrêté le présent devis à la somme de : cinq mille dinars algériens")
+        assertThat(text).contains("Devis DV-2026-0001").contains("VALABLE JUSQU'AU").contains("01/07/2026")
+            .contains("Arrêté le présent devis à la somme de : cinq mille").contains("dinars algériens.")
             .contains("Ce document n'est pas une facture.");
     }
 }

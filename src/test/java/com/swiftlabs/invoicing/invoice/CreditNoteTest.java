@@ -209,8 +209,8 @@ class CreditNoteTest {
             stripper.setSortByPosition(true);
             text = stripper.getText(pdf);
         }
-        assertThat(text).contains("AVOIR").contains("AV-2026-0001").contains("Sur la facture FA-2026-0001 du 10/03/2026")
-            .contains("Total avoir 1 000,00 DA").contains("Arrêté le présent avoir à la somme de : mille dinars algériens")
+        assertThat(text).contains("Avoir AV-2026-0001").contains("Sur la facture FA-2026-0001 du 10/03/2026")
+            .contains("Total de l'avoir 1 000,00 DA").contains("Arrêté le présent avoir à la somme de : mille dinars").contains("algériens.")
             .doesNotContain("FACTURE\n");
     }
 

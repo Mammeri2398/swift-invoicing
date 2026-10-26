@@ -1,0 +1,66 @@
+# Builds the Windows installer (SwiftInvoicing-Setup-<version>.exe) on a GitHub Windows machine.
+#
+# - Push a version tag (git tag v1.0.0 && git push dev v1.0.0): the tests run, then the installer is
+#   built and attached to a GitHub release of that tag.
+# - Or run it by hand (Actions > Windows installer > Run workflow): the installer is a downloadable
+#   artifact of the run, with the pom's version.
+name: Windows installer
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      # Docker is available here: the PostgreSQL tests (Testcontainers) run too
+      - run: ./mvnw -B verify
+
+  installer:
+    name: Installer
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Download cache (PostgreSQL, WinSW, Visual C++)
+        uses: actions/cache@v4
+        with:
+          path: target/windows/cache
+          key: windows-downloads-${{ hashFiles('packaging/windows/build.ps1') }}
+      - name: Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup --no-progress -y
+          }
+      - name: Build the installer
+        shell: pwsh
+        run: ./packaging/windows/build.ps1 -SkipTests -Version '${{ github.ref_type == 'tag' && github.ref_name || '' }}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SwiftInvoicing-Setup
+          path: target/windows/SwiftInvoicing-Setup-*.exe
+          if-no-files-found: error
+      - name: Release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create '${{ github.ref_name }}' (Get-Item target/windows/SwiftInvoicing-Setup-*.exe).FullName --title 'Swift Invoicing ${{ github.ref_name }}' --generate-notes

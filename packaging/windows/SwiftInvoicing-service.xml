@@ -1,0 +1,31 @@
+<!--
+  The application as a Windows service, run by WinSW (SwiftInvoicing-service.exe, next to this file).
+  It starts with Windows, after the database service, and is restarted if it stops unexpectedly.
+  The working folder holds what the application writes: config\, logs\, backups\ (see application-onprem.properties).
+-->
+<service>
+  <id>SwiftInvoicing</id>
+  <name>Swift Invoicing</name>
+  <description>Application de facturation Swift Invoicing (accès par le navigateur).</description>
+
+  <executable>%BASE%\..\app\SwiftInvoicing.exe</executable>
+  <workingdirectory>%ProgramData%\Swift Invoicing</workingdirectory>
+
+  <startmode>Automatic</startmode>
+  <depend>SwiftInvoicingDB</depend>
+
+  <!-- Ctrl+C first: Spring finishes the requests in progress (graceful shutdown) -->
+  <stoptimeout>30 sec</stoptimeout>
+
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="30 sec"/>
+  <onfailure action="restart" delay="2 min"/>
+  <resetfailure>1 hour</resetfailure>
+
+  <!-- Console output (start-up errors before the application log is open) -->
+  <logpath>%ProgramData%\Swift Invoicing\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>5</keepFiles>
+  </log>
+</service>

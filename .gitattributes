@@ -1,2 +1,5 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+# Windows packaging files (PowerShell, Inno Setup) keep Windows line endings
+*.ps1 text eol=crlf
+*.iss text eol=crlf

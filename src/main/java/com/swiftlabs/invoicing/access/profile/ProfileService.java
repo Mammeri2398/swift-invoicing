@@ -4,6 +4,8 @@ import com.swiftlabs.invoicing.access.privilege.Privilege;
 import com.swiftlabs.invoicing.access.privilege.PrivilegeRepository;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
+import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import org.springframework.stereotype.Service;
@@ -19,7 +21,7 @@ import java.util.Set;
 public class ProfileService {
 
     /** Privilege that can restore every other one: someone active must always keep it. */
-    static final String MANAGE_PROFILES = "MANAGE_PROFILES";
+    static final String MANAGE_PROFILES = Privileges.MANAGE_PROFILES;
 
     private final ProfileRepository profileRepository;
     private final PrivilegeRepository privilegeRepository;
@@ -54,23 +56,23 @@ public class ProfileService {
         String name = form.getName();
         List<Long> privilegeIds = form.getPrivilegeIds();
         if (name == null || name.trim().isEmpty()) {
-            throw BusinessException.onField("name", "profile.error.nameRequired");
+            throw BusinessException.onField("name", MessageProperties.PROFILE_ERROR_NAME_REQUIRED);
         }
         String trimmedName = name.trim();
         Profile profile = id == null ? new Profile() : profileRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("profile.error.notFound"));
+            .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.PROFILE_ERROR_NOT_FOUND));
 
         Profile sameName = profileRepository.findByName(trimmedName);
         if (sameName != null && !sameName.getId().equals(profile.getId())) {
-            throw BusinessException.onField("name", "profile.error.nameUsed");
+            throw BusinessException.onField("name", MessageProperties.PROFILE_ERROR_NAME_USED);
         }
 
         Set<Privilege> privileges = new HashSet<>(privilegeRepository.findAllById(privilegeIds));
         if (privileges.size() != new HashSet<>(privilegeIds).size()) {
-            throw BusinessException.onField("privilegeIds", "privilege.error.notFound");
+            throw BusinessException.onField("privilegeIds", MessageProperties.PRIVILEGE_ERROR_NOT_FOUND);
         }
         if (profile.getId() != null && removesLastManageProfiles(profile, privileges)) {
-            throw BusinessException.onField("privilegeIds", "profile.error.lastManageProfiles", MANAGE_PROFILES);
+            throw BusinessException.onField("privilegeIds", MessageProperties.PROFILE_ERROR_LAST_MANAGE_PROFILES, MANAGE_PROFILES);
         }
 
         profile.setName(trimmedName);

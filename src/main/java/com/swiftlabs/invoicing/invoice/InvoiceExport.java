@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.invoice;
 
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -78,8 +79,8 @@ public class InvoiceExport {
             col("originalInvoice", 16, i -> i.getOriginalInvoice() != null ? i.getOriginalInvoice().getInvoiceNumber() : null),
             col("stampDuty", 16, Invoice::getStampDutyAmount),
             // Invoices only: what was received and what is left (credit notes: blank)
-            new Column("invoiceExport.col.paid", 14, row -> row.payment() != null ? row.payment().paid() : null),
-            new Column("invoiceExport.col.balance", 14, row -> row.payment() != null ? row.payment().balance() : null));
+            new Column(MessageProperties.INVOICE_EXPORT_COL_PAID, 14, row -> row.payment() != null ? row.payment().paid() : null),
+            new Column(MessageProperties.INVOICE_EXPORT_COL_BALANCE, 14, row -> row.payment() != null ? row.payment().balance() : null));
     }
 
     private String header(Column column) {
@@ -99,7 +100,7 @@ public class InvoiceExport {
 
     public byte[] toXlsx(List<Invoice> invoices, Map<Long, PaymentService.Summary> payments) {
         try (XSSFWorkbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            Sheet sheet = workbook.createSheet(WorkbookUtil.createSafeSheetName(messages.get("invoiceExport.sheet")));
+            Sheet sheet = workbook.createSheet(WorkbookUtil.createSafeSheetName(messages.get(MessageProperties.INVOICE_EXPORT_SHEET)));
             CellStyle header = headerStyle(workbook);
             CellStyle date = formatStyle(workbook, "dd/mm/yyyy");
             CellStyle dateTime = formatStyle(workbook, "dd/mm/yyyy hh:mm");

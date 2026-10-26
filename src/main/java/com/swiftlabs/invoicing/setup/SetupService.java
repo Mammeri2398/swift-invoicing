@@ -7,6 +7,7 @@ import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.Language;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import org.slf4j.Logger;
@@ -67,10 +68,10 @@ public class SetupService {
     @Transactional
     public synchronized User complete(SetupForm form, Language language) {
         if (!isSetupNeeded()) {
-            throw new BusinessException("setup.error.alreadyDone");
+            throw new BusinessException(MessageProperties.SETUP_ERROR_ALREADY_DONE);
         }
         if (!form.getPassword().equals(form.getConfirmPassword())) {
-            throw BusinessException.onField("confirmPassword", "setup.error.passwordMismatch");
+            throw BusinessException.onField("confirmPassword", MessageProperties.SETUP_ERROR_PASSWORD_MISMATCH);
         }
         try {
             passwordPolicy.validate(form.getPassword(), form.getAdminUsername());

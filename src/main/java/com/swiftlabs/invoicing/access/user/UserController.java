@@ -5,9 +5,13 @@ import com.swiftlabs.invoicing.access.auth.SessionService;
 import com.swiftlabs.invoicing.access.profile.ProfileService;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorService;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
 import com.swiftlabs.invoicing.common.FormErrors;
 import com.swiftlabs.invoicing.common.Language;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
+import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import jakarta.validation.Valid;
@@ -27,8 +31,8 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 
 @Controller
-@RequestMapping("/users")
-@PreAuthorize("hasAuthority('MANAGE_USERS')")
+@RequestMapping(Endpoints.USERS)
+@PreAuthorize(Privileges.Has.MANAGE_USERS)
 public class UserController {
 
     private final UserService userService;
@@ -50,47 +54,47 @@ public class UserController {
 
     @GetMapping
     public String list(Model model) {
-        model.addAttribute("users", userService.findAll());
-        model.addAttribute("now", LocalDateTime.now(clock));
-        return "access/user/list";
+        model.addAttribute(CommonCodes.Attributes.USERS, userService.findAll());
+        model.addAttribute(CommonCodes.Attributes.NOW, LocalDateTime.now(clock));
+        return CommonCodes.Views.ACCESS_USER_LIST;
     }
 
-    @GetMapping("/new")
+    @GetMapping(Endpoints.USER_NEW)
     public String newForm(Model model) {
         UserForm form = new UserForm();
         // By default the new colleague works in the administrator's language
         form.setLanguage(messages.current());
-        model.addAttribute("user", form);
+        model.addAttribute(CommonCodes.Attributes.USER, form);
         return formView(model);
     }
 
-    @GetMapping("/{id}/edit")
+    @GetMapping(Endpoints.USER_EDIT)
     public String editForm(@PathVariable Long id, Model model) {
         User user = userService.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("user.error.notFound"));
-        model.addAttribute("user", UserForm.from(user));
+            .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.USER_ERROR_NOT_FOUND));
+        model.addAttribute(CommonCodes.Attributes.USER, UserForm.from(user));
         return formView(model);
     }
 
     /** Invalid input is shown again with the errors next to each field. */
-    @PostMapping("/save")
-    public String save(@Valid @ModelAttribute("user") UserForm form, BindingResult result,
+    @PostMapping(Endpoints.USER_SAVE)
+    public String save(@Valid @ModelAttribute(CommonCodes.Attributes.USER) UserForm form, BindingResult result,
                        @AuthenticationPrincipal AppUserPrincipal me, Model model, RedirectAttributes redirectAttributes) {
         if (!result.hasErrors()) {
             try {
                 if (form.getId() == null) {
                     UserService.NewAccount account = userService.create(form);
-                    redirectAttributes.addFlashAttribute("temporaryPassword", account.temporaryPassword());
-                    redirectAttributes.addFlashAttribute("temporaryPasswordUser", account.user().getUsername());
-                    redirectAttributes.addFlashAttribute("success", messages.get("user.created"));
+                    redirectAttributes.addFlashAttribute(CommonCodes.Attributes.TEMPORARY_PASSWORD, account.temporaryPassword());
+                    redirectAttributes.addFlashAttribute(CommonCodes.Attributes.TEMPORARY_PASSWORD_USER, account.user().getUsername());
+                    redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.USER_CREATED));
                 } else {
                     User user = userService.update(form, me.getId());
                     if (!user.isEnabled()) {
                         sessionService.expireSessions(user.getUsername(), null);
                     }
-                    redirectAttributes.addFlashAttribute("success", messages.get("user.updated"));
+                    redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.USER_UPDATED));
                 }
-                return "redirect:/users";
+                return Endpoints.REDIRECT + Endpoints.USERS;
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
             }
@@ -99,48 +103,49 @@ public class UserController {
     }
 
     /** New temporary password (forgotten password without mail, locked account...). */
-    @PostMapping("/{id}/reset-password")
+    @PostMapping(Endpoints.USER_RESET_PASSWORD)
     public String resetPassword(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             String temporaryPassword = userService.resetToTemporaryPassword(id);
             User user = userService.findById(id).orElseThrow();
             sessionService.expireSessions(user.getUsername(), null);
-            redirectAttributes.addFlashAttribute("temporaryPassword", temporaryPassword);
-            redirectAttributes.addFlashAttribute("temporaryPasswordUser", user.getUsername());
-            redirectAttributes.addFlashAttribute("success", messages.get("user.passwordReset"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.TEMPORARY_PASSWORD, temporaryPassword);
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.TEMPORARY_PASSWORD_USER, user.getUsername());
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.USER_PASSWORD_RESET));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", messages.of(ex));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));
         }
-        return "redirect:/users";
+        return Endpoints.REDIRECT + Endpoints.USERS;
     }
 
     /** Lost phone and recovery codes: the user logs in with the password alone and sets it up again. */
-    @PostMapping("/{id}/reset-two-factor")
+    @PostMapping(Endpoints.USER_RESET_TWO_FACTOR)
     public String resetTwoFactor(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        User user = userService.findById(id).orElseThrow(() -> new ResourceNotFoundException("user.error.notFound"));
+        User user = userService.findById(id).orElseThrow(() -> new ResourceNotFoundException(MessageProperties.USER_ERROR_NOT_FOUND));
         twoFactorService.reset(id);
         sessionService.expireSessions(user.getUsername(), null);
-        redirectAttributes.addFlashAttribute("success", messages.get("user.twoFactorReset", user.getUsername()));
-        return "redirect:/users";
+        redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.USER_TWO_FACTOR_RESET,
+            user.getUsername()));
+        return Endpoints.REDIRECT + Endpoints.USERS;
     }
 
-    @PostMapping("/{id}/delete")
+    @PostMapping(Endpoints.USER_DELETE)
     public String delete(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal me,
                          RedirectAttributes redirectAttributes) {
         try {
             userService.delete(id, me.getId());
-            redirectAttributes.addFlashAttribute("success", messages.get("user.deleted"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.USER_DELETED));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", messages.of(ex));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));
         } catch (RuntimeException ex) {
-            redirectAttributes.addFlashAttribute("error", messages.get("user.error.deleteFailed"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.get(MessageProperties.USER_ERROR_DELETE_FAILED));
         }
-        return "redirect:/users";
+        return Endpoints.REDIRECT + Endpoints.USERS;
     }
 
     private String formView(Model model) {
-        model.addAttribute("profiles", profileService.findAll());
-        model.addAttribute("languages", Language.values());
-        return "access/user/form";
+        model.addAttribute(CommonCodes.Attributes.PROFILES, profileService.findAll());
+        model.addAttribute(CommonCodes.Attributes.LANGUAGES, Language.values());
+        return CommonCodes.Views.ACCESS_USER_FORM;
     }
 }

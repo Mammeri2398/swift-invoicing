@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
     /** Upload above spring.servlet.multipart.max-file-size (raised before any controller runs). */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ModelAndView uploadTooLarge(MaxUploadSizeExceededException ex) {
-        return errorPage(HttpStatus.PAYLOAD_TOO_LARGE, messages.get("error.uploadTooLarge"));
+        return errorPage(HttpStatus.PAYLOAD_TOO_LARGE, messages.get(MessageProperties.ERROR_UPLOAD_TOO_LARGE));
     }
 
     @ExceptionHandler(Exception.class)
@@ -51,14 +51,14 @@ public class GlobalExceptionHandler {
             throw ex;
         }
         log.error("Unhandled exception", ex);
-        return errorPage(HttpStatus.INTERNAL_SERVER_ERROR, messages.get("error.unexpected"));
+        return errorPage(HttpStatus.INTERNAL_SERVER_ERROR, messages.get(MessageProperties.ERROR_UNEXPECTED));
     }
 
     private ModelAndView errorPage(HttpStatus status, String message) {
-        ModelAndView mav = new ModelAndView("error");
+        ModelAndView mav = new ModelAndView(CommonCodes.Views.ERROR);
         mav.setStatus(status);
-        mav.addObject("status", status.value());
-        mav.addObject("message", message);
+        mav.addObject(CommonCodes.Attributes.STATUS, status.value());
+        mav.addObject(CommonCodes.Attributes.MESSAGE, message);
         return mav;
     }
 }

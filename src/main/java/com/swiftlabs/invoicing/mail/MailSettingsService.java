@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.mail;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ public class MailSettingsService {
     @Transactional
     public MailSettings save(MailSettingsForm form) {
         if (form.isEnabled() && (form.getHost() == null || form.getHost().isBlank())) {
-            throw BusinessException.onField("host", "mail.error.hostRequired");
+            throw BusinessException.onField("host", MessageProperties.MAIL_ERROR_HOST_REQUIRED);
         }
         MailSettings settings = current();
         settings.setEnabled(form.isEnabled());
@@ -51,7 +52,7 @@ public class MailSettingsService {
         }
         settings.setFromAddress(blankToNull(form.getFromAddress()));
         if (form.isEnabled() && settings.sender().isBlank()) {
-            throw BusinessException.onField("fromAddress", "mail.error.fromRequired");
+            throw BusinessException.onField("fromAddress", MessageProperties.MAIL_ERROR_FROM_REQUIRED);
         }
         return repository.save(settings);
     }
@@ -62,22 +63,22 @@ public class MailSettingsService {
      */
     public void sendTest(String to) {
         if (!gateway.isEnabled()) {
-            throw new BusinessException("mail.error.notEnabled");
+            throw new BusinessException(MessageProperties.MAIL_ERROR_NOT_ENABLED);
         }
         if (to == null || to.isBlank()) {
-            throw new BusinessException("mail.error.noAddress");
+            throw new BusinessException(MessageProperties.MAIL_ERROR_NO_ADDRESS);
         }
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(gateway.fromAddress());
         message.setTo(to);
-        message.setSubject(messages.get("mail.test.subject"));
-        message.setText(messages.get("mail.test.body"));
+        message.setSubject(messages.get(MessageProperties.MAIL_TEST_SUBJECT));
+        message.setText(messages.get(MessageProperties.MAIL_TEST_BODY));
         try {
             gateway.sender().send(message);
         } catch (MailException ex) {
             log.warn("Test email to {} failed", to, ex);
             Throwable cause = ex.getMostSpecificCause();
-            throw new BusinessException("mail.error.sendFailed",
+            throw new BusinessException(MessageProperties.MAIL_ERROR_SEND_FAILED,
                 cause.getMessage() != null ? cause.getMessage().strip() : cause.getClass().getSimpleName());
         }
     }

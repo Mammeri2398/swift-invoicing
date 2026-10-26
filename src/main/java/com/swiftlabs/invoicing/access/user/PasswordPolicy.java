@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.access.user;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 
@@ -16,7 +17,7 @@ public class PasswordPolicy {
     private static final String LOWER = "abcdefghijkmnpqrstuvwxyz";
     private static final String DIGITS = "23456789";
     private static final int TEMPORARY_LENGTH = 16;
-    private static final String RULES = "password.rules";
+    private static final String RULES = MessageProperties.PASSWORD_RULES;
 
     private final int minLength;
     private final int maxLength;
@@ -38,7 +39,7 @@ public class PasswordPolicy {
             throw new BusinessException(RULES, minLength, maxLength);
         }
         if (username != null && password.toLowerCase().contains(username.toLowerCase())) {
-            throw new BusinessException("password.error.containsUsername");
+            throw new BusinessException(MessageProperties.PASSWORD_ERROR_CONTAINS_USERNAME);
         }
     }
 

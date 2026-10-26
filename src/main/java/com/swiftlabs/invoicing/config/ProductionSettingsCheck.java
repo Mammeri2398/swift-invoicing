@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.config;
 
+import com.swiftlabs.invoicing.common.MessageProperties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
@@ -68,7 +70,7 @@ public class ProductionSettingsCheck implements BeanFactoryPostProcessor, Enviro
                 problems.add(variable + " is not set (" + property + ")");
             }
         });
-        if (!environment.getProperty("mail.enabled", Boolean.class, false)) {
+        if (!environment.getProperty(MessageProperties.MAIL_ENABLED, Boolean.class, false)) {
             problems.add("MAIL_ENABLED=false: password reset links would be written to the log");
         }
         if (isSet(environment, "app.base-url")) {

@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.access.auth;
 
+import com.swiftlabs.invoicing.common.CommonCodes;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.CurrentSecurityContext;
@@ -12,7 +14,7 @@ import java.util.stream.Collectors;
 @ControllerAdvice
 public class CurrentUserAdvice {
 
-    @ModelAttribute("currentUser")
+    @ModelAttribute(CommonCodes.Attributes.CURRENT_USER)
     public CurrentUser currentUser(@CurrentSecurityContext(expression = "authentication") Authentication authentication) {
         if (authentication == null || !(authentication.getPrincipal() instanceof AppUserPrincipal principal)) {
             return null;

@@ -1,6 +1,10 @@
 package com.swiftlabs.invoicing.invoice;
 
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
+import com.swiftlabs.invoicing.common.Privileges;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ContentDisposition;
@@ -21,8 +25,8 @@ import java.util.List;
 
 /** Downloads of the invoice register (invoices and credit notes), with the same filters as the list page. */
 @Controller
-@RequestMapping("/invoices/export")
-@PreAuthorize("hasAuthority('VIEW_INVOICES')")
+@RequestMapping(Endpoints.INVOICE_EXPORT)
+@PreAuthorize(Privileges.Has.VIEW_INVOICES)
 public class InvoiceExportController {
 
     /** Chronological, as in the register. */
@@ -46,16 +50,16 @@ public class InvoiceExportController {
         this.messages = messages;
     }
 
-    @GetMapping("/csv")
-    public ResponseEntity<byte[]> csv(@ModelAttribute("filter") InvoiceFilter filter, BindingResult ignoredFilterErrors) {
+    @GetMapping(Endpoints.INVOICE_EXPORT_CSV)
+    public ResponseEntity<byte[]> csv(@ModelAttribute(CommonCodes.Attributes.FILTER) InvoiceFilter filter, BindingResult ignoredFilterErrors) {
         filter.setKinds(DocumentKind.ACCOUNTING);
         List<Invoice> invoices = invoiceService.searchAll(filter, EXPORT_ORDER);
         byte[] body = export.toCsv(invoices, paymentService.summaries(invoices));
         return download(body, new MediaType("text", "csv", StandardCharsets.UTF_8), fileName(filter, "csv"));
     }
 
-    @GetMapping("/xlsx")
-    public ResponseEntity<byte[]> xlsx(@ModelAttribute("filter") InvoiceFilter filter, BindingResult ignoredFilterErrors) {
+    @GetMapping(Endpoints.INVOICE_EXPORT_XLSX)
+    public ResponseEntity<byte[]> xlsx(@ModelAttribute(CommonCodes.Attributes.FILTER) InvoiceFilter filter, BindingResult ignoredFilterErrors) {
         filter.setKinds(DocumentKind.ACCOUNTING);
         List<Invoice> invoices = invoiceService.searchAll(filter, EXPORT_ORDER);
         byte[] body = export.toXlsx(invoices, paymentService.summaries(invoices));
@@ -72,6 +76,6 @@ public class InvoiceExportController {
     /** e.g. factures-2026-export-2026-10-24.xlsx (invoices-... in English: the prefix is ASCII in every language) */
     private String fileName(InvoiceFilter filter, String extension) {
         String year = filter.getYear() != null ? "-" + filter.getYear() : "";
-        return messages.get("invoiceExport.fileName") + year + "-export-" + LocalDate.now(clock) + "." + extension;
+        return messages.get(MessageProperties.INVOICE_EXPORT_FILE_NAME) + year + "-export-" + LocalDate.now(clock) + "." + extension;
     }
 }

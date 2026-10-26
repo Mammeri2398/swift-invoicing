@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.access.privilege;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import org.springframework.stereotype.Service;
@@ -34,22 +35,22 @@ public class PrivilegeService {
     @Transactional
     public Privilege save(PrivilegeForm form) {
         if (form.getName() == null || form.getName().trim().isEmpty()) {
-            throw BusinessException.onField("name", "privilege.error.nameRequired");
+            throw BusinessException.onField("name", MessageProperties.PRIVILEGE_ERROR_NAME_REQUIRED);
         }
         Privilege privilege;
         if (form.getId() == null) {
             String code = form.getCode() != null ? form.getCode().trim().toUpperCase() : "";
             if (code.isEmpty()) {
-                throw BusinessException.onField("code", "privilege.error.codeRequired");
+                throw BusinessException.onField("code", MessageProperties.PRIVILEGE_ERROR_CODE_REQUIRED);
             }
             if (privilegeRepository.existsByCode(code)) {
-                throw BusinessException.onField("code", "privilege.error.codeUsed");
+                throw BusinessException.onField("code", MessageProperties.PRIVILEGE_ERROR_CODE_USED);
             }
             privilege = new Privilege();
             privilege.setCode(code);
         } else {
             privilege = privilegeRepository.findById(form.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("privilege.error.notFound"));
+                .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.PRIVILEGE_ERROR_NOT_FOUND));
         }
         privilege.setName(form.getName().trim());
         privilege.setDescription(form.getDescription());

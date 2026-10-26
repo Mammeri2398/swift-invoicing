@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.common.AmountInWords;
 import com.swiftlabs.invoicing.common.AmountUtils;
+import com.swiftlabs.invoicing.common.CommonCodes;
 import com.swiftlabs.invoicing.config.InvoiceProperties;
 import com.swiftlabs.invoicing.issuer.Issuer;
 import com.swiftlabs.invoicing.issuer.IssuerService;
@@ -56,17 +57,17 @@ public class InvoicePdfService {
         Issuer issuer = issuerService.getIssuer();
         // A document for the client: always in French, whatever the language of the user who prints it
         Context context = new Context(Locale.FRENCH);
-        context.setVariable("invoice", invoice);
-        context.setVariable("vatMention", properties.vatMention());
-        context.setVariable("issuer", IssuerDetails.of(invoice, issuer));
+        context.setVariable(CommonCodes.Attributes.INVOICE, invoice);
+        context.setVariable(CommonCodes.Attributes.VAT_MENTION, properties.vatMention());
+        context.setVariable(CommonCodes.Attributes.ISSUER, IssuerDetails.of(invoice, issuer));
         // Embedded in the document: no URL to resolve while rendering
-        context.setVariable("logoDataUri", issuer.hasLogo()
+        context.setVariable(CommonCodes.Attributes.LOGO_DATA_URI, issuer.hasLogo()
             ? "data:" + issuer.getLogoContentType() + ";base64," + Base64.getEncoder().encodeToString(issuer.getLogoData())
             : null);
-        context.setVariable("amountUtils", new AmountUtils());
-        context.setVariable("initials", initials(issuer.getFullName()));
-        context.setVariable("paymentTerms", paymentTerms(invoice));
-        context.setVariable("amountInWords", new AmountInWords());
+        context.setVariable(CommonCodes.Attributes.AMOUNT_UTILS, new AmountUtils());
+        context.setVariable(CommonCodes.Attributes.INITIALS, initials(issuer.getFullName()));
+        context.setVariable(CommonCodes.Attributes.PAYMENT_TERMS, paymentTerms(invoice));
+        context.setVariable(CommonCodes.Attributes.AMOUNT_IN_WORDS, new AmountInWords());
 
         String html = templateEngine.process("invoice/pdf", context);
 

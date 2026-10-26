@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.backup;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,17 +47,17 @@ public class PostgresTools {
         if (!connection.isDefaultSchema()) {
             command.add("--schema=" + connection.schema());
         }
-        deleteQuietly(run(command, connection, target.getParent(), step("backup.tool.dump")));
+        deleteQuietly(run(command, connection, target.getParent(), step(MessageProperties.BACKUP_TOOL_DUMP)));
     }
 
     /** The table of contents of a backup, one entry per line; fails when the file is not a readable backup. */
     public List<String> contents(Path backup) {
         Path output = run(new ArrayList<>(List.of(tool("pg_restore"), "--list", backup.toString())), null,
-            backup.getParent(), step("backup.tool.list"));
+            backup.getParent(), step(MessageProperties.BACKUP_TOOL_LIST));
         try {
             return Files.readAllLines(output, StandardCharsets.UTF_8);
         } catch (IOException ex) {
-            throw new BusinessException("backup.error.unreadableBackup");
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_UNREADABLE_BACKUP);
         } finally {
             deleteQuietly(output);
         }
@@ -72,12 +73,12 @@ public class PostgresTools {
         Path restoreScript = workDirectory.resolve("restauration-" + System.nanoTime() + "-complete.sql");
         try {
             deleteQuietly(run(new ArrayList<>(List.of(tool("pg_restore"), "--clean", "--if-exists", "--no-owner", "--no-privileges",
-                "--file=" + script, backup.toString())), null, workDirectory, step("backup.tool.read")));
+                "--file=" + script, backup.toString())), null, workDirectory, step(MessageProperties.BACKUP_TOOL_READ)));
             writeRestoreScript(connection.schema(), script, restoreScript);
             List<String> command = command("psql", connection);
             command.addAll(List.of("--no-psqlrc", "--quiet", "--single-transaction", "--set=ON_ERROR_STOP=1",
                 "--file=" + restoreScript));
-            deleteQuietly(run(command, connection, workDirectory, step("backup.tool.restore")));
+            deleteQuietly(run(command, connection, workDirectory, step(MessageProperties.BACKUP_TOOL_RESTORE)));
         } finally {
             deleteQuietly(script);
             deleteQuietly(restoreScript);
@@ -111,7 +112,7 @@ public class PostgresTools {
                 writer.newLine();
             }
         } catch (IOException ex) {
-            throw new BusinessException("backup.error.backupNotRead", String.valueOf(ex.getMessage()));
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_BACKUP_NOT_READ, String.valueOf(ex.getMessage()));
         }
     }
 
@@ -135,7 +136,7 @@ public class PostgresTools {
         try {
             output = Files.createTempFile(workDirectory, "pg-", ".log");
         } catch (IOException ex) {
-            throw new BusinessException("backup.error.folderNotWritable", workDirectory.toString());
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_FOLDER_NOT_WRITABLE, workDirectory.toString());
         }
         ProcessBuilder builder = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(output.toFile());
         builder.environment().put("PGCONNECT_TIMEOUT", "10");
@@ -148,26 +149,26 @@ public class PostgresTools {
         } catch (IOException ex) {
             deleteQuietly(output);
             log.error("Cannot run {}: {}", command.get(0), ex.getMessage());
-            throw new BusinessException("backup.error.toolMissing", Path.of(command.get(0)).getFileName().toString());
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_TOOL_MISSING, Path.of(command.get(0)).getFileName().toString());
         }
         try {
             if (!process.waitFor(properties.timeout().toSeconds(), TimeUnit.SECONDS)) {
                 process.destroyForcibly();
                 deleteQuietly(output);
-                throw new BusinessException("backup.tool.timeout", failure);
+                throw new BusinessException(MessageProperties.BACKUP_TOOL_TIMEOUT, failure);
             }
         } catch (InterruptedException ex) {
             process.destroyForcibly();
             Thread.currentThread().interrupt();
             deleteQuietly(output);
-            throw new BusinessException("backup.tool.interrupted", failure);
+            throw new BusinessException(MessageProperties.BACKUP_TOOL_INTERRUPTED, failure);
         }
         if (process.exitValue() != 0) {
             String detail = lastLines(output);
             deleteQuietly(output);
             log.error("{} failed (exit {}): {}", Path.of(command.get(0)).getFileName(), process.exitValue(), detail);
-            throw detail.isEmpty() ? new BusinessException("backup.tool.failed", failure)
-                : new BusinessException("backup.tool.failedDetail", failure, detail);
+            throw detail.isEmpty() ? new BusinessException(MessageProperties.BACKUP_TOOL_FAILED, failure)
+                : new BusinessException(MessageProperties.BACKUP_TOOL_FAILED_DETAIL, failure, detail);
         }
         return output;
     }

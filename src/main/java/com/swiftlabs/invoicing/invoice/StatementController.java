@@ -1,5 +1,9 @@
 package com.swiftlabs.invoicing.invoice;
 
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
+import com.swiftlabs.invoicing.common.Privileges;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -23,8 +27,8 @@ public class StatementController {
         this.clock = clock;
     }
 
-    @GetMapping("/clients/{id}/statement")
-    @PreAuthorize("hasAuthority('VIEW_INVOICES')")
+    @GetMapping(Endpoints.CLIENT_STATEMENT)
+    @PreAuthorize(Privileges.Has.VIEW_INVOICES)
     public String statement(@PathVariable Long id,
                             @RequestParam(name = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                             @RequestParam(name = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
@@ -35,7 +39,7 @@ public class StatementController {
         if (start.isAfter(end)) {
             start = end;
         }
-        model.addAttribute("statement", statementService.statement(id, start, end));
-        return "invoice/statement";
+        model.addAttribute(CommonCodes.Attributes.STATEMENT, statementService.statement(id, start, end));
+        return CommonCodes.Views.INVOICE_STATEMENT;
     }
 }

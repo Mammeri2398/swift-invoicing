@@ -1,6 +1,9 @@
 package com.swiftlabs.invoicing.dashboard;
 
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
 import com.swiftlabs.invoicing.common.Messages;
+import com.swiftlabs.invoicing.common.Privileges;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -24,13 +27,13 @@ public class TurnoverController {
         this.messages = messages;
     }
 
-    @GetMapping("/turnover")
-    @PreAuthorize("hasAuthority('VIEW_DASHBOARD')")
+    @GetMapping(Endpoints.TURNOVER)
+    @PreAuthorize(Privileges.Has.VIEW_DASHBOARD)
     public String turnover(@RequestParam(name = "year", required = false) Integer year, Model model) {
         int currentYear = LocalDate.now(clock).getYear();
         int y = year != null ? year : currentYear;
-        model.addAttribute("report", turnoverService.report(y, messages.current()));
-        model.addAttribute("years", turnoverService.years(currentYear));
-        return "dashboard/turnover";
+        model.addAttribute(CommonCodes.Attributes.REPORT, turnoverService.report(y, messages.current()));
+        model.addAttribute(CommonCodes.Attributes.YEARS, turnoverService.years(currentYear));
+        return CommonCodes.Views.DASHBOARD_TURNOVER;
     }
 }

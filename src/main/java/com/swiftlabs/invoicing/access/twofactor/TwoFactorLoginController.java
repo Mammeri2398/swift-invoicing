@@ -1,6 +1,9 @@
 package com.swiftlabs.invoicing.access.twofactor;
 
 import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 
 import jakarta.servlet.ServletException;
@@ -23,7 +26,7 @@ import java.io.IOException;
 
 /** Second login step: the code from the authenticator app, or a recovery code. */
 @Controller
-@RequestMapping(TwoFactorLogin.VERIFY_URL)
+@RequestMapping(Endpoints.LOGIN_VERIFY)
 @PreAuthorize("hasAuthority('" + TwoFactorLogin.PENDING_AUTHORITY + "')")
 public class TwoFactorLoginController {
 
@@ -40,7 +43,7 @@ public class TwoFactorLoginController {
 
     @GetMapping
     public String form() {
-        return "access/two-factor-verify";
+        return CommonCodes.Views.ACCESS_TWO_FACTOR_VERIFY;
     }
 
     @PostMapping
@@ -61,11 +64,11 @@ public class TwoFactorLoginController {
                 // Same answer as for a wrong password: the login page explains the lockout
                 SecurityContextHolder.clearContext();
                 request.getSession().invalidate();
-                return "redirect:/login?error";
+                return Endpoints.REDIRECT + Endpoints.LOGIN + "?error";
             }
             default -> {
-                redirectAttributes.addFlashAttribute("error", messages.get("twoFactor.error.wrongCode"));
-                return "redirect:" + TwoFactorLogin.VERIFY_URL;
+                redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.get(MessageProperties.TWO_FACTOR_ERROR_WRONG_CODE));
+                return Endpoints.REDIRECT + Endpoints.LOGIN_VERIFY;
             }
         }
     }
@@ -76,8 +79,8 @@ public class TwoFactorLoginController {
         FlashMap flash = RequestContextUtils.getOutputFlashMap(request);
         // In the user's own language: this request was still in the one of the login page
         flash.put("message", principal.getLanguage() != null
-            ? messages.get(principal.getLanguage(), "twoFactor.recoveryCodeUsed", left)
-            : messages.get("twoFactor.recoveryCodeUsed", left));
+            ? messages.get(principal.getLanguage(), MessageProperties.TWO_FACTOR_RECOVERY_CODE_USED, left)
+            : messages.get(MessageProperties.TWO_FACTOR_RECOVERY_CODE_USED, left));
         RequestContextUtils.getFlashMapManager(request).saveOutputFlashMap(flash, request, response);
     }
 }

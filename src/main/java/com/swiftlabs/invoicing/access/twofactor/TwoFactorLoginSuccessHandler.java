@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.access.twofactor;
 
 import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
+import com.swiftlabs.invoicing.common.Endpoints;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,7 +21,7 @@ public class TwoFactorLoginSuccessHandler implements AuthenticationSuccessHandle
     private final SavedRequestAwareAuthenticationSuccessHandler target = new SavedRequestAwareAuthenticationSuccessHandler();
 
     public TwoFactorLoginSuccessHandler() {
-        target.setDefaultTargetUrl("/");
+        target.setDefaultTargetUrl(Endpoints.HOME);
     }
 
     @Override
@@ -28,7 +29,7 @@ public class TwoFactorLoginSuccessHandler implements AuthenticationSuccessHandle
         throws IOException, ServletException {
         if (authentication.getPrincipal() instanceof AppUserPrincipal principal && principal.isTwoFactorEnabled()) {
             TwoFactorLogin.begin(authentication, request, response);
-            response.sendRedirect(request.getContextPath() + TwoFactorLogin.VERIFY_URL);
+            response.sendRedirect(request.getContextPath() + Endpoints.LOGIN_VERIFY);
             return;
         }
         target.onAuthenticationSuccess(request, response, authentication);

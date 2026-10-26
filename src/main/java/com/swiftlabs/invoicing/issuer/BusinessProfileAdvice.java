@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.issuer;
 
+import com.swiftlabs.invoicing.common.CommonCodes;
+
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -13,7 +15,7 @@ public class BusinessProfileAdvice {
         this.issuerService = issuerService;
     }
 
-    @ModelAttribute("companyType")
+    @ModelAttribute(CommonCodes.Attributes.COMPANY_TYPE)
     public CompanyType companyType() {
         try {
             return issuerService.getIssuer().getCompanyType();

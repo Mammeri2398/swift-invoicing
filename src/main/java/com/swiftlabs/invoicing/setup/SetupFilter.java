@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.setup;
 
+import com.swiftlabs.invoicing.common.Endpoints;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,14 +10,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Stream;
 
 /** Until the first-run setup is done, every page leads to it; afterwards the setup page is closed. */
 public class SetupFilter extends OncePerRequestFilter {
 
-    public static final String SETUP_URL = "/setup";
-
-    private static final List<String> ALWAYS_ALLOWED = List.of("/css/", "/js/", "/fonts/", "/images/", "/favicon.ico", "/error",
-        "/actuator/health");
+    private static final List<String> ALWAYS_ALLOWED = Stream.concat(Endpoints.STATIC_FOLDERS.stream(),
+        Stream.of(Endpoints.FAVICON, Endpoints.ERROR, Endpoints.HEALTH)).toList();
 
     private final SetupService setupService;
 
@@ -28,14 +29,14 @@ public class SetupFilter extends OncePerRequestFilter {
         throws ServletException, IOException {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         if (ALWAYS_ALLOWED.stream().noneMatch(path::startsWith)) {
-            boolean setupPage = path.equals(SETUP_URL);
+            boolean setupPage = path.equals(Endpoints.SETUP);
             boolean needed = setupService.isSetupNeeded();
             if (needed && !setupPage) {
-                response.sendRedirect(request.getContextPath() + SETUP_URL);
+                response.sendRedirect(request.getContextPath() + Endpoints.SETUP);
                 return;
             }
             if (!needed && setupPage) {
-                response.sendRedirect(request.getContextPath() + "/login");
+                response.sendRedirect(request.getContextPath() + Endpoints.LOGIN);
                 return;
             }
         }

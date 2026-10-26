@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.access.twofactor;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 
@@ -85,7 +86,7 @@ public class TwoFactorService {
         User user = user(userId);
         OptionalLong step = Totp.verify(secret, normalize(code), clock.instant(), null);
         if (step.isEmpty()) {
-            throw BusinessException.onField("code", "twoFactor.error.wrongSetupCode");
+            throw BusinessException.onField("code", MessageProperties.TWO_FACTOR_ERROR_WRONG_SETUP_CODE);
         }
         user.enableTotp(secret, step.getAsLong());
         log.info("Two-factor login enabled for '{}'", user.getUsername());
@@ -147,11 +148,11 @@ public class TwoFactorService {
 
     private void requireAppCode(User user, String code) {
         if (!user.isTotpEnabled()) {
-            throw new BusinessException("twoFactor.error.notEnabled");
+            throw new BusinessException(MessageProperties.TWO_FACTOR_ERROR_NOT_ENABLED);
         }
         OptionalLong step = Totp.verify(user.getTotpSecret(), normalize(code), clock.instant(), user.getTotpLastStep());
         if (step.isEmpty()) {
-            throw BusinessException.onField("code", "twoFactor.error.wrongCode");
+            throw BusinessException.onField("code", MessageProperties.TWO_FACTOR_ERROR_WRONG_CODE);
         }
         user.acceptTotpStep(step.getAsLong());
     }
@@ -189,6 +190,6 @@ public class TwoFactorService {
     }
 
     private User user(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("user.error.notFound"));
+        return userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException(MessageProperties.USER_ERROR_NOT_FOUND));
     }
 }

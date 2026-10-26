@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.common.AmountUtils;
 import com.swiftlabs.invoicing.common.Language;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 
 import org.slf4j.Logger;
@@ -112,29 +113,31 @@ public class InvoiceAudit {
             return null;
         }
         if (event.getAction() == InvoiceEvent.Action.SENT || event.getAction() == InvoiceEvent.Action.REMINDED) {
-            return messages.get("invoice.history.sentTo", detail);
+            return messages.get(MessageProperties.INVOICE_HISTORY_SENT_TO, detail);
         }
         if (messages.current() == Language.FR) {
             return detail;
         }
         Matcher matcher = ON_INVOICE.matcher(detail);
         if (matcher.matches()) {
-            return messages.get("invoice.history.onInvoice", matcher.group(1));
+            return messages.get(MessageProperties.INVOICE_HISTORY_ON_INVOICE, matcher.group(1));
         }
         matcher = FROM_DOCUMENT.matcher(detail);
         if (matcher.matches()) {
-            return messages.get(matcher.group(1).equals("devis") ? "invoice.history.fromQuote" : "invoice.history.fromProforma",
-                matcher.group(2), matcher.group(3));
+            String key = matcher.group(1).equals("devis")
+                ? MessageProperties.INVOICE_HISTORY_FROM_QUOTE : MessageProperties.INVOICE_HISTORY_FROM_PROFORMA;
+            return messages.get(key, matcher.group(2), matcher.group(3));
         }
         if (detail.equals(DRAFT_INVOICE_CREATED)) {
-            return messages.get("invoice.history.draftInvoiceCreated");
+            return messages.get(MessageProperties.INVOICE_HISTORY_DRAFT_INVOICE_CREATED);
         }
         matcher = PAYMENT.matcher(detail);
         if ((event.getAction() == InvoiceEvent.Action.PAYMENT || event.getAction() == InvoiceEvent.Action.PAYMENT_DELETED)
                 && matcher.matches()) {
             return matcher.group(3) == null
-                ? messages.get("invoice.history.payment", matcher.group(1), matcher.group(2))
-                : messages.get("invoice.history.paymentWith", matcher.group(1), matcher.group(2), paymentPrecision(matcher.group(3)));
+                ? messages.get(MessageProperties.INVOICE_HISTORY_PAYMENT, matcher.group(1), matcher.group(2))
+                : messages.get(MessageProperties.INVOICE_HISTORY_PAYMENT_WITH, matcher.group(1), matcher.group(2),
+                    paymentPrecision(matcher.group(3)));
         }
         return detail;
     }

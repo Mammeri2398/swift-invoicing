@@ -1,8 +1,12 @@
 package com.swiftlabs.invoicing.access.profile;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
+import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import jakarta.validation.Valid;
@@ -18,8 +22,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
-@PreAuthorize("hasAuthority('MANAGE_PROFILES')")
-@RequestMapping("/profiles")
+@PreAuthorize(Privileges.Has.MANAGE_PROFILES)
+@RequestMapping(Endpoints.PROFILES)
 public class ProfileController {
 
     private final ProfileService profileService;
@@ -32,33 +36,33 @@ public class ProfileController {
 
     @GetMapping
     public String list(Model model) {
-        model.addAttribute("profiles", profileService.findAll());
-        return "access/profile/list";
+        model.addAttribute(CommonCodes.Attributes.PROFILES, profileService.findAll());
+        return CommonCodes.Views.ACCESS_PROFILE_LIST;
     }
 
-    @GetMapping("/new")
+    @GetMapping(Endpoints.PROFILE_NEW)
     public String newForm(Model model) {
-        model.addAttribute("profile", new ProfileForm());
+        model.addAttribute(CommonCodes.Attributes.PROFILE, new ProfileForm());
         return formView(model);
     }
 
-    @GetMapping("/{id}/edit")
+    @GetMapping(Endpoints.PROFILE_EDIT)
     public String editForm(@PathVariable Long id, Model model) {
         Profile profile = profileService.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("profile.error.notFound"));
-        model.addAttribute("profile", ProfileForm.from(profile));
+            .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.PROFILE_ERROR_NOT_FOUND));
+        model.addAttribute(CommonCodes.Attributes.PROFILE, ProfileForm.from(profile));
         return formView(model);
     }
 
     /** Invalid input is shown again with the errors next to each field. */
-    @PostMapping("/save")
-    public String save(@Valid @ModelAttribute("profile") ProfileForm form, BindingResult result, Model model,
+    @PostMapping(Endpoints.PROFILE_SAVE)
+    public String save(@Valid @ModelAttribute(CommonCodes.Attributes.PROFILE) ProfileForm form, BindingResult result, Model model,
                        RedirectAttributes redirectAttributes) {
         if (!result.hasErrors()) {
             try {
                 profileService.save(form);
-                redirectAttributes.addFlashAttribute("success", messages.get("profile.saved"));
-                return "redirect:/profiles";
+                redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.PROFILE_SAVED));
+                return Endpoints.REDIRECT + Endpoints.PROFILES;
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
             }
@@ -66,19 +70,19 @@ public class ProfileController {
         return formView(model);
     }
 
-    @PostMapping("/{id}/delete")
+    @PostMapping(Endpoints.PROFILE_DELETE)
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             profileService.delete(id);
-            redirectAttributes.addFlashAttribute("success", messages.get("profile.deleted"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.PROFILE_DELETED));
         } catch (Exception ex) {
-            redirectAttributes.addFlashAttribute("error", messages.get("profile.error.deleteFailed"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.get(MessageProperties.PROFILE_ERROR_DELETE_FAILED));
         }
-        return "redirect:/profiles";
+        return Endpoints.REDIRECT + Endpoints.PROFILES;
     }
 
     private String formView(Model model) {
-        model.addAttribute("allPrivileges", profileService.findAllPrivileges());
-        return "access/profile/form";
+        model.addAttribute(CommonCodes.Attributes.ALL_PRIVILEGES, profileService.findAllPrivileges());
+        return CommonCodes.Views.ACCESS_PROFILE_FORM;
     }
 }

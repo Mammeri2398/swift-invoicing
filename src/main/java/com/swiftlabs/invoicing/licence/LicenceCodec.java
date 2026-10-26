@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.licence;
 
+import com.swiftlabs.invoicing.common.MessageProperties;
+
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Key;
@@ -78,7 +80,7 @@ public final class LicenceCodec {
         String compact = key == null ? "" : key.replaceAll("\\s", "");
         int dot = compact.indexOf('.');
         if (!compact.startsWith(PREFIX) || dot < 0) {
-            throw new InvalidLicenceException("licence.error.notAKey");
+            throw new InvalidLicenceException(MessageProperties.LICENCE_ERROR_NOT_AKEY);
         }
         try {
             byte[] payload = DECODER.decode(compact.substring(PREFIX.length(), dot));
@@ -87,11 +89,11 @@ public final class LicenceCodec {
             signature.initVerify(publicKey);
             signature.update(payload);
             if (!signature.verify(signed)) {
-                throw new InvalidLicenceException("licence.error.badSignature");
+                throw new InvalidLicenceException(MessageProperties.LICENCE_ERROR_BAD_SIGNATURE);
             }
             return Licence.parse(new String(payload, StandardCharsets.UTF_8));
         } catch (IllegalArgumentException | GeneralSecurityException ex) {
-            throw new InvalidLicenceException("licence.error.unreadable");
+            throw new InvalidLicenceException(MessageProperties.LICENCE_ERROR_UNREADABLE);
         }
     }
 }

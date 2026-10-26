@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.licence;
 
+import com.swiftlabs.invoicing.common.Endpoints;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,12 +17,10 @@ import java.util.List;
  */
 public class LicenceFilter extends OncePerRequestFilter {
 
-    public static final String LICENCE_URL = "/settings/licence";
-
-    private static final List<String> ALWAYS_ALLOWED = List.of(LICENCE_URL, "/perform-login", "/perform-logout", "/login/verify",
-        "/account/", "/setup", "/forgot-password", "/reset-password",
+    private static final List<String> ALWAYS_ALLOWED = List.of(Endpoints.LICENCE, Endpoints.PERFORM_LOGIN, Endpoints.PERFORM_LOGOUT,
+        Endpoints.LOGIN_VERIFY, Endpoints.ACCOUNT + "/", Endpoints.SETUP, Endpoints.FORGOT_PASSWORD, Endpoints.RESET_PASSWORD,
         // Backups stay possible (the data belongs to the customer), restoring one too
-        "/settings/backups");
+        Endpoints.BACKUPS);
 
     private final LicenceService licenceService;
 
@@ -34,7 +34,7 @@ public class LicenceFilter extends OncePerRequestFilter {
         if (licenceService.isRequired() && !"GET".equals(request.getMethod()) && !"HEAD".equals(request.getMethod())) {
             String path = request.getRequestURI().substring(request.getContextPath().length());
             if (ALWAYS_ALLOWED.stream().noneMatch(path::startsWith) && licenceService.status().isReadOnly()) {
-                response.sendRedirect(request.getContextPath() + LICENCE_URL + "?readonly");
+                response.sendRedirect(request.getContextPath() + Endpoints.LICENCE + "?readonly");
                 return;
             }
         }

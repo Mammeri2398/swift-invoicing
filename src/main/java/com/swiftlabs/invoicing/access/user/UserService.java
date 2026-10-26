@@ -4,6 +4,7 @@ import com.swiftlabs.invoicing.access.profile.Profile;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.Language;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 import com.swiftlabs.invoicing.licence.LicenceService;
 
@@ -55,10 +56,10 @@ public class UserService {
     public NewAccount create(UserForm form) {
         Profile profile = requireProfile(form.getProfileId());
         if (userRepository.existsByUsername(form.getUsername())) {
-            throw BusinessException.onField("username", "user.error.usernameUsed");
+            throw BusinessException.onField("username", MessageProperties.USER_ERROR_USERNAME_USED);
         }
         if (userRepository.existsByEmail(form.getEmail())) {
-            throw BusinessException.onField("email", "user.error.emailUsed");
+            throw BusinessException.onField("email", MessageProperties.USER_ERROR_EMAIL_USED);
         }
         // The licence limits the number of active accounts
         licenceService.checkUserLimit(userRepository.countByEnabledTrue() + 1);
@@ -81,10 +82,10 @@ public class UserService {
         User existing = require(form.getId());
         Profile profile = requireProfile(form.getProfileId());
         if (!form.getEmail().equals(existing.getEmail()) && userRepository.existsByEmail(form.getEmail())) {
-            throw BusinessException.onField("email", "user.error.emailUsed");
+            throw BusinessException.onField("email", MessageProperties.USER_ERROR_EMAIL_USED);
         }
         if (!form.isEnabled() && Objects.equals(existing.getId(), actingUserId)) {
-            throw BusinessException.onField("enabled", "user.error.disableSelf");
+            throw BusinessException.onField("enabled", MessageProperties.USER_ERROR_DISABLE_SELF);
         }
         if (form.isEnabled() && !existing.isEnabled()) {
             licenceService.checkUserLimit(userRepository.countByEnabledTrue() + 1);
@@ -105,7 +106,7 @@ public class UserService {
     public User updateOwnDetails(Long userId, String firstName, String lastName, String email) {
         User user = require(userId);
         if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(email)) {
-            throw BusinessException.onField("email", "user.error.emailUsed");
+            throw BusinessException.onField("email", MessageProperties.USER_ERROR_EMAIL_USED);
         }
         user.setFirstName(firstName);
         user.setLastName(lastName);
@@ -126,10 +127,10 @@ public class UserService {
     public void changeOwnPassword(Long userId, String currentPassword, String newPassword) {
         User user = require(userId);
         if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword())) {
-            throw BusinessException.onField("currentPassword", "user.error.wrongCurrentPassword");
+            throw BusinessException.onField("currentPassword", MessageProperties.USER_ERROR_WRONG_CURRENT_PASSWORD);
         }
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
-            throw BusinessException.onField("newPassword", "user.error.samePassword");
+            throw BusinessException.onField("newPassword", MessageProperties.USER_ERROR_SAME_PASSWORD);
         }
         setPassword(user, newPassword);
     }
@@ -152,7 +153,7 @@ public class UserService {
     @Transactional
     public void delete(Long id, Long actingUserId) {
         if (Objects.equals(id, actingUserId)) {
-            throw new BusinessException("user.error.deleteSelf");
+            throw new BusinessException(MessageProperties.USER_ERROR_DELETE_SELF);
         }
         userRepository.delete(require(id));
     }
@@ -164,15 +165,15 @@ public class UserService {
 
     private User require(Long id) {
         return userRepository.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("user.error.notFound"));
+            .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.USER_ERROR_NOT_FOUND));
     }
 
     private Profile requireProfile(Long profileId) {
         if (profileId == null) {
-            throw BusinessException.onField("profileId", "user.error.profileRequired");
+            throw BusinessException.onField("profileId", MessageProperties.USER_ERROR_PROFILE_REQUIRED);
         }
         return profileRepository.findById(profileId)
-            .orElseThrow(() -> BusinessException.onField("profileId", "user.error.profileNotFound"));
+            .orElseThrow(() -> BusinessException.onField("profileId", MessageProperties.USER_ERROR_PROFILE_NOT_FOUND));
     }
 
     private LocalDateTime now() {

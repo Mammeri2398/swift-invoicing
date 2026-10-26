@@ -16,23 +16,23 @@ public class GlobalModelAttributes {
         this.properties = properties;
     }
 
-    @ModelAttribute("amountUtils")
+    @ModelAttribute(CommonCodes.Attributes.AMOUNT_UTILS)
     public AmountUtils amountUtils() {
         return new AmountUtils();
     }
 
-    @ModelAttribute("amountInWords")
+    @ModelAttribute(CommonCodes.Attributes.AMOUNT_IN_WORDS)
     public AmountInWords amountInWords() {
         return new AmountInWords();
     }
 
-    @ModelAttribute("vatMention")
+    @ModelAttribute(CommonCodes.Attributes.VAT_MENTION)
     public String vatMention() {
         return properties.vatMention();
     }
 
     /** Request path, used by the navigation to highlight the current section. */
-    @ModelAttribute("currentPath")
+    @ModelAttribute(CommonCodes.Attributes.CURRENT_PATH)
     public String currentPath(HttpServletRequest request) {
         return request.getRequestURI();
     }

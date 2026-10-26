@@ -1,5 +1,8 @@
 package com.swiftlabs.invoicing.dashboard;
 
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
+import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.invoice.PaymentService;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,13 +25,14 @@ public class DashboardController {
         this.paymentService = paymentService;
     }
 
-    @GetMapping("/dashboard")
-    @PreAuthorize("hasAuthority('VIEW_DASHBOARD')")
+    @GetMapping(Endpoints.DASHBOARD)
+    @PreAuthorize(Privileges.Has.VIEW_DASHBOARD)
     public String dashboard(@RequestParam(name = "year", required = false) Integer year, Model model) {
-        model.addAttribute("stats", dashboardService.stats(year));
+        model.addAttribute(CommonCodes.Attributes.STATS, dashboardService.stats(year));
         List<PaymentService.Overdue> overdue = paymentService.overdue();
-        model.addAttribute("overdue", overdue);
-        model.addAttribute("overdueTotal", overdue.stream().map(PaymentService.Overdue::balance).reduce(BigDecimal.ZERO, BigDecimal::add));
-        return "dashboard/index";
+        model.addAttribute(CommonCodes.Attributes.OVERDUE, overdue);
+        model.addAttribute(CommonCodes.Attributes.OVERDUE_TOTAL,
+            overdue.stream().map(PaymentService.Overdue::balance).reduce(BigDecimal.ZERO, BigDecimal::add));
+        return CommonCodes.Views.DASHBOARD_INDEX;
     }
 }

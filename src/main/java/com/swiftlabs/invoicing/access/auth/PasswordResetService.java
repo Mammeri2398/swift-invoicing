@@ -3,6 +3,8 @@ package com.swiftlabs.invoicing.access.auth;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.access.user.UserService;
+import com.swiftlabs.invoicing.common.Endpoints;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 import com.swiftlabs.invoicing.mail.MailGateway;
@@ -108,7 +110,7 @@ public class PasswordResetService {
         random.nextBytes(bytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         tokenRepository.save(new PasswordResetToken(hash(token), user, LocalDateTime.now(clock).plus(validity)));
-        sendLink(user, baseUrl() + "/reset-password?token=" + token);
+        sendLink(user, baseUrl() + Endpoints.RESET_PASSWORD + "?token=" + token);
     }
 
     /**
@@ -140,8 +142,8 @@ public class PasswordResetService {
         }
         message.setTo(user.getEmail());
         // In the user's own language, whatever the language of the page that asked for it
-        message.setSubject(messages.get(user.getLanguage(), "auth.reset.mail.subject"));
-        message.setText(messages.get(user.getLanguage(), "auth.reset.mail.body", user.getUsername(), resetUrl, validity.toMinutes()));
+        message.setSubject(messages.get(user.getLanguage(), MessageProperties.AUTH_RESET_MAIL_SUBJECT));
+        message.setText(messages.get(user.getLanguage(), MessageProperties.AUTH_RESET_MAIL_BODY, user.getUsername(), resetUrl, validity.toMinutes()));
         try {
             mailGateway.sender().send(message);
         } catch (Exception ex) {

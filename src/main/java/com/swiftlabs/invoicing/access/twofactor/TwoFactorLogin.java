@@ -24,7 +24,6 @@ import java.util.List;
 public final class TwoFactorLogin {
 
     public static final String PENDING_AUTHORITY = "TWO_FACTOR_PENDING";
-    public static final String VERIFY_URL = "/login/verify";
     private static final String PENDING_ATTRIBUTE = TwoFactorLogin.class.getName() + ".PENDING";
 
     private static final SecurityContextRepository CONTEXT_REPOSITORY = new HttpSessionSecurityContextRepository();

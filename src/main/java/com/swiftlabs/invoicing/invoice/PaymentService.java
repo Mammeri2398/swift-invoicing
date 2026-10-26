@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.common.AmountUtils;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import org.springframework.data.domain.Sort;
@@ -90,26 +91,26 @@ public class PaymentService {
     @Transactional
     public InvoicePayment record(Long invoiceId, PaymentForm form) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
-            .orElseThrow(() -> new ResourceNotFoundException("invoice.error.notFound", String.valueOf(invoiceId)));
+            .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.INVOICE_ERROR_NOT_FOUND, String.valueOf(invoiceId)));
         if (invoice.getKind() != DocumentKind.INVOICE || invoice.getStatus() != InvoiceStatus.ISSUED) {
-            throw new BusinessException("invoice.payment.error.notPayable");
+            throw new BusinessException(MessageProperties.INVOICE_PAYMENT_ERROR_NOT_PAYABLE);
         }
         BigDecimal balance = balance(invoice);
         if (balance.signum() <= 0) {
-            throw new BusinessException("invoice.payment.error.nothingLeft");
+            throw new BusinessException(MessageProperties.INVOICE_PAYMENT_ERROR_NOTHING_LEFT);
         }
         if (form.getAmount() == null || form.getAmount().signum() <= 0) {
-            throw BusinessException.onField("amount", "invoice.payment.error.amountPositive");
+            throw BusinessException.onField("amount", MessageProperties.INVOICE_PAYMENT_ERROR_AMOUNT_POSITIVE);
         }
         if (form.getAmount().compareTo(balance) > 0) {
-            throw BusinessException.onField("amount", "invoice.payment.error.amountTooHigh", AmountUtils.format(balance));
+            throw BusinessException.onField("amount", MessageProperties.INVOICE_PAYMENT_ERROR_AMOUNT_TOO_HIGH, AmountUtils.format(balance));
         }
         LocalDate today = LocalDate.now(clock);
         if (form.getPaidOn() == null || form.getPaidOn().isAfter(today)) {
-            throw BusinessException.onField("paidOn", "invoice.payment.error.future");
+            throw BusinessException.onField("paidOn", MessageProperties.INVOICE_PAYMENT_ERROR_FUTURE);
         }
         if (form.getPaidOn().isBefore(invoice.getIssueDate())) {
-            throw BusinessException.onField("paidOn", "invoice.payment.error.beforeInvoice");
+            throw BusinessException.onField("paidOn", MessageProperties.INVOICE_PAYMENT_ERROR_BEFORE_INVOICE);
         }
         InvoicePayment payment = paymentRepository.save(new InvoicePayment(invoice, AmountUtils.round2(form.getAmount()),
             form.getPaidOn(), form.getMethod(), form.getReference(), currentUsername(), LocalDateTime.now(clock)));
@@ -123,7 +124,7 @@ public class PaymentService {
     public Invoice delete(Long invoiceId, Long paymentId) {
         InvoicePayment payment = paymentRepository.findById(paymentId)
             .filter(p -> p.getInvoice().getId().equals(invoiceId))
-            .orElseThrow(() -> new ResourceNotFoundException("invoice.payment.error.notFound"));
+            .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.INVOICE_PAYMENT_ERROR_NOT_FOUND));
         Invoice invoice = payment.getInvoice();
         paymentRepository.delete(payment);
         paymentRepository.flush();

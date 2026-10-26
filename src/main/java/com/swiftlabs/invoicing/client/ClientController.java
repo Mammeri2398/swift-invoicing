@@ -1,8 +1,12 @@
 package com.swiftlabs.invoicing.client;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
+import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.invoice.PaymentService;
 
 import jakarta.validation.Valid;
@@ -18,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
-@RequestMapping("/clients")
+@RequestMapping(Endpoints.CLIENTS)
 public class ClientController {
 
     private final ClientService clientService;
@@ -32,38 +36,38 @@ public class ClientController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('VIEW_CLIENTS')")
+    @PreAuthorize(Privileges.Has.VIEW_CLIENTS)
     public String list(Model model) {
-        model.addAttribute("clients", clientService.findAll());
+        model.addAttribute(CommonCodes.Attributes.CLIENTS, clientService.findAll());
         // What each client still owes on issued invoices
-        model.addAttribute("balances", paymentService.balancesByClient());
-        return "client/list";
+        model.addAttribute(CommonCodes.Attributes.BALANCES, paymentService.balancesByClient());
+        return CommonCodes.Views.CLIENT_LIST;
     }
 
-    @GetMapping("/new")
-    @PreAuthorize("hasAuthority('CREATE_CLIENT')")
+    @GetMapping(Endpoints.CLIENT_NEW)
+    @PreAuthorize(Privileges.Has.CREATE_CLIENT)
     public String newForm(Model model) {
-        model.addAttribute("client", new ClientForm());
+        model.addAttribute(CommonCodes.Attributes.CLIENT, new ClientForm());
         return formView(model);
     }
 
-    @GetMapping("/{id}/edit")
-    @PreAuthorize("hasAuthority('CREATE_CLIENT')")
+    @GetMapping(Endpoints.CLIENT_EDIT)
+    @PreAuthorize(Privileges.Has.CREATE_CLIENT)
     public String editForm(@PathVariable Long id, Model model) {
-        model.addAttribute("client", ClientForm.from(clientService.findById(id)));
+        model.addAttribute(CommonCodes.Attributes.CLIENT, ClientForm.from(clientService.findById(id)));
         return formView(model);
     }
 
     /** Invalid input is shown again with the errors next to each field. */
-    @PostMapping("/save")
-    @PreAuthorize("hasAuthority('CREATE_CLIENT')")
-    public String save(@Valid @ModelAttribute("client") ClientForm form, BindingResult result, Model model,
+    @PostMapping(Endpoints.CLIENT_SAVE)
+    @PreAuthorize(Privileges.Has.CREATE_CLIENT)
+    public String save(@Valid @ModelAttribute(CommonCodes.Attributes.CLIENT) ClientForm form, BindingResult result, Model model,
                        RedirectAttributes redirectAttributes) {
         if (!result.hasErrors()) {
             try {
                 clientService.save(form);
-                redirectAttributes.addFlashAttribute("success", messages.get("client.saved"));
-                return "redirect:/clients";
+                redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.CLIENT_SAVED));
+                return Endpoints.REDIRECT + Endpoints.CLIENTS;
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
             }
@@ -71,20 +75,20 @@ public class ClientController {
         return formView(model);
     }
 
-    @PostMapping("/{id}/delete")
-    @PreAuthorize("hasAuthority('DELETE_CLIENT')")
+    @PostMapping(Endpoints.CLIENT_DELETE)
+    @PreAuthorize(Privileges.Has.DELETE_CLIENT)
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             clientService.delete(id);
-            redirectAttributes.addFlashAttribute("success", messages.get("client.deleted"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.CLIENT_DELETED));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", messages.of(ex));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));
         }
-        return "redirect:/clients";
+        return Endpoints.REDIRECT + Endpoints.CLIENTS;
     }
 
     private String formView(Model model) {
-        model.addAttribute("types", ClientType.values());
-        return "client/form";
+        model.addAttribute(CommonCodes.Attributes.TYPES, ClientType.values());
+        return CommonCodes.Views.CLIENT_FORM;
     }
 }

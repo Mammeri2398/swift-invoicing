@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.licence;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import org.slf4j.Logger;
@@ -61,8 +62,8 @@ public class LicenceService {
             LocalDate trialEnd = record.getTrialStartedAt().toLocalDate().plusDays(properties.trialDays());
             long left = ChronoUnit.DAYS.between(today, trialEnd);
             return left >= 0
-                ? new LicenceStatus(LicenceStatus.State.TRIAL, null, left, "licence.status.trial", new Object[] {left})
-                : new LicenceStatus(LicenceStatus.State.TRIAL_OVER, null, left, "licence.status.trialOver", null);
+                ? new LicenceStatus(LicenceStatus.State.TRIAL, null, left, MessageProperties.LICENCE_STATUS_TRIAL, new Object[] {left})
+                : new LicenceStatus(LicenceStatus.State.TRIAL_OVER, null, left, MessageProperties.LICENCE_STATUS_TRIAL_OVER, null);
         }
         Licence licence;
         try {
@@ -79,13 +80,13 @@ public class LicenceService {
             return new LicenceStatus(LicenceStatus.State.VALID, licence, left);
         }
         if (left >= 0) {
-            return new LicenceStatus(LicenceStatus.State.EXPIRING, licence, left, "licence.status.expiring", new Object[] {left});
+            return new LicenceStatus(LicenceStatus.State.EXPIRING, licence, left, MessageProperties.LICENCE_STATUS_EXPIRING, new Object[] {left});
         }
         long graceLeft = left + properties.graceDays();
         return graceLeft >= 0
-            ? new LicenceStatus(LicenceStatus.State.GRACE, licence, left, "licence.status.grace",
+            ? new LicenceStatus(LicenceStatus.State.GRACE, licence, left, MessageProperties.LICENCE_STATUS_GRACE,
                 new Object[] {licence.expires().format(DATE), graceLeft})
-            : new LicenceStatus(LicenceStatus.State.EXPIRED, licence, left, "licence.status.expired", null);
+            : new LicenceStatus(LicenceStatus.State.EXPIRED, licence, left, MessageProperties.LICENCE_STATUS_EXPIRED, null);
     }
 
     /** Checks and saves a key pasted by the customer. */
@@ -98,7 +99,7 @@ public class LicenceService {
         }
         LicenceRecord record = record();
         if (licence.expires().isBefore(now(record).toLocalDate())) {
-            throw new InvalidLicenceException("licence.error.expired", licence.expires().format(DATE));
+            throw new InvalidLicenceException(MessageProperties.LICENCE_ERROR_EXPIRED, licence.expires().format(DATE));
         }
         record.activate(key.replaceAll("\\s", ""), LocalDateTime.now(clock));
         log.info("Licence {} activated for {} ({} users, until {})", licence.id(), licence.company(), licence.users(), licence.expires());
@@ -116,7 +117,7 @@ public class LicenceService {
     @Transactional
     public void checkUserLimit(long activeUsersAfterChange) {
         if (properties.required() && activeUsersAfterChange > maxUsers()) {
-            throw new BusinessException("licence.error.userLimit", String.valueOf(maxUsers()));
+            throw new BusinessException(MessageProperties.LICENCE_ERROR_USER_LIMIT, String.valueOf(maxUsers()));
         }
     }
 
@@ -140,7 +141,8 @@ public class LicenceService {
     private InvalidLicenceException nifMismatch(Licence licence) {
         String issuerNif = digits(issuerService.getIssuer().getNif());
         return digits(licence.nif()).equals(issuerNif) ? null
-            : new InvalidLicenceException("licence.error.nifMismatch", licence.nif(), licence.company(), issuerService.getIssuer().getNif());
+            : new InvalidLicenceException(MessageProperties.LICENCE_ERROR_NIF_MISMATCH, licence.nif(), licence.company(),
+                issuerService.getIssuer().getNif());
     }
 
     private static String digits(String value) {

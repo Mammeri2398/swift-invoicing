@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.common.AmountUtils;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.mail.MailGateway;
 
 import jakarta.mail.MessagingException;
@@ -72,7 +73,7 @@ public class InvoiceMailService {
         Invoice invoice = sendable(invoiceId);
         BigDecimal balance = paymentService.balance(invoice);
         if (invoice.getKind() != DocumentKind.INVOICE || invoice.getStatus() != InvoiceStatus.ISSUED || balance.signum() <= 0) {
-            throw new BusinessException("invoiceMail.error.nothingToPay");
+            throw new BusinessException(MessageProperties.INVOICE_MAIL_ERROR_NOTHING_TO_PAY);
         }
         InvoiceEmailForm form = new InvoiceEmailForm();
         form.setReminder(true);
@@ -98,7 +99,7 @@ public class InvoiceMailService {
     public void send(Long invoiceId, InvoiceEmailForm form) {
         Invoice invoice = sendable(invoiceId);
         if (!isEnabled()) {
-            throw new BusinessException("invoiceMail.error.disabled");
+            throw new BusinessException(MessageProperties.INVOICE_MAIL_ERROR_DISABLED);
         }
         try {
             JavaMailSender mailSender = mailGateway.sender();
@@ -119,10 +120,10 @@ public class InvoiceMailService {
                 new ByteArrayResource(pdfService.render(invoiceService.findWithLines(invoiceId))), "application/pdf");
             mailSender.send(message);
         } catch (MessagingException | UnsupportedEncodingException ex) {
-            throw BusinessException.onField("to", "invoiceMail.error.invalidAddress");
+            throw BusinessException.onField("to", MessageProperties.INVOICE_MAIL_ERROR_INVALID_ADDRESS);
         } catch (MailException | IOException ex) {
             log.error("Could not send invoice {} by email", invoice.getInvoiceNumber(), ex);
-            throw new BusinessException("invoiceMail.error.sendFailed");
+            throw new BusinessException(MessageProperties.INVOICE_MAIL_ERROR_SEND_FAILED);
         }
         audit.record(invoice, form.isReminder() ? InvoiceEvent.Action.REMINDED : InvoiceEvent.Action.SENT,
             form.hasCc() ? form.getTo() + ", cc " + form.getCc() : form.getTo());
@@ -133,7 +134,7 @@ public class InvoiceMailService {
         Invoice invoice = invoiceService.findById(invoiceId);
         if (invoice.getStatus() != InvoiceStatus.ISSUED && invoice.getStatus() != InvoiceStatus.PAID
                 && invoice.getStatus() != InvoiceStatus.ACCEPTED) {
-            throw new BusinessException("invoiceMail.error.notSendable");
+            throw new BusinessException(MessageProperties.INVOICE_MAIL_ERROR_NOT_SENDABLE);
         }
         return invoice;
     }

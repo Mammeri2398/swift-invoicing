@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.client;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 import com.swiftlabs.invoicing.invoice.InvoiceRepository;
 
@@ -31,7 +32,7 @@ public class ClientService {
 
     public Client findById(Long id) {
         return clientRepository.findById(id).orElseThrow(() ->
-            new ResourceNotFoundException("client.error.notFound", String.valueOf(id)));
+            new ResourceNotFoundException(MessageProperties.CLIENT_ERROR_NOT_FOUND, String.valueOf(id)));
     }
 
     @Transactional
@@ -39,7 +40,7 @@ public class ClientService {
         // Update the stored client so fields not on the form (createdAt) are kept
         Client client = form.getId() != null ? findById(form.getId()) : new Client();
         if (form.getType() == null) {
-            throw BusinessException.onField("type", "client.error.typeRequired");
+            throw BusinessException.onField("type", MessageProperties.CLIENT_ERROR_TYPE_REQUIRED);
         }
         client.setType(form.getType());
         client.setName(form.getName());
@@ -62,14 +63,14 @@ public class ClientService {
         Client client = findById(id);
         long invoices = invoiceRepository.countByClientId(client.getId());
         if (invoices > 0) {
-            throw new BusinessException("client.error.hasInvoices", invoices);
+            throw new BusinessException(MessageProperties.CLIENT_ERROR_HAS_INVOICES, invoices);
         }
         clientRepository.delete(client);
     }
 
     private void validate(Client client) {
         if (client.getType() == ClientType.PROFESSIONNEL && (client.getNif() == null || client.getNif().trim().isEmpty())) {
-            throw BusinessException.onField("nif", "client.error.nifRequired");
+            throw BusinessException.onField("nif", MessageProperties.CLIENT_ERROR_NIF_REQUIRED);
         }
     }
 }

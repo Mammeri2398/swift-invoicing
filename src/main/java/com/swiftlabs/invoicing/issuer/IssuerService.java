@@ -1,7 +1,9 @@
 package com.swiftlabs.invoicing.issuer;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,28 +35,29 @@ public class IssuerService {
 
     public Issuer getIssuer() {
         return issuerRepository.findById(ISSUER_ID).orElseThrow(() ->
-            new BusinessException("issuer.error.notFound"));
+            new BusinessException(MessageProperties.ISSUER_ERROR_NOT_FOUND));
     }
 
     @Transactional
     public Issuer save(IssuerForm form) {
         // Validate before touching the managed row, so a rejected form never gets flushed
         CompanyType type = form.getCompanyType() != null ? form.getCompanyType() : CompanyType.AUTO_ENTREPRENEUR;
-        requireText("fullName", form.getFullName(), type.isCompany() ? "issuer.error.companyNameRequired" : "issuer.error.fullNameRequired");
-        requireText("nif", form.getNif(), "issuer.error.nifRequired");
+        requireText("fullName", form.getFullName(),
+            type.isCompany() ? MessageProperties.ISSUER_ERROR_COMPANY_NAME_REQUIRED : MessageProperties.ISSUER_ERROR_FULL_NAME_REQUIRED);
+        requireText("nif", form.getNif(), MessageProperties.ISSUER_ERROR_NIF_REQUIRED);
         // Identifiers required on invoices, by legal status (décret exécutif 05-468)
         if (type.isCompany()) {
-            requireText("legalForm", form.getLegalForm(), "issuer.error.legalFormRequired");
+            requireText("legalForm", form.getLegalForm(), MessageProperties.ISSUER_ERROR_LEGAL_FORM_REQUIRED);
             if (form.getShareCapital() == null) {
-                throw BusinessException.onField("shareCapital", "issuer.error.shareCapitalRequired");
+                throw BusinessException.onField("shareCapital", MessageProperties.ISSUER_ERROR_SHARE_CAPITAL_REQUIRED);
             }
-            requireText("rcNumber", form.getRcNumber(), "issuer.error.rcRequired");
-            requireText("taxArticle", form.getTaxArticle(), "issuer.error.taxArticleRequired");
+            requireText("rcNumber", form.getRcNumber(), MessageProperties.ISSUER_ERROR_RC_REQUIRED);
+            requireText("taxArticle", form.getTaxArticle(), MessageProperties.ISSUER_ERROR_TAX_ARTICLE_REQUIRED);
         } else {
-            requireText("aeCardNumber", form.getAeCardNumber(), "issuer.error.aeCardRequired");
+            requireText("aeCardNumber", form.getAeCardNumber(), MessageProperties.ISSUER_ERROR_AE_CARD_REQUIRED);
         }
         if (form.getAnnualCeiling() == null || form.getAnnualCeiling().signum() <= 0) {
-            throw BusinessException.onField("annualCeiling", "issuer.error.ceilingPositive");
+            throw BusinessException.onField("annualCeiling", MessageProperties.ISSUER_ERROR_CEILING_POSITIVE);
         }
 
         // The logo is not on this form: it is kept
@@ -87,14 +90,14 @@ public class IssuerService {
     @Transactional
     public void updateLogo(byte[] data) {
         if (data == null || data.length == 0) {
-            throw new BusinessException("issuer.error.logoMissing");
+            throw new BusinessException(MessageProperties.ISSUER_ERROR_LOGO_MISSING);
         }
         if (data.length > MAX_LOGO_BYTES) {
-            throw new BusinessException("issuer.error.logoTooBig", String.valueOf(MAX_LOGO_BYTES / 1024));
+            throw new BusinessException(MessageProperties.ISSUER_ERROR_LOGO_TOO_BIG, String.valueOf(MAX_LOGO_BYTES / 1024));
         }
         String contentType = detectImageType(data);
         if (contentType == null) {
-            throw new BusinessException("issuer.error.logoFormat");
+            throw new BusinessException(MessageProperties.ISSUER_ERROR_LOGO_FORMAT);
         }
         checkDecodableWithinLimits(data);
         getIssuer().replaceLogo(data, contentType);
@@ -108,20 +111,20 @@ public class IssuerService {
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
             if (!readers.hasNext()) {
-                throw new BusinessException("issuer.error.logoInvalid");
+                throw new BusinessException(MessageProperties.ISSUER_ERROR_LOGO_INVALID);
             }
             ImageReader reader = readers.next();
             try {
                 reader.setInput(input);
                 if (reader.getWidth(0) > MAX_LOGO_PIXELS || reader.getHeight(0) > MAX_LOGO_PIXELS) {
-                    throw new BusinessException("issuer.error.logoTooLarge", String.valueOf(MAX_LOGO_PIXELS));
+                    throw new BusinessException(MessageProperties.ISSUER_ERROR_LOGO_TOO_LARGE, String.valueOf(MAX_LOGO_PIXELS));
                 }
                 reader.read(0);
             } finally {
                 reader.dispose();
             }
         } catch (IOException ex) {
-            throw new BusinessException("issuer.error.logoInvalid");
+            throw new BusinessException(MessageProperties.ISSUER_ERROR_LOGO_INVALID);
         }
     }
 
@@ -133,10 +136,10 @@ public class IssuerService {
     /** Content type from the file signature ("magic number"), or null if neither PNG nor JPEG. */
     private static String detectImageType(byte[] data) {
         if (startsWith(data, PNG_SIGNATURE)) {
-            return "image/png";
+            return MediaType.IMAGE_PNG_VALUE;
         }
         if (startsWith(data, JPEG_SIGNATURE)) {
-            return "image/jpeg";
+            return MediaType.IMAGE_JPEG_VALUE;
         }
         return null;
     }

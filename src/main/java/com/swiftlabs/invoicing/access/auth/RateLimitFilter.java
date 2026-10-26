@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.access.auth;
 
+import com.swiftlabs.invoicing.common.Endpoints;
 import com.swiftlabs.invoicing.config.SecurityProperties.Limit;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 
@@ -56,14 +57,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static String rule(HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         String method = request.getMethod();
-        if ("POST".equals(method) && (path.equals("/perform-login") || path.equals("/login/verify"))) {
+        if ("POST".equals(method) && (path.equals(Endpoints.PERFORM_LOGIN) || path.equals(Endpoints.LOGIN_VERIFY))) {
             return "login";
         }
-        if ("POST".equals(method) && (path.equals("/forgot-password/send") || path.equals("/reset-password/save"))) {
+        if ("POST".equals(method) && (path.equals(Endpoints.FORGOT_PASSWORD_SEND) || path.equals(Endpoints.RESET_PASSWORD_SAVE))) {
             return "password-reset";
         }
         String number = request.getParameter("number");
-        if ("GET".equals(method) && path.equals("/invoices/lookup") && number != null && !number.isBlank()) {
+        if ("GET".equals(method) && path.equals(Endpoints.INVOICE_LOOKUP) && number != null && !number.isBlank()) {
             return "lookup";
         }
         return null;

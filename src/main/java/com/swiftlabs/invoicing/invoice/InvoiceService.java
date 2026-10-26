@@ -5,6 +5,7 @@ import com.swiftlabs.invoicing.client.ClientService;
 import com.swiftlabs.invoicing.client.ClientType;
 import com.swiftlabs.invoicing.common.AmountUtils;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 import com.swiftlabs.invoicing.config.InvoiceProperties;
 import com.swiftlabs.invoicing.issuer.Issuer;
@@ -66,13 +67,13 @@ public class InvoiceService {
 
     public Invoice findById(Long id) {
         return invoiceRepository.findById(id).orElseThrow(() ->
-            new ResourceNotFoundException("invoice.error.notFound", String.valueOf(id)));
+            new ResourceNotFoundException(MessageProperties.INVOICE_ERROR_NOT_FOUND, String.valueOf(id)));
     }
 
     /** Invoice ready to display or print: client and lines loaded in one query. */
     public Invoice findWithLines(Long id) {
         return invoiceRepository.findWithLinesById(id).orElseThrow(() ->
-            new ResourceNotFoundException("invoice.error.notFound", String.valueOf(id)));
+            new ResourceNotFoundException(MessageProperties.INVOICE_ERROR_NOT_FOUND, String.valueOf(id)));
     }
 
     public boolean existsByNumber(String number) {
@@ -108,13 +109,13 @@ public class InvoiceService {
             invoice.setKind(form.getKind());
         }
         if (!invoice.isDraft()) {
-            throw new BusinessException("invoice.error.notDraft");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_NOT_DRAFT);
         }
         if (form.getClientId() == null && !invoice.isCreditNote()) {
-            throw BusinessException.onField("clientId", "invoice.error.clientRequired");
+            throw BusinessException.onField("clientId", MessageProperties.INVOICE_ERROR_CLIENT_REQUIRED);
         }
         if (form.getLines() == null || form.getLines().isEmpty()) {
-            throw BusinessException.onField("lines", "invoice.error.noLines");
+            throw BusinessException.onField("lines", MessageProperties.INVOICE_ERROR_NO_LINES);
         }
         // A credit note is always for the client of its invoice
         if (!invoice.isCreditNote()) {
@@ -146,7 +147,7 @@ public class InvoiceService {
     public Invoice issue(Long id) {
         Invoice invoice = findById(id);
         if (!invoice.isDraft()) {
-            throw new BusinessException("invoice.error.alreadyIssued");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_ALREADY_ISSUED);
         }
         if (invoice.isCreditNote()) {
             checkCreditNote(invoice);
@@ -155,10 +156,10 @@ public class InvoiceService {
         // Quotes and pro formas are not fiscal documents: the client's identifiers are checked on the invoice
         boolean fiscal = invoice.getKind().isAccounting();
         if (fiscal && client.getType() == ClientType.PROFESSIONNEL && (client.getNif() == null || client.getNif().isBlank())) {
-            throw new BusinessException("invoice.error.clientNifRequired");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_CLIENT_NIF_REQUIRED);
         }
         if (invoice.getLines().isEmpty()) {
-            throw new BusinessException("invoice.error.noLinesToIssue");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_NO_LINES_TO_ISSUE);
         }
         Issuer issuer = issuerService.getIssuer();
         // A company's invoice to a business carries the buyer's identifiers too (décret exécutif 05-468)
@@ -166,20 +167,20 @@ public class InvoiceService {
             boolean noRc = isBlank(client.getRcNumber());
             boolean noAi = isBlank(client.getTaxArticle());
             if (noRc || noAi) {
-                throw new BusinessException(noRc && noAi ? "invoice.error.clientMissing.both"
-                    : noRc ? "invoice.error.clientMissing.rc" : "invoice.error.clientMissing.ai");
+                throw new BusinessException(noRc && noAi ? MessageProperties.INVOICE_ERROR_CLIENT_MISSING_BOTH
+                    : noRc ? MessageProperties.INVOICE_ERROR_CLIENT_MISSING_RC : MessageProperties.INVOICE_ERROR_CLIENT_MISSING_AI);
             }
         }
         // The type may have changed since the draft was saved
         if (!issuer.isCompany() && invoice.getLines().stream().anyMatch(line -> line.getVatRate().signum() > 0)) {
-            throw new BusinessException("invoice.error.vatForAutoEntrepreneur");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_VAT_FOR_AUTO_ENTREPRENEUR);
         }
         int year = invoice.getIssueDate().getYear();
         int number = nextNumber(invoice.getKind(), year);
         String prefix = prefix(invoice.getKind());
         String invoiceNumber = prefix + "-" + year + "-" + String.format("%04d", number);
         if (invoiceRepository.existsByInvoiceNumber(invoiceNumber)) {
-            throw new BusinessException("invoice.error.numberExists", invoiceNumber);
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_NUMBER_EXISTS, invoiceNumber);
         }
 
         invoice.setInvoiceNumber(invoiceNumber);
@@ -257,7 +258,7 @@ public class InvoiceService {
     private Invoice issuedQuote(Long quoteId) {
         Invoice quote = findById(quoteId);
         if (!quote.isQuote() || quote.getStatus() != InvoiceStatus.ISSUED) {
-            throw new BusinessException("invoice.error.quoteNotIssued");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_QUOTE_NOT_ISSUED);
         }
         return quote;
     }
@@ -273,7 +274,7 @@ public class InvoiceService {
         boolean convertible = document.isOffer() && (document.getStatus() == InvoiceStatus.ISSUED
             || (document.isQuote() && document.getStatus() == InvoiceStatus.ACCEPTED));
         if (!convertible) {
-            throw new BusinessException("invoice.error.notConvertible");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_NOT_CONVERTIBLE);
         }
         Invoice existing = invoiceOf(documentId);
         if (existing != null) {
@@ -317,7 +318,7 @@ public class InvoiceService {
     public Invoice createCreditNote(Long invoiceId) {
         Invoice original = findWithLines(invoiceId);
         if (original.getKind() != DocumentKind.INVOICE || !original.isIssuedOrPaid()) {
-            throw new BusinessException("invoice.error.creditNoteNotAllowed");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_CREDIT_NOTE_NOT_ALLOWED);
         }
         List<Invoice> existing = invoiceRepository.findByOriginalInvoiceIdOrderByIdAsc(invoiceId);
         for (Invoice creditNote : existing) {
@@ -326,7 +327,7 @@ public class InvoiceService {
             }
         }
         if (remainingToCredit(original).signum() <= 0) {
-            throw new BusinessException("invoice.error.fullyCredited");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_FULLY_CREDITED);
         }
         Invoice creditNote = newDraft();
         creditNote.setKind(DocumentKind.CREDIT_NOTE);
@@ -359,15 +360,15 @@ public class InvoiceService {
     private void checkCreditNote(Invoice creditNote) {
         Invoice original = creditNote.getOriginalInvoice();
         if (!original.isIssuedOrPaid()) {
-            throw new BusinessException("invoice.error.originalNotIssued", original.getInvoiceNumber());
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_ORIGINAL_NOT_ISSUED, original.getInvoiceNumber());
         }
         if (creditNote.getIssueDate().isBefore(original.getIssueDate())) {
-            throw BusinessException.onField("issueDate", "invoice.error.creditNoteBeforeInvoice");
+            throw BusinessException.onField("issueDate", MessageProperties.INVOICE_ERROR_CREDIT_NOTE_BEFORE_INVOICE);
         }
         creditNote.recalculateTotal();
         BigDecimal remaining = remainingToCredit(original);
         if (creditNote.getTotalAmount().compareTo(remaining) > 0) {
-            throw new BusinessException("invoice.error.creditNoteTooHigh", AmountUtils.format(creditNote.getTotalAmount()),
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_CREDIT_NOTE_TOO_HIGH, AmountUtils.format(creditNote.getTotalAmount()),
                 original.getInvoiceNumber(), AmountUtils.format(remaining));
         }
     }
@@ -376,16 +377,16 @@ public class InvoiceService {
     public Invoice pay(Long id) {
         Invoice invoice = findById(id);
         if (invoice.isCreditNote()) {
-            throw new BusinessException("invoice.error.creditNoteNotPayable");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_CREDIT_NOTE_NOT_PAYABLE);
         }
         if (invoice.isOffer()) {
-            throw new BusinessException("invoice.error.offerNotPayable");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_OFFER_NOT_PAYABLE);
         }
         if (invoice.getStatus() != InvoiceStatus.ISSUED) {
-            throw new BusinessException("invoice.error.payIssuedOnly");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_PAY_ISSUED_ONLY);
         }
         if (remainingToCredit(invoice).signum() <= 0) {
-            throw new BusinessException("invoice.error.nothingToCollect");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_NOTHING_TO_COLLECT);
         }
         // "Payer le solde": one payment of everything left, today, with the invoice's payment method
         paymentService.record(id, new PaymentForm(paymentService.balance(invoice), LocalDate.now(), invoice.getPaymentMethod(), null));
@@ -396,14 +397,14 @@ public class InvoiceService {
     public Invoice cancel(Long id) {
         Invoice invoice = findById(id);
         if (invoice.isCreditNote() && !invoice.isDraft()) {
-            throw new BusinessException("invoice.error.creditNoteNotCancellable");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_CREDIT_NOTE_NOT_CANCELLABLE);
         }
         if (invoice.getStatus() == InvoiceStatus.CANCELLED) {
-            throw new BusinessException("invoice.error.alreadyCancelled");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_ALREADY_CANCELLED);
         }
         // Cancelling on top of a credit note would cancel the same amount twice
         if (invoiceRepository.sumIssuedCreditNotes(invoice.getId()).signum() > 0) {
-            throw new BusinessException("invoice.error.hasCreditNote");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_HAS_CREDIT_NOTE);
         }
         invoice.setStatus(InvoiceStatus.CANCELLED);
         invoice.setCancelledAt(LocalDateTime.now());
@@ -416,7 +417,7 @@ public class InvoiceService {
     public void delete(Long id) {
         Invoice invoice = findById(id);
         if (!invoice.isDraft()) {
-            throw new BusinessException("invoice.error.deleteDraftOnly");
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_DELETE_DRAFT_ONLY);
         }
         audit.forget(invoice);
         invoiceRepository.delete(invoice);
@@ -471,10 +472,10 @@ public class InvoiceService {
         }
         String field = "lines[" + index + "].vatRate";
         if (requested == null) {
-            throw BusinessException.onField(field, "invoice.error.vatRateRequired");
+            throw BusinessException.onField(field, MessageProperties.INVOICE_ERROR_VAT_RATE_REQUIRED);
         }
         if (properties.vatRates().stream().noneMatch(rate -> rate.compareTo(requested) == 0)) {
-            throw BusinessException.onField(field, "invoice.error.vatRateNotAllowed");
+            throw BusinessException.onField(field, MessageProperties.INVOICE_ERROR_VAT_RATE_NOT_ALLOWED);
         }
         return requested;
     }

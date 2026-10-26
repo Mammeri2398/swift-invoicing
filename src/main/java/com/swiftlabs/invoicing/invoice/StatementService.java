@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.invoice;
 
 import com.swiftlabs.invoicing.client.Client;
 import com.swiftlabs.invoicing.client.ClientService;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 
 import org.springframework.stereotype.Service;
@@ -54,10 +55,11 @@ public class StatementService {
                 clientId, DocumentKind.ACCOUNTING, List.of(InvoiceStatus.ISSUED, InvoiceStatus.PAID))) {
             if (document.isCreditNote()) {
                 movements.add(new Movement(document.getIssueDate(), 1,
-                    messages.get("clientStatement.entry.creditNote", document.getOriginalInvoice().getInvoiceNumber()),
+                    messages.get(MessageProperties.CLIENT_STATEMENT_ENTRY_CREDIT_NOTE, document.getOriginalInvoice().getInvoiceNumber()),
                     document, BigDecimal.ZERO, document.getTotalAmount()));
             } else {
-                movements.add(new Movement(document.getIssueDate(), 0, messages.get("clientStatement.entry.invoice"), document, document.getAmountDue(), BigDecimal.ZERO));
+                movements.add(new Movement(document.getIssueDate(), 0, messages.get(MessageProperties.CLIENT_STATEMENT_ENTRY_INVOICE),
+                    document, document.getAmountDue(), BigDecimal.ZERO));
             }
         }
         for (InvoicePayment payment : paymentRepository.findByClient(clientId)) {
@@ -65,10 +67,11 @@ public class StatementService {
                 continue;
             }
             String label = payment.getMethod() != null
-                ? messages.get("clientStatement.entry.paymentBy", messages.get("clientStatement.method." + payment.getMethod().name()))
-                : messages.get("clientStatement.entry.payment");
+                ? messages.get(MessageProperties.CLIENT_STATEMENT_ENTRY_PAYMENT_BY,
+                    messages.get("clientStatement.method." + payment.getMethod().name()))
+                : messages.get(MessageProperties.CLIENT_STATEMENT_ENTRY_PAYMENT);
             if (payment.getReference() != null) {
-                label = messages.get("clientStatement.entry.withReference", label, payment.getReference());
+                label = messages.get(MessageProperties.CLIENT_STATEMENT_ENTRY_WITH_REFERENCE, label, payment.getReference());
             }
             movements.add(new Movement(payment.getPaidOn(), 2, label, payment.getInvoice(), BigDecimal.ZERO, payment.getAmount()));
         }

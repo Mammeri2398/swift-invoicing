@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.licence;
 
+import com.swiftlabs.invoicing.common.CommonCodes;
+
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -13,7 +15,7 @@ public class LicenceAdvice {
         this.licenceService = licenceService;
     }
 
-    @ModelAttribute("licence")
+    @ModelAttribute(CommonCodes.Attributes.LICENCE)
     public LicenceStatus licence() {
         try {
             return licenceService.status();

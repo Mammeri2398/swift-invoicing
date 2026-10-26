@@ -1,5 +1,8 @@
 package com.swiftlabs.invoicing.access.auth;
 
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 import com.swiftlabs.invoicing.setup.NetworkAddresses;
@@ -24,7 +27,7 @@ public class AuthController {
         this.messages = messages;
     }
 
-    @GetMapping("/login")
+    @GetMapping(Endpoints.LOGIN)
     public String login(@RequestParam(name = "error", required = false) String error,
                         @RequestParam(name = "logout", required = false) String logout,
                         @RequestParam(name = "expired", required = false) String expired,
@@ -33,30 +36,31 @@ public class AuthController {
                         Authentication authentication, Model model) {
         if (authentication != null && authentication.isAuthenticated()
             && !(authentication instanceof AnonymousAuthenticationToken)) {
-            return "redirect:/";
+            return Endpoints.REDIRECT + Endpoints.HOME;
         }
         if (error != null) {
             // Never tells whether the user exists, is locked or disabled
-            model.addAttribute("error", messages.get("auth.login.error", lockout.maxAttempts(), lockout.duration().toMinutes()));
+            model.addAttribute(CommonCodes.Attributes.ERROR, messages.get(MessageProperties.AUTH_LOGIN_ERROR, lockout.maxAttempts(),
+                lockout.duration().toMinutes()));
         }
         if (logout != null) {
-            model.addAttribute("logout", messages.get("auth.login.loggedOut"));
+            model.addAttribute(CommonCodes.Attributes.LOGOUT, messages.get(MessageProperties.AUTH_LOGIN_LOGGED_OUT));
         }
         if (setup != null) {
-            model.addAttribute("logout", messages.get("auth.login.setupDone"));
-            model.addAttribute("networkAddresses", networkAddresses.urls());
+            model.addAttribute(CommonCodes.Attributes.LOGOUT, messages.get(MessageProperties.AUTH_LOGIN_SETUP_DONE));
+            model.addAttribute(CommonCodes.Attributes.NETWORK_ADDRESSES, networkAddresses.urls());
         }
         if (expired != null) {
-            model.addAttribute("logout", messages.get("auth.login.expired"));
+            model.addAttribute(CommonCodes.Attributes.LOGOUT, messages.get(MessageProperties.AUTH_LOGIN_EXPIRED));
         }
         if (restored != null) {
-            model.addAttribute("logout", messages.get("auth.login.restored"));
+            model.addAttribute(CommonCodes.Attributes.LOGOUT, messages.get(MessageProperties.AUTH_LOGIN_RESTORED));
         }
-        return "access/login";
+        return CommonCodes.Views.ACCESS_LOGIN;
     }
 
-    @GetMapping("/access-denied")
+    @GetMapping(Endpoints.ACCESS_DENIED)
     public String accessDenied() {
-        return "access/access-denied";
+        return CommonCodes.Views.ACCESS_ACCESS_DENIED;
     }
 }

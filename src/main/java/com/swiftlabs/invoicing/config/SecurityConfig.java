@@ -5,6 +5,7 @@ import com.swiftlabs.invoicing.access.auth.RateLimitFilter;
 import com.swiftlabs.invoicing.access.auth.RateLimiter;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorFilter;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorLoginSuccessHandler;
+import com.swiftlabs.invoicing.common.Endpoints;
 import com.swiftlabs.invoicing.licence.LicenceFilter;
 import com.swiftlabs.invoicing.licence.LicenceService;
 import com.swiftlabs.invoicing.setup.SetupFilter;
@@ -43,13 +44,13 @@ import java.util.Map;
 public class SecurityConfig {
 
     private static final String[] PUBLIC_URLS = {
-        "/css/**", "/js/**", "/fonts/**", "/images/**", "/favicon.ico", "/error",
-        "/login", "/forgot-password", "/forgot-password/send", "/reset-password", "/reset-password/save",
-        "/invoices/lookup",
+        Endpoints.CSS, Endpoints.JS, Endpoints.FONTS, Endpoints.IMAGES, Endpoints.FAVICON, Endpoints.ERROR,
+        Endpoints.LOGIN, Endpoints.FORGOT_PASSWORD, Endpoints.FORGOT_PASSWORD_SEND, Endpoints.RESET_PASSWORD, Endpoints.RESET_PASSWORD_SAVE,
+        Endpoints.INVOICE_LOOKUP,
         // First-run setup of an on-premise install: open only while no user exists (SetupFilter)
-        "/setup",
+        Endpoints.SETUP,
         // Status only (UP/DOWN), no details: see management.* in application.properties
-        "/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness",
+        Endpoints.HEALTH, Endpoints.HEALTH_LIVENESS, Endpoints.HEALTH_READINESS,
     };
 
     /**
@@ -79,15 +80,15 @@ public class SecurityConfig {
                 .requestMatchers(PUBLIC_URLS).permitAll()
                 .anyRequest().authenticated())
             .formLogin(form -> form
-                .loginPage("/login")
-                .loginProcessingUrl("/perform-login")
+                .loginPage(Endpoints.LOGIN)
+                .loginProcessingUrl(Endpoints.PERFORM_LOGIN)
                 .successHandler(loginSuccessHandler)
                 // Same message for every failure (unknown user, wrong password, locked, disabled)
-                .failureUrl("/login?error")
+                .failureUrl(Endpoints.LOGIN + "?error")
                 .permitAll())
             .logout(logout -> logout
-                .logoutUrl("/perform-logout")
-                .logoutSuccessUrl("/login?logout")
+                .logoutUrl(Endpoints.PERFORM_LOGOUT)
+                .logoutSuccessUrl(Endpoints.LOGIN + "?logout")
                 .invalidateHttpSession(true)
                 .clearAuthentication(true)
                 .deleteCookies("JSESSIONID"))
@@ -96,8 +97,8 @@ public class SecurityConfig {
                 // No limit on parallel sessions, but they are tracked so they can be ended
                 .maximumSessions(-1)
                 .sessionRegistry(sessionRegistry)
-                .expiredUrl("/login?expired"))
-            .exceptionHandling(ex -> ex.accessDeniedPage("/access-denied"))
+                .expiredUrl(Endpoints.LOGIN + "?expired"))
+            .exceptionHandling(ex -> ex.accessDeniedPage(Endpoints.ACCESS_DENIED))
             .csrf(csrf -> csrf.csrfTokenRequestHandler(eagerCsrfTokenHandler()))
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp.policyDirectives(CONTENT_SECURITY_POLICY))

@@ -3,6 +3,9 @@ package com.swiftlabs.invoicing.access.twofactor;
 import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
 import com.swiftlabs.invoicing.access.auth.SessionService;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 
@@ -24,7 +27,7 @@ import java.util.List;
 
 /** The logged-in user's two-factor login: setup with a QR code, recovery codes, turning it off. */
 @Controller
-@RequestMapping(TwoFactorFilter.SETUP_URL)
+@RequestMapping(Endpoints.TWO_FACTOR)
 @PreAuthorize("isAuthenticated() and !hasAuthority('" + TwoFactorLogin.PENDING_AUTHORITY + "')")
 public class TwoFactorController {
 
@@ -50,10 +53,10 @@ public class TwoFactorController {
                        @RequestParam(name = "change", defaultValue = "false") boolean change,
                        HttpSession session, Model model) {
         boolean enabled = twoFactorService.isEnabled(principal.getId());
-        model.addAttribute("enabled", enabled);
-        model.addAttribute("required", isRequired(principal));
+        model.addAttribute(CommonCodes.Attributes.ENABLED, enabled);
+        model.addAttribute(CommonCodes.Attributes.REQUIRED, isRequired(principal));
         if (enabled) {
-            model.addAttribute("remainingCodes", twoFactorService.remainingRecoveryCodes(principal.getId()));
+            model.addAttribute(CommonCodes.Attributes.REMAINING_CODES, twoFactorService.remainingRecoveryCodes(principal.getId()));
         }
         if (!enabled || change) {
             String secret = (String) session.getAttribute(SETUP_SECRET);
@@ -61,18 +64,18 @@ public class TwoFactorController {
                 secret = Totp.newSecret();
                 session.setAttribute(SETUP_SECRET, secret);
             }
-            model.addAttribute("setup", twoFactorService.setup(principal.getUsername(), secret));
+            model.addAttribute(CommonCodes.Attributes.SETUP, twoFactorService.setup(principal.getUsername(), secret));
         }
-        return "access/account/two-factor";
+        return CommonCodes.Views.ACCESS_ACCOUNT_TWO_FACTOR;
     }
 
-    @PostMapping("/confirm")
+    @PostMapping(Endpoints.TWO_FACTOR_CONFIRM)
     public String confirm(@AuthenticationPrincipal AppUserPrincipal principal, @RequestParam String code,
                           HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
         HttpSession session = request.getSession();
         String secret = (String) session.getAttribute(SETUP_SECRET);
         if (secret == null) {
-            return "redirect:" + TwoFactorFilter.SETUP_URL;
+            return Endpoints.REDIRECT + Endpoints.TWO_FACTOR;
         }
         boolean change = twoFactorService.isEnabled(principal.getId());
         try {
@@ -81,42 +84,44 @@ public class TwoFactorController {
             refreshPrincipal(principal.withTwoFactorEnabled(true), request, response);
             // Sessions opened with the password alone end
             sessionService.expireSessions(principal.getUsername(), session.getId());
-            redirectAttributes.addFlashAttribute("recoveryCodes", codes);
-            redirectAttributes.addFlashAttribute("success", messages.get(change ? "twoFactor.moved" : "twoFactor.enabled"));
-            return "redirect:" + TwoFactorFilter.SETUP_URL;
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.RECOVERY_CODES, codes);
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS,
+                messages.get(change ? MessageProperties.TWO_FACTOR_MOVED : MessageProperties.TWO_FACTOR_ENABLED));
+            return Endpoints.REDIRECT + Endpoints.TWO_FACTOR;
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", messages.of(ex));
-            return "redirect:" + TwoFactorFilter.SETUP_URL + (change ? "?change=true" : "");
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));
+            return Endpoints.REDIRECT + Endpoints.TWO_FACTOR + (change ? "?change=true" : "");
         }
     }
 
-    @PostMapping("/recovery-codes")
+    @PostMapping(Endpoints.TWO_FACTOR_RECOVERY_CODES)
     public String regenerate(@AuthenticationPrincipal AppUserPrincipal principal, @RequestParam String code,
                              RedirectAttributes redirectAttributes) {
         try {
-            redirectAttributes.addFlashAttribute("recoveryCodes", twoFactorService.regenerateRecoveryCodes(principal.getId(), code));
-            redirectAttributes.addFlashAttribute("success", messages.get("twoFactor.codesRegenerated"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.RECOVERY_CODES,
+                twoFactorService.regenerateRecoveryCodes(principal.getId(), code));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.TWO_FACTOR_CODES_REGENERATED));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", messages.of(ex));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));
         }
-        return "redirect:" + TwoFactorFilter.SETUP_URL;
+        return Endpoints.REDIRECT + Endpoints.TWO_FACTOR;
     }
 
-    @PostMapping("/disable")
+    @PostMapping(Endpoints.TWO_FACTOR_DISABLE)
     public String disable(@AuthenticationPrincipal AppUserPrincipal principal, @RequestParam String code,
                           HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
         if (isRequired(principal)) {
-            redirectAttributes.addFlashAttribute("error", messages.get("twoFactor.requiredForProfile"));
-            return "redirect:" + TwoFactorFilter.SETUP_URL;
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.get(MessageProperties.TWO_FACTOR_REQUIRED_FOR_PROFILE));
+            return Endpoints.REDIRECT + Endpoints.TWO_FACTOR;
         }
         try {
             twoFactorService.disable(principal.getId(), code);
             refreshPrincipal(principal.withTwoFactorEnabled(false), request, response);
-            redirectAttributes.addFlashAttribute("success", messages.get("twoFactor.disabled"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.TWO_FACTOR_DISABLED));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", messages.of(ex));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));
         }
-        return "redirect:" + TwoFactorFilter.SETUP_URL;
+        return Endpoints.REDIRECT + Endpoints.TWO_FACTOR;
     }
 
     private boolean isRequired(AppUserPrincipal principal) {

@@ -1,8 +1,12 @@
 package com.swiftlabs.invoicing.issuer;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
+import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.dashboard.DashboardService;
 import com.swiftlabs.invoicing.setup.NetworkAddresses;
 
@@ -26,7 +30,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.io.IOException;
 
 @Controller
-@RequestMapping("/settings/issuer")
+@RequestMapping(Endpoints.ISSUER)
 public class IssuerController {
 
     private final IssuerService issuerService;
@@ -43,22 +47,22 @@ public class IssuerController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('VIEW_ISSUER')")
+    @PreAuthorize(Privileges.Has.VIEW_ISSUER)
     public String editForm(Model model, Authentication authentication) {
-        model.addAttribute("issuer", IssuerForm.from(issuerService.getIssuer()));
+        model.addAttribute(CommonCodes.Attributes.ISSUER, IssuerForm.from(issuerService.getIssuer()));
         return formView(model, authentication);
     }
 
     /** Invalid input is shown again with the errors next to each field. */
-    @PostMapping("/save")
-    @PreAuthorize("hasAuthority('EDIT_ISSUER')")
-    public String save(@Valid @ModelAttribute("issuer") IssuerForm form, BindingResult result, Model model,
+    @PostMapping(Endpoints.ISSUER_SAVE)
+    @PreAuthorize(Privileges.Has.EDIT_ISSUER)
+    public String save(@Valid @ModelAttribute(CommonCodes.Attributes.ISSUER) IssuerForm form, BindingResult result, Model model,
                        Authentication authentication, RedirectAttributes redirectAttributes) {
         if (!result.hasErrors()) {
             try {
                 issuerService.save(form);
-                redirectAttributes.addFlashAttribute("success", messages.get("issuer.saved"));
-                return "redirect:/settings/issuer";
+                redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.ISSUER_SAVED));
+                return Endpoints.REDIRECT + Endpoints.ISSUER;
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
             }
@@ -67,8 +71,8 @@ public class IssuerController {
     }
 
     /** The logo, for the preview on this page (the PDF embeds it directly). */
-    @GetMapping("/logo")
-    @PreAuthorize("hasAuthority('VIEW_ISSUER')")
+    @GetMapping(Endpoints.ISSUER_LOGO)
+    @PreAuthorize(Privileges.Has.VIEW_ISSUER)
     public ResponseEntity<byte[]> logo() {
         Issuer issuer = issuerService.getIssuer();
         if (!issuer.hasLogo()) {
@@ -80,35 +84,35 @@ public class IssuerController {
             .body(issuer.getLogoData());
     }
 
-    @PostMapping("/logo")
-    @PreAuthorize("hasAuthority('EDIT_ISSUER')")
+    @PostMapping(Endpoints.ISSUER_LOGO)
+    @PreAuthorize(Privileges.Has.EDIT_ISSUER)
     public String uploadLogo(@RequestParam("logo") MultipartFile file, RedirectAttributes redirectAttributes) {
         try {
             issuerService.updateLogo(file.getBytes());
-            redirectAttributes.addFlashAttribute("success", messages.get("issuer.logo.saved"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.ISSUER_LOGO_SAVED));
         } catch (BusinessException ex) {
-            redirectAttributes.addFlashAttribute("error", messages.of(ex));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));
         } catch (IOException ex) {
-            redirectAttributes.addFlashAttribute("error", messages.get("issuer.logo.unreadable"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.get(MessageProperties.ISSUER_LOGO_UNREADABLE));
         }
-        return "redirect:/settings/issuer";
+        return Endpoints.REDIRECT + Endpoints.ISSUER;
     }
 
-    @PostMapping("/logo/delete")
-    @PreAuthorize("hasAuthority('EDIT_ISSUER')")
+    @PostMapping(Endpoints.ISSUER_LOGO_DELETE)
+    @PreAuthorize(Privileges.Has.EDIT_ISSUER)
     public String removeLogo(RedirectAttributes redirectAttributes) {
         issuerService.removeLogo();
-        redirectAttributes.addFlashAttribute("success", messages.get("issuer.logo.deleted"));
-        return "redirect:/settings/issuer";
+        redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.ISSUER_LOGO_DELETED));
+        return Endpoints.REDIRECT + Endpoints.ISSUER;
     }
 
     private String formView(Model model, Authentication authentication) {
         Issuer issuer = issuerService.getIssuer();
-        model.addAttribute("hasLogo", issuer.hasLogo());
-        model.addAttribute("stats", dashboardService.stats(null));
-        model.addAttribute("networkAddresses", networkAddresses.urls());
-        model.addAttribute("canEdit", authentication.getAuthorities().stream()
-            .anyMatch(a -> "EDIT_ISSUER".equals(a.getAuthority())));
-        return "issuer/form";
+        model.addAttribute(CommonCodes.Attributes.HAS_LOGO, issuer.hasLogo());
+        model.addAttribute(CommonCodes.Attributes.STATS, dashboardService.stats(null));
+        model.addAttribute(CommonCodes.Attributes.NETWORK_ADDRESSES, networkAddresses.urls());
+        model.addAttribute(CommonCodes.Attributes.CAN_EDIT, authentication.getAuthorities().stream()
+            .anyMatch(a -> Privileges.EDIT_ISSUER.equals(a.getAuthority())));
+        return CommonCodes.Views.ISSUER_FORM;
     }
 }

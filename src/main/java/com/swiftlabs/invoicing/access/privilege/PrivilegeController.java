@@ -1,8 +1,12 @@
 package com.swiftlabs.invoicing.access.privilege;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.Endpoints;
 import com.swiftlabs.invoicing.common.FormErrors;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
+import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import jakarta.validation.Valid;
@@ -18,8 +22,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
-@PreAuthorize("hasAuthority('MANAGE_PRIVILEGES')")
-@RequestMapping("/privileges")
+@PreAuthorize(Privileges.Has.MANAGE_PRIVILEGES)
+@RequestMapping(Endpoints.PRIVILEGES)
 public class PrivilegeController {
 
     private final PrivilegeService privilegeService;
@@ -32,48 +36,48 @@ public class PrivilegeController {
 
     @GetMapping
     public String list(Model model) {
-        model.addAttribute("privileges", privilegeService.findAll());
-        return "access/privilege/list";
+        model.addAttribute(CommonCodes.Attributes.PRIVILEGES, privilegeService.findAll());
+        return CommonCodes.Views.ACCESS_PRIVILEGE_LIST;
     }
 
-    @GetMapping("/new")
+    @GetMapping(Endpoints.PRIVILEGE_NEW)
     public String newForm(Model model) {
-        model.addAttribute("privilege", new PrivilegeForm());
-        return "access/privilege/form";
+        model.addAttribute(CommonCodes.Attributes.PRIVILEGE, new PrivilegeForm());
+        return CommonCodes.Views.ACCESS_PRIVILEGE_FORM;
     }
 
-    @GetMapping("/{id}/edit")
+    @GetMapping(Endpoints.PRIVILEGE_EDIT)
     public String editForm(@PathVariable Long id, Model model) {
         Privilege privilege = privilegeService.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("privilege.error.notFound"));
-        model.addAttribute("privilege", PrivilegeForm.from(privilege));
-        return "access/privilege/form";
+            .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.PRIVILEGE_ERROR_NOT_FOUND));
+        model.addAttribute(CommonCodes.Attributes.PRIVILEGE, PrivilegeForm.from(privilege));
+        return CommonCodes.Views.ACCESS_PRIVILEGE_FORM;
     }
 
     /** Invalid input is shown again with the errors next to each field. */
-    @PostMapping("/save")
-    public String save(@Valid @ModelAttribute("privilege") PrivilegeForm form, BindingResult result,
+    @PostMapping(Endpoints.PRIVILEGE_SAVE)
+    public String save(@Valid @ModelAttribute(CommonCodes.Attributes.PRIVILEGE) PrivilegeForm form, BindingResult result,
                        RedirectAttributes redirectAttributes) {
         if (!result.hasErrors()) {
             try {
                 privilegeService.save(form);
-                redirectAttributes.addFlashAttribute("success", messages.get("privilege.saved"));
-                return "redirect:/privileges";
+                redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.PRIVILEGE_SAVED));
+                return Endpoints.REDIRECT + Endpoints.PRIVILEGES;
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);
             }
         }
-        return "access/privilege/form";
+        return CommonCodes.Views.ACCESS_PRIVILEGE_FORM;
     }
 
-    @PostMapping("/{id}/delete")
+    @PostMapping(Endpoints.PRIVILEGE_DELETE)
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         try {
             privilegeService.delete(id);
-            redirectAttributes.addFlashAttribute("success", messages.get("privilege.deleted"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.PRIVILEGE_DELETED));
         } catch (Exception ex) {
-            redirectAttributes.addFlashAttribute("error", messages.get("privilege.error.deleteFailed"));
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.get(MessageProperties.PRIVILEGE_ERROR_DELETE_FAILED));
         }
-        return "redirect:/privileges";
+        return Endpoints.REDIRECT + Endpoints.PRIVILEGES;
     }
 }

@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.backup;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.common.MessageProperties;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
@@ -104,21 +105,21 @@ public class BackupService {
     @Transactional
     public void saveSettings(String directory, int keepCount) {
         if (keepCount < 1 || keepCount > 365) {
-            throw BusinessException.onField("keepCount", "backup.error.keepCount");
+            throw BusinessException.onField("keepCount", MessageProperties.BACKUP_ERROR_KEEP_COUNT);
         }
         String trimmed = directory == null ? "" : directory.trim();
         if (trimmed.isEmpty()) {
-            throw BusinessException.onField("directory", "backup.error.directoryRequired");
+            throw BusinessException.onField("directory", MessageProperties.BACKUP_ERROR_DIRECTORY_REQUIRED);
         }
         Path folder;
         try {
             folder = Path.of(trimmed).toAbsolutePath().normalize();
             Files.createDirectories(folder);
         } catch (InvalidPathException | IOException ex) {
-            throw BusinessException.onField("directory", "backup.error.directoryCreate", trimmed);
+            throw BusinessException.onField("directory", MessageProperties.BACKUP_ERROR_DIRECTORY_CREATE, trimmed);
         }
         if (!Files.isWritable(folder)) {
-            throw BusinessException.onField("directory", "backup.error.directoryNotWritable");
+            throw BusinessException.onField("directory", MessageProperties.BACKUP_ERROR_DIRECTORY_NOT_WRITABLE);
         }
         BackupSettings settings = settingsRepository.findById(BackupSettings.ID)
             .orElseGet(() -> new BackupSettings(trimmed, keepCount));
@@ -164,7 +165,7 @@ public class BackupService {
     /** Makes a backup now; automatic ones then delete the oldest automatic backups beyond the number kept. */
     public BackupFile backup(BackupKind kind) {
         if (!running.tryLock()) {
-            throw new BusinessException("backup.error.busy");
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_BUSY);
         }
         try {
             BackupFile file = backupLocked(kind);
@@ -202,7 +203,7 @@ public class BackupService {
             log.error("Backup failed: {}", ex.getMessage());
             throw ex;
         } catch (IOException ex) {
-            BusinessException error = new BusinessException("backup.error.folderInaccessible", String.valueOf(ex.getMessage()));
+            BusinessException error = new BusinessException(MessageProperties.BACKUP_ERROR_FOLDER_INACCESSIBLE, String.valueOf(ex.getMessage()));
             lastFailure = new Failure(LocalDateTime.now(clock), error);
             log.error("Backup failed", ex);
             throw error;
@@ -221,11 +222,11 @@ public class BackupService {
     /** The file of a backup of the folder, for download or restore. */
     public Path file(String name) {
         if (!BackupFile.isValidName(name)) {
-            throw new BusinessException("backup.error.notFound");
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_NOT_FOUND);
         }
         Path file = directory().resolve(name);
         if (!Files.isRegularFile(file)) {
-            throw new BusinessException("backup.error.notFound");
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_NOT_FOUND);
         }
         return file;
     }
@@ -239,15 +240,15 @@ public class BackupService {
     /** Adds a backup file from another PC (or an older copy) to the folder, ready to be restored. */
     public BackupFile importFile(MultipartFile upload) {
         if (upload == null || upload.isEmpty()) {
-            throw new BusinessException("backup.error.chooseFile");
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_CHOOSE_FILE);
         }
         requireAvailable();
         try (InputStream in = upload.getInputStream()) {
             if (!Arrays.equals(in.readNBytes(MAGIC.length), MAGIC)) {
-                throw new BusinessException("backup.error.notOurs");
+                throw new BusinessException(MessageProperties.BACKUP_ERROR_NOT_OURS);
             }
         } catch (IOException ex) {
-            throw new BusinessException("backup.error.fileUnreadable");
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_FILE_UNREADABLE);
         }
         try {
             Path folder = createdDirectory();
@@ -264,7 +265,7 @@ public class BackupService {
             log.info("Backup imported: {} (from {})", file, upload.getOriginalFilename());
             return BackupFile.of(file, Files.size(file)).orElseThrow();
         } catch (IOException ex) {
-            throw new BusinessException("backup.error.fileNotSaved");
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_FILE_NOT_SAVED);
         }
     }
 
@@ -277,7 +278,7 @@ public class BackupService {
         PostgresConnection target = requireAvailable();
         Path file = file(name);
         if (!running.tryLock()) {
-            throw new BusinessException("backup.error.busy");
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_BUSY);
         }
         try {
             checkContents(file);
@@ -302,15 +303,15 @@ public class BackupService {
         boolean ours = contents.stream().anyMatch(line -> line.contains(" TABLE " + schema + " flyway_schema_history "))
             && contents.stream().anyMatch(line -> line.contains(" TABLE " + schema + " invoice "));
         if (!ours) {
-            throw new BusinessException("backup.error.notOurs");
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_NOT_OURS);
         }
     }
 
     private PostgresConnection requireAvailable() {
         if (!properties.enabled()) {
-            throw new BusinessException("backup.error.notEnabled");
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_NOT_ENABLED);
         }
-        return database.connection().orElseThrow(() -> new BusinessException("backup.error.needsPostgres"));
+        return database.connection().orElseThrow(() -> new BusinessException(MessageProperties.BACKUP_ERROR_NEEDS_POSTGRES));
     }
 
     private Path createdDirectory() throws IOException {
@@ -318,7 +319,7 @@ public class BackupService {
         try {
             Files.createDirectories(folder);
         } catch (AccessDeniedException ex) {
-            throw new BusinessException("backup.error.folderNotWritable", folder.toString());
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_FOLDER_NOT_WRITABLE, folder.toString());
         }
         return folder;
     }

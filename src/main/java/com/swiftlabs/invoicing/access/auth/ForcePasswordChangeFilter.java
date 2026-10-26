@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.access.auth;
 
+import com.swiftlabs.invoicing.common.Endpoints;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +12,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * A user signed in with a temporary password can only reach the password change page
@@ -17,10 +20,9 @@ import java.util.List;
  */
 public class ForcePasswordChangeFilter extends OncePerRequestFilter {
 
-    public static final String CHANGE_PASSWORD_URL = "/account/password";
-
     private static final List<String> ALLOWED_PREFIXES =
-        List.of(CHANGE_PASSWORD_URL, "/login/verify", "/perform-logout", "/css/", "/js/", "/fonts/", "/images/", "/error");
+        Stream.concat(Endpoints.STATIC_FOLDERS.stream(),
+            Stream.of(Endpoints.ACCOUNT_PASSWORD_PAGE, Endpoints.LOGIN_VERIFY, Endpoints.PERFORM_LOGOUT, Endpoints.ERROR)).toList();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -28,7 +30,7 @@ public class ForcePasswordChangeFilter extends OncePerRequestFilter {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof AppUserPrincipal principal
             && principal.isMustChangePassword() && !isAllowed(request)) {
-            response.sendRedirect(request.getContextPath() + CHANGE_PASSWORD_URL);
+            response.sendRedirect(request.getContextPath() + Endpoints.ACCOUNT_PASSWORD_PAGE);
             return;
         }
         chain.doFilter(request, response);

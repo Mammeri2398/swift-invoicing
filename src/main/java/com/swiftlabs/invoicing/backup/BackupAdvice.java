@@ -1,6 +1,9 @@
 package com.swiftlabs.invoicing.backup;
 
+import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
+import com.swiftlabs.invoicing.common.Privileges;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -30,23 +33,24 @@ public class BackupAdvice {
         this.messages = messages;
     }
 
-    @ModelAttribute("backupWarning")
+    @ModelAttribute(CommonCodes.Attributes.BACKUP_WARNING)
     public String backupWarning(Authentication authentication) {
         if (authentication == null || !backupService.isAvailable()
-            || authentication.getAuthorities().stream().noneMatch(authority -> authority.getAuthority().equals("MANAGE_BACKUPS"))) {
+            || authentication.getAuthorities().stream().noneMatch(authority -> authority.getAuthority().equals(Privileges.MANAGE_BACKUPS))) {
             return null;
         }
         try {
             BackupService.Failure failure = backupService.lastFailure();
             if (failure != null) {
-                return messages.get("backup.warning", messages.of(failure.error()));
+                return messages.get(MessageProperties.BACKUP_WARNING, messages.of(failure.error()));
             }
             LocalDateTime staleBefore = LocalDateTime.now(clock).minusDays(STALE_DAYS);
             Optional<BackupFile> latest = backupService.latest();
             if (latest.isEmpty()) {
-                return messages.get("backup.warning.none");
+                return messages.get(MessageProperties.BACKUP_WARNING_NONE);
             }
-            return latest.get().createdAt().isAfter(staleBefore) ? null : messages.get("backup.warning.stale", String.valueOf(STALE_DAYS));
+            return latest.get().createdAt().isAfter(staleBefore) ? null : messages.get(MessageProperties.BACKUP_WARNING_STALE,
+                String.valueOf(STALE_DAYS));
         } catch (RuntimeException ex) {
             // Never break a page over the warning
             return null;

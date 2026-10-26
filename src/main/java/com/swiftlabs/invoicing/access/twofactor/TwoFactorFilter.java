@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.access.twofactor;
 
 import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
+import com.swiftlabs.invoicing.common.Endpoints;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,6 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Sends a user who typed their password but not their code yet to the code page, and a user who
@@ -20,9 +22,8 @@ import java.util.List;
  */
 public class TwoFactorFilter extends OncePerRequestFilter {
 
-    public static final String SETUP_URL = "/account/two-factor";
-
-    private static final List<String> ALWAYS_ALLOWED = List.of("/perform-logout", "/css/", "/js/", "/fonts/", "/images/", "/error");
+    private static final List<String> ALWAYS_ALLOWED = Stream.concat(Endpoints.STATIC_FOLDERS.stream(),
+        Stream.of(Endpoints.PERFORM_LOGOUT, Endpoints.ERROR)).toList();
 
     private final List<String> requiredFor;
 
@@ -36,14 +37,14 @@ public class TwoFactorFilter extends OncePerRequestFilter {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String path = request.getRequestURI().substring(request.getContextPath().length());
         if (TwoFactorLogin.isPending(authentication)) {
-            if (!startsWithAny(path, ALWAYS_ALLOWED) && !path.startsWith(TwoFactorLogin.VERIFY_URL)) {
-                response.sendRedirect(request.getContextPath() + TwoFactorLogin.VERIFY_URL);
+            if (!startsWithAny(path, ALWAYS_ALLOWED) && !path.startsWith(Endpoints.LOGIN_VERIFY)) {
+                response.sendRedirect(request.getContextPath() + Endpoints.LOGIN_VERIFY);
                 return;
             }
         } else if (mustSetUp(authentication) && !startsWithAny(path, ALWAYS_ALLOWED)
             // The forced password change comes first, then the setup
-            && !path.startsWith(SETUP_URL) && !path.startsWith("/account/password")) {
-            response.sendRedirect(request.getContextPath() + SETUP_URL);
+            && !path.startsWith(Endpoints.TWO_FACTOR) && !path.startsWith(Endpoints.ACCOUNT_PASSWORD_PAGE)) {
+            response.sendRedirect(request.getContextPath() + Endpoints.TWO_FACTOR);
             return;
         }
         chain.doFilter(request, response);

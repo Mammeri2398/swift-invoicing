@@ -47,6 +47,7 @@ public final class CommonCodes {
         public static final String FILTER = "filter";
         public static final String FORM_KIND = "formKind";
         public static final String FORM_TITLE = "formTitle";
+        public static final String FREQUENCIES = "frequencies";
         public static final String FROM_ADDRESS = "fromAddress";
         public static final String FULLY_CREDITED = "fullyCredited";
         public static final String HAS_LOGO = "hasLogo";
@@ -93,6 +94,7 @@ public final class CommonCodes {
         public static final String PROFILE = "profile";
         public static final String PROFILES = "profiles";
         public static final String RECOVERY_CODES = "recoveryCodes";
+        public static final String RECURRING = "recurring";
         public static final String REFUSED = "refused";
         public static final String REMAINING_CODES = "remainingCodes";
         public static final String REMAINING_TO_CREDIT = "remainingToCredit";
@@ -186,6 +188,10 @@ public final class CommonCodes {
 
         // mail
         public static final String MAIL_SETTINGS = "mail/settings";
+
+        // recurring
+        public static final String RECURRING_FORM = "recurring/form";
+        public static final String RECURRING_LIST = "recurring/list";
 
         // setup
         public static final String SETUP_SETUP = "setup/setup";

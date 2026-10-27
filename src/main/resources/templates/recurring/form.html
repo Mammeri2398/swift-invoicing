@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page((${recurring.id == null} ? #{recurring.form.newTitle} : #{recurring.form.editTitle}), ~{::main}, ~{::script})}">
+<body>
+<main class="page">
+    <nav class="breadcrumb" th:aria-label="#{invoice.breadcrumb}">
+        <a th:href="@{/invoices}" th:text="#{nav.invoices}">Factures</a><span class="icon icon-xs rtl-flip">chevron_right</span>
+        <a th:href="@{/recurring}" th:text="#{recurring.list.title}">Factures récurrentes</a><span class="icon icon-xs rtl-flip">chevron_right</span>
+        <span class="text-primary" th:text="${recurring.id == null} ? #{invoice.form.breadcrumb.new} : ${recurring.name}">Nouveau</span>
+    </nav>
+    <div class="page-header">
+        <div>
+            <h1 class="page-title" th:text="${recurring.id == null} ? #{recurring.form.newTitle} : #{recurring.form.editTitle}">Nouvelle facture récurrente</h1>
+            <p class="page-subtitle" th:text="#{recurring.form.subtitle}">À chaque échéance, une facture brouillon est préparée avec ces lignes.</p>
+        </div>
+    </div>
+
+    <form th:action="@{/recurring/save}" method="post" th:object="${recurring}" id="invoice-form" class="flex flex-col gap-6"
+          th:attr="data-stamp-duty=${stampDutyRules}">
+        <input type="hidden" th:field="*{id}"/>
+        <div th:replace="~{layout/fragments :: formErrors}"></div>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <section class="card lg:col-span-2">
+                <div class="card-header"><h2 class="card-title"><span class="icon">event_repeat</span><th:block th:text="#{recurring.form.schedule}">Échéances</th:block></h2></div>
+                <div class="card-body form-grid">
+                    <div class="field md:col-span-2">
+                        <label class="label" for="name"><th:block th:text="#{recurring.col.name}">Nom</th:block> <span class="required">*</span></label>
+                        <input class="input" type="text" th:errorclass="input-invalid" th:field="*{name}" required maxlength="255"
+                               th:placeholder="#{recurring.form.name.placeholder}"/>
+                        <p th:replace="~{layout/fragments :: fieldError('name')}"></p>
+                        <p class="hint" th:text="#{recurring.form.name.hint}">Pour vous retrouver : jamais imprimé.</p>
+                    </div>
+                    <div class="field md:col-span-2">
+                        <label class="label" for="clientId"><th:block th:text="#{invoice.form.client}">Client</th:block> <span class="required">*</span></label>
+                        <select class="input" th:errorclass="input-invalid" th:field="*{clientId}" required>
+                            <option value="" th:text="#{invoice.form.selectClient}">Sélectionner un client…</option>
+                            <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}">Client</option>
+                        </select>
+                        <p th:replace="~{layout/fragments :: fieldError('clientId')}"></p>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="frequency"><th:block th:text="#{recurring.col.frequency}">Fréquence</th:block> <span class="required">*</span></label>
+                        <select class="input" th:errorclass="input-invalid" th:field="*{frequency}">
+                            <option th:each="f : ${frequencies}" th:value="${f.name()}" th:text="${@messages.label(f)}">Mensuelle</option>
+                        </select>
+                        <p th:replace="~{layout/fragments :: fieldError('frequency')}"></p>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="nextDate"><th:block th:text="#{recurring.col.nextDate}">Prochaine facture</th:block> <span class="required">*</span></label>
+                        <input class="input" type="date" th:errorclass="input-invalid" th:field="*{nextDate}" required/>
+                        <p th:replace="~{layout/fragments :: fieldError('nextDate')}"></p>
+                        <p class="hint" th:text="#{recurring.form.nextDate.hint}">Les suivantes reviennent le même jour.</p>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="endDate"><th:block th:text="#{recurring.form.endDate}">Dernière facture au plus tard le</th:block>
+                            <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
+                        <input class="input" type="date" th:errorclass="input-invalid" th:field="*{endDate}"/>
+                        <p th:replace="~{layout/fragments :: fieldError('endDate')}"></p>
+                        <p class="hint" th:text="#{recurring.form.endDate.hint}">Vide : sans fin.</p>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="dueDays"><th:block th:text="#{recurring.form.dueDays}">Échéance de paiement (jours)</th:block>
+                            <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
+                        <input class="input text-end" type="number" min="0" max="365" step="1" th:errorclass="input-invalid" th:field="*{dueDays}"/>
+                        <p th:replace="~{layout/fragments :: fieldError('dueDays')}"></p>
+                        <p class="hint" th:text="#{recurring.form.dueDays.hint}">30 : à payer 30 jours après la date de la facture.</p>
+                    </div>
+                    <div class="field md:col-span-2">
+                        <label class="label" for="paymentMethod"><th:block th:text="#{invoice.form.paymentMethod}">Mode de paiement</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
+                        <select class="input" th:errorclass="input-invalid" th:field="*{paymentMethod}">
+                            <option value="">—</option>
+                            <option th:each="pm : ${paymentMethods}" th:value="${pm.name()}">
+                                <th:block th:replace="~{layout/fragments :: paymentMethod(${pm.name()})}"></th:block>
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header"><h2 class="card-title"><span class="icon">payments</span><th:block th:text="#{recurring.form.eachInvoice}">Chaque facture</th:block></h2></div>
+                <div class="card-body flex flex-col gap-3">
+                    <dl class="flex flex-col gap-1 text-body-md empty:hidden">
+                        <div th:if="${company}" class="flex justify-between"><dt class="text-on-surface-variant" th:text="#{invoice.total.exclVat}">Total HT</dt><dd class="tabular-nums" data-subtotal>0,00 DA</dd></div>
+                        <div th:if="${company}" class="flex justify-between"><dt class="text-on-surface-variant" th:text="#{invoice.total.vat}">TVA</dt><dd class="tabular-nums" data-vat>0,00 DA</dd></div>
+                        <div class="hidden justify-between" data-stamp-row><dt class="text-on-surface-variant" th:text="${company} ? #{invoice.total.inclVat} : #{invoice.total}">Total</dt><dd class="tabular-nums" data-total>0,00 DA</dd></div>
+                        <div class="hidden justify-between" data-stamp-row><dt class="text-on-surface-variant" th:text="#{invoice.total.stampDuty}">Droit de timbre</dt><dd class="tabular-nums" data-stamp>0,00 DA</dd></div>
+                    </dl>
+                    <p class="text-display-lg tabular-nums text-primary" data-grand-total>0,00 DA</p>
+                    <p class="hint" th:text="#{recurring.form.draftHint}">Chaque brouillon reste modifiable avant d'être émis.</p>
+                </div>
+            </section>
+        </div>
+
+        <section th:replace="~{invoice/lines :: linesCard}"></section>
+
+        <section class="card">
+            <div class="card-body field">
+                <label class="label" for="notes"><th:block th:text="#{invoice.form.notes}">Notes / informations de paiement</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
+                <textarea class="input" th:errorclass="input-invalid" th:field="*{notes}" rows="3" maxlength="1000"></textarea>
+                <p th:replace="~{layout/fragments :: fieldError('notes')}"></p>
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <a th:href="@{/recurring}" class="btn btn-secondary" th:text="#{action.cancel}">Annuler</a>
+            <button type="submit" class="btn btn-primary"><span class="icon">save</span><th:block th:text="#{action.save}">Enregistrer</th:block></button>
+        </div>
+
+        <th:block th:replace="~{invoice/lines :: lineLists}"></th:block>
+    </form>
+</main>
+<script th:src="@{/js/invoice-form.js}" defer></script>
+</body>
+</html>

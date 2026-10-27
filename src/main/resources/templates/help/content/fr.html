@@ -104,6 +104,12 @@
             « Net à payer ». Ces taux se règlent dans la configuration ; vérifiez-les avec votre comptable.</p>
         <p class="help-tip">Une erreur sur une facture émise se corrige par un avoir (voir <a href="#credit-notes">Avoirs</a>), jamais
             en la modifiant.</p>
+        <p>Pour une facture qui revient (loyer, maintenance, abonnement), créez une <a th:href="@{/recurring}">facture récurrente</a> :
+            depuis la liste des factures, ou depuis une facture avec « Rendre récurrente ». Choisissez la fréquence (mensuelle,
+            trimestrielle, semestrielle, annuelle) et la date de la prochaine facture : à cette date, l'application prépare un
+            <strong>brouillon</strong> avec les mêmes lignes. Rien n'est émis tout seul : vérifiez le brouillon, puis émettez-le.</p>
+        <p class="help-tip">Si le PC était éteint à la date prévue, les brouillons manqués sont préparés au démarrage suivant, chacun
+            à sa date. Mettez une facture récurrente en pause pendant une interruption du contrat.</p>
     </div>
 </section>
 

@@ -83,7 +83,7 @@
     <a th:if="${u.can('VIEW_DASHBOARD')}" th:href="@{/}" class="nav-link"
        th:classappend="${p == '/' or p == '/dashboard'} ? 'active'" th:text="#{nav.dashboard}">Tableau de bord</a>
     <a th:if="${u.can('VIEW_INVOICES')}" th:href="@{/invoices}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/invoices') and p != '/invoices/lookup' and navSection != 'quotes'} ? 'active'" th:text="#{nav.invoices}">Factures</a>
+       th:classappend="${(#strings.startsWith(p, '/invoices') and p != '/invoices/lookup' and navSection != 'quotes') or #strings.startsWith(p, '/recurring')} ? 'active'" th:text="#{nav.invoices}">Factures</a>
     <a th:if="${u.can('VIEW_INVOICES')}" th:href="@{/quotes}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/quotes') or navSection == 'quotes'} ? 'active'" th:text="#{nav.quotes}">Devis</a>
     <a th:if="${u.can('VIEW_DASHBOARD')}" th:href="@{/turnover}" class="nav-link"

@@ -131,6 +131,16 @@ public final class Endpoints {
 
     public static final String QUOTES = "/quotes";
 
+    // ---- Recurring invoices -------------------------------------------------------------------------------------------
+    public static final String RECURRING = "/recurring";
+    public static final String RECURRING_NEW = "/new";
+    public static final String RECURRING_SAVE = "/save";
+    public static final String RECURRING_EDIT = "/{id}/edit";
+    public static final String RECURRING_PAUSE = "/{id}/pause";
+    public static final String RECURRING_RESUME = "/{id}/resume";
+    public static final String RECURRING_DELETE = "/{id}/delete";
+    public static final String RECURRING_RUN = "/run";
+
     // ---- TVA du mois (help for the G50 declaration) -------------------------------------------------------------
     public static final String VAT = "/vat";
     public static final String VAT_EXPORT = "/export";

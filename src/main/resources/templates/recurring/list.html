@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(#{recurring.list.title}, ~{::main}, ~{})}">
+<body>
+<main class="page">
+    <nav class="breadcrumb" th:aria-label="#{invoice.breadcrumb}">
+        <a th:href="@{/invoices}" th:text="#{nav.invoices}">Factures</a><span class="icon icon-xs rtl-flip">chevron_right</span>
+        <span class="text-primary" th:text="#{recurring.list.title}">Factures récurrentes</span>
+    </nav>
+    <div class="page-header">
+        <div>
+            <h1 class="page-title" th:text="#{recurring.list.title}">Factures récurrentes</h1>
+            <p class="page-subtitle" th:text="#{recurring.list.subtitle}">Loyer, maintenance, abonnement : une facture brouillon est préparée à chaque échéance.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <form th:action="@{/recurring/run}" method="post">
+                <button type="submit" class="btn btn-secondary"><span class="icon">autorenew</span><th:block th:text="#{recurring.list.run}">Préparer maintenant</th:block></button>
+            </form>
+            <a th:href="@{/recurring/new}" class="btn btn-primary"><span class="icon">add_circle</span><th:block th:text="#{recurring.list.new}">Nouvelle facture récurrente</th:block></a>
+        </div>
+    </div>
+
+    <div class="alert alert-info mb-6">
+        <span class="icon">info</span><span th:text="#{recurring.list.howItWorks}">Rien n'est émis automatiquement.</span>
+    </div>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{recurring.col.name}">Nom</th>
+                    <th scope="col" th:text="#{recurring.col.client}">Client</th>
+                    <th scope="col" th:text="#{recurring.col.frequency}">Fréquence</th>
+                    <th scope="col" th:text="#{recurring.col.nextDate}">Prochaine facture</th>
+                    <th scope="col" class="num" th:text="${company} ? #{recurring.col.amountExclVat} : #{recurring.col.amount}">Montant HT</th>
+                    <th scope="col" th:text="#{recurring.col.status}">Statut</th>
+                    <th scope="col" th:text="#{recurring.col.lastInvoice}">Dernier brouillon</th>
+                    <th scope="col"><span class="sr-only" th:text="#{catalog.col.actions}">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${items}" class="align-top">
+                    <td>
+                        <p class="font-medium" th:text="${r.name}">Loyer bureau</p>
+                        <p th:if="${r.lastError != null}" class="field-error" th:text="#{recurring.list.error(${r.lastError})}">Échec : ...</p>
+                    </td>
+                    <td th:text="${r.client.name}">Client</td>
+                    <td th:text="${@messages.label(r.frequency)}">Mensuelle</td>
+                    <td class="tabular-nums whitespace-nowrap">
+                        <span th:if="${r.finished}" class="text-on-surface-variant">—</span>
+                        <span th:unless="${r.finished}" th:text="${#temporals.format(r.nextDate, 'dd/MM/yyyy')}"
+                              th:classappend="${r.active and !r.nextDate.isAfter(now)} ? 'font-semibold text-primary'">01/11/2026</span>
+                        <p th:if="${r.endDate != null and !r.finished}" class="hint" th:text="#{recurring.list.until(${#temporals.format(r.endDate, 'dd/MM/yyyy')})}">jusqu'au 31/12/2026</p>
+                    </td>
+                    <td class="num" th:text="${amountUtils.format(r.subtotal)}">0,00 DA</td>
+                    <td>
+                        <span th:if="${r.finished}" class="badge badge-neutral" th:text="#{recurring.status.finished}">Terminée</span>
+                        <span th:if="${!r.finished and r.active}" class="badge badge-success" th:text="#{recurring.status.active}">Active</span>
+                        <span th:if="${!r.finished and !r.active}" class="badge badge-neutral" th:text="#{recurring.status.paused}">En pause</span>
+                    </td>
+                    <td>
+                        <a th:if="${r.lastInvoice != null}" th:href="@{/invoices/{id}(id=${r.lastInvoice.id})}" class="text-primary hover:underline whitespace-nowrap"
+                           th:text="${r.lastInvoice.invoiceNumber ?: #temporals.format(r.lastInvoice.issueDate, 'dd/MM/yyyy')}">01/10/2026</a>
+                        <span th:if="${r.lastInvoice == null}" class="text-on-surface-variant">—</span>
+                    </td>
+                    <td>
+                        <div class="flex justify-end gap-1">
+                            <a th:href="@{/recurring/{id}/edit(id=${r.id})}" class="btn-icon" th:title="#{action.edit}" th:aria-label="#{action.edit}">
+                                <span class="icon">edit</span></a>
+                            <form th:if="${r.active and !r.finished}" th:action="@{/recurring/{id}/pause(id=${r.id})}" method="post">
+                                <button type="submit" class="btn-icon" th:title="#{recurring.action.pause}" th:aria-label="#{recurring.action.pause}">
+                                    <span class="icon">pause_circle</span></button>
+                            </form>
+                            <form th:if="${!r.active and !r.finished}" th:action="@{/recurring/{id}/resume(id=${r.id})}" method="post">
+                                <button type="submit" class="btn-icon" th:title="#{recurring.action.resume}" th:aria-label="#{recurring.action.resume}">
+                                    <span class="icon">play_circle</span></button>
+                            </form>
+                            <form th:action="@{/recurring/{id}/delete(id=${r.id})}" method="post" th:data-confirm="#{recurring.list.confirmDelete(${r.name})}">
+                                <button type="submit" class="btn-icon danger" th:title="#{action.delete}" th:aria-label="#{action.delete}">
+                                    <span class="icon">delete</span></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${items.isEmpty()}">
+                    <td colspan="8" class="table-empty" th:text="#{recurring.list.empty}">Aucune facture récurrente.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

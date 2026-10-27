@@ -88,70 +88,7 @@
             </section>
         </div>
 
-        <section class="card">
-            <div class="card-header">
-                <h2 class="card-title"><span class="icon">receipt</span><th:block th:text="#{invoice.form.lines}">Lignes</th:block></h2>
-                <button type="button" class="btn btn-secondary btn-sm" data-add-line><span class="icon">add</span><th:block th:text="#{invoice.form.addLine}">Ajouter une ligne</th:block></button>
-            </div>
-            <div class="table-wrap">
-                <table class="table" id="lines-table">
-                    <thead>
-                    <tr>
-                        <th scope="col" class="w-10" th:text="#{invoice.line.number}">N°</th>
-                        <th scope="col" th:text="#{invoice.line.description}">Désignation</th>
-                        <th scope="col" class="w-32" th:text="#{invoice.line.unit}">Unité</th>
-                        <th scope="col" class="w-32" th:text="#{invoice.line.quantity}">Quantité</th>
-                        <th scope="col" class="w-40" th:text="#{invoice.form.unitPrice}">Prix unitaire (DA)</th>
-                        <th th:if="${company}" scope="col" class="w-28" th:text="#{invoice.line.vat}">TVA</th>
-                        <th scope="col" class="num w-40" th:text="${company} ? #{invoice.total.exclVat} : #{invoice.total}">Total</th>
-                        <th scope="col" class="w-12"><span class="sr-only" th:text="#{action.delete}">Supprimer</span></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="line, stat : *{lines}" data-line class="align-top">
-                        <td class="text-on-surface-variant tabular-nums" data-line-number th:text="${stat.count}">1</td>
-                        <td>
-                            <input class="input input-sm" type="text" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].description}" required maxlength="255" th:placeholder="#{invoice.form.description.placeholder}"
-                                   list="catalog" autocomplete="off" data-description/>
-                            <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].description'})}"></p>
-                        </td>
-                        <td>
-                            <input class="input input-sm" type="text" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].unit}" maxlength="50" list="units" placeholder="jour"/>
-                            <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].unit'})}"></p>
-                        </td>
-                        <td>
-                            <input class="input input-sm text-end" type="number" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].quantity}" required min="0" step="0.001" data-quantity/>
-                            <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].quantity'})}"></p>
-                        </td>
-                        <td>
-                            <input class="input input-sm text-end" type="number" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].unitPrice}" required min="0" step="0.01" data-unit-price/>
-                            <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].unitPrice'})}"></p>
-                        </td>
-                        <td th:if="${company}">
-                            <!--/* Compared as numbers: a saved rate is 19.00, the option 19 */-->
-                            <select class="input input-sm" th:name="${'lines[' + stat.index + '].vatRate'}" data-vat-rate th:aria-label="#{invoice.form.vatRate}"
-                                    th:classappend="${#fields.hasErrors('lines[' + stat.index + '].vatRate')} ? 'input-invalid'">
-                                <option th:each="rate, rateStat : ${vatRates}" th:value="${rate}"
-                                        th:selected="${line.vatRate != null ? line.vatRate.compareTo(rate) == 0 : rateStat.first}"
-                                        th:text="${rate.signum() == 0} ? #{invoice.line.vatExempt} : ${amountUtils.formatRate(rate) + ' %'}">19 %</option>
-                            </select>
-                            <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].vatRate'})}"></p>
-                        </td>
-                        <td class="num font-semibold" data-line-total>0,00 DA</td>
-                        <td><button type="button" class="btn-icon danger" data-remove-line th:title="#{invoice.form.removeLine}" th:aria-label="#{invoice.form.removeLine}"><span class="icon">delete</span></button></td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="card-footer">
-                <span th:text="#{invoice.form.minOneLine}">Au moins une ligne est nécessaire.</span>
-                <p th:replace="~{layout/fragments :: fieldError('lines')}"></p>
-                <!--/* invoice-form.js: data-label without stamp duty, data-net-label with it */-->
-                <span><span th:text="${company} ? #{invoice.total.inclVatLabel} : #{invoice.total.label}"
-                            th:data-label="${company} ? #{invoice.total.inclVatLabel} : #{invoice.total.label}"
-                            th:data-net-label="#{invoice.total.net}" data-grand-label>Total :</span> <strong class="text-on-surface" data-grand-total>0,00 DA</strong></span>
-            </div>
-        </section>
+        <section th:replace="~{invoice/lines :: linesCard}"></section>
 
         <section class="card">
             <div class="card-body field">
@@ -167,40 +104,7 @@
                 <th:block th:text="${creditNoteOf != null} ? #{invoice.form.saveCreditNote} : #{invoice.form.saveDraft}">Enregistrer le brouillon</th:block></button>
         </div>
 
-        <!--/* Catalogue: picking an article fills the line's unit, price and TVA (invoice-form.js) */-->
-        <datalist id="catalog">
-            <option th:each="c : ${catalogItems}" th:value="${c.name}" th:label="${amountUtils.format(c.unitPrice) + (c.unit != null ? ' / ' + c.unit : '')}"
-                    th:data-unit="${c.unit}" th:data-price="${c.unitPrice}" th:data-vat="${c.vatRate}"></option>
-        </datalist>
-
-        <!--/* Units are printed on the document, which stays in French */-->
-        <datalist id="units">
-            <option value="jour"></option>
-            <option value="heure"></option>
-            <option value="forfait"></option>
-            <option value="pièce"></option>
-            <option value="mois"></option>
-        </datalist>
-
-        <!-- Row added by "Ajouter une ligne" (INDEX is replaced by the script) -->
-        <template id="line-template">
-            <tr data-line>
-                <td class="text-on-surface-variant tabular-nums" data-line-number></td>
-                <td><input class="input input-sm" type="text" name="lines[INDEX].description" required maxlength="255" th:placeholder="#{invoice.form.description.placeholder}"
-                           list="catalog" autocomplete="off" data-description/></td>
-                <td><input class="input input-sm" type="text" name="lines[INDEX].unit" maxlength="50" list="units" placeholder="jour"/></td>
-                <td><input class="input input-sm text-end" type="number" name="lines[INDEX].quantity" value="1" required min="0" step="0.001" data-quantity/></td>
-                <td><input class="input input-sm text-end" type="number" name="lines[INDEX].unitPrice" required min="0" step="0.01" data-unit-price/></td>
-                <td th:if="${company}">
-                    <select class="input input-sm" name="lines[INDEX].vatRate" data-vat-rate th:aria-label="#{invoice.form.vatRate}">
-                        <option th:each="rate, rateStat : ${vatRates}" th:value="${rate}" th:selected="${rateStat.first}"
-                                th:text="${rate.signum() == 0} ? #{invoice.line.vatExempt} : ${amountUtils.formatRate(rate) + ' %'}">19 %</option>
-                    </select>
-                </td>
-                <td class="num font-semibold" data-line-total>0,00 DA</td>
-                <td><button type="button" class="btn-icon danger" data-remove-line th:title="#{invoice.form.removeLine}" th:aria-label="#{invoice.form.removeLine}"><span class="icon">delete</span></button></td>
-            </tr>
-        </template>
+        <th:block th:replace="~{invoice/lines :: lineLists}"></th:block>
     </form>
 </main>
 <script th:src="@{/js/invoice-form.js}" defer></script>

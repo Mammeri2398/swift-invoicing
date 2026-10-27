@@ -104,6 +104,12 @@
             “Net amount due”. These rates are set in the configuration; check them with your accountant.</p>
         <p class="help-tip">A mistake on an issued invoice is corrected with a credit note (see <a href="#credit-notes">Credit notes</a>),
             never by editing it.</p>
+        <p>For an invoice that comes back (rent, maintenance, subscription), create a <a th:href="@{/recurring}">recurring invoice</a>:
+            from the invoice list, or from an invoice with "Make recurring". Choose the frequency (monthly, quarterly, every six
+            months, yearly) and the date of the next invoice: on that date the application prepares a <strong>draft</strong> with
+            the same lines. Nothing is issued by itself: check the draft, then issue it.</p>
+        <p class="help-tip">If the PC was off on the planned date, the missed drafts are prepared at the next start, each on its own
+            date. Pause a recurring invoice while the contract is on hold.</p>
     </div>
 </section>
 

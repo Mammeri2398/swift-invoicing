@@ -34,6 +34,7 @@ public class Messages {
         "i18n/help",
         "i18n/vat",
         "i18n/accounting",
+        "i18n/recurring",
     };
 
     private static volatile MessageSource french;

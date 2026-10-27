@@ -70,6 +70,9 @@
             <a th:if="${payment != null and status == 'ISSUED' and payment.balance.signum() > 0 and u != null and u.can('ISSUE_INVOICE')}"
                th:href="@{/invoices/{id}/email(id=${invoice.id},reminder=true)}" class="btn btn-secondary"
                th:classappend="${overdue} ? 'ring-2 ring-error'"><span class="icon">notifications</span><th:block th:text="#{invoice.view.remind}">Relancer</th:block></a>
+            <!-- A model that prepares this invoice again every month (or quarter...) -->
+            <a th:if="${invoice.kind.name() == 'INVOICE' and status != 'CANCELLED' and u != null and u.can('CREATE_INVOICE')}"
+               th:href="@{/recurring/new(from=${invoice.id})}" class="btn btn-secondary"><span class="icon">event_repeat</span><th:block th:text="#{invoice.view.makeRecurring}">Rendre récurrente</th:block></a>
             <!-- An issued credit note is final; an invoice with a credit note is cancelled by another credit note -->
             <form th:if="${remainingToCredit != null and !fullyCredited and u != null and u.can('CREATE_INVOICE')}"
                   th:action="@{/invoices/{id}/credit-note(id=${invoice.id})}" method="post">

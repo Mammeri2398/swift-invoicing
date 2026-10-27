@@ -320,24 +320,6 @@ public class InvoiceController {
         response.getOutputStream().write(bytes);
     }
 
-    /** The droit de timbre rules as JSON, for the live preview of the form (invoice-form.js). */
-    private String stampDutyRules() {
-        InvoiceProperties.StampDuty duty = properties.stampDuty();
-        if (!duty.enabled()) {
-            return null;
-        }
-        StringBuilder json = new StringBuilder("{\"minimum\":").append(duty.minimum().toPlainString())
-            .append(",\"maximum\":").append(duty.maximum() != null ? duty.maximum().toPlainString() : "null")
-            .append(",\"brackets\":[");
-        for (int i = 0; i < duty.brackets().size(); i++) {
-            InvoiceProperties.Bracket bracket = duty.brackets().get(i);
-            json.append(i > 0 ? "," : "").append("{\"upTo\":")
-                .append(bracket.upTo() != null ? bracket.upTo().toPlainString() : "null")
-                .append(",\"rate\":").append(bracket.rate().toPlainString()).append("}");
-        }
-        return json.append("]}").toString();
-    }
-
     private String formView(InvoiceForm form, Model model) {
         // Editing a draft credit note: its invoice is shown and the client cannot change
         Invoice existing = form.getId() != null ? invoiceService.findById(form.getId()) : null;
@@ -351,7 +333,7 @@ public class InvoiceController {
             : messages.get((creating ? MessageProperties.INVOICE_FORM_TITLE_NEW_PREFIX
                 : MessageProperties.INVOICE_FORM_TITLE_EDIT_PREFIX) + kind.name()));
         // Droit de timbre: invoices only
-        model.addAttribute(CommonCodes.Attributes.STAMP_DUTY_RULES, kind == DocumentKind.INVOICE ? stampDutyRules() : null);
+        model.addAttribute(CommonCodes.Attributes.STAMP_DUTY_RULES, kind == DocumentKind.INVOICE ? properties.stampDuty().toJson() : null);
         // Suggested while typing a line's description (invoice-form.js fills the unit, price and TVA)
         model.addAttribute(CommonCodes.Attributes.CATALOG_ITEMS, catalogService.findAll());
         model.addAttribute(CommonCodes.Attributes.CLIENTS, clientService.findAll());

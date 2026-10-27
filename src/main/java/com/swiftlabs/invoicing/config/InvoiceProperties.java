@@ -60,6 +60,23 @@ public record InvoiceProperties(
             }
             return duty.setScale(2, RoundingMode.UNNECESSARY);
         }
+
+        /** The rules for invoice-form.js (same computation in the browser); null when disabled. */
+        public String toJson() {
+            if (!enabled) {
+                return null;
+            }
+            StringBuilder json = new StringBuilder("{\"minimum\":").append(minimum.toPlainString())
+                .append(",\"maximum\":").append(maximum != null ? maximum.toPlainString() : "null")
+                .append(",\"brackets\":[");
+            for (int i = 0; i < brackets.size(); i++) {
+                Bracket bracket = brackets.get(i);
+                json.append(i > 0 ? "," : "").append("{\"upTo\":")
+                    .append(bracket.upTo() != null ? bracket.upTo().toPlainString() : "null")
+                    .append(",\"rate\":").append(bracket.rate().toPlainString()).append("}");
+            }
+            return json.append("]}").toString();
+        }
     }
 
     /** Rate in percent for amounts up to {@code upTo} DA included (null: every amount above the previous bracket). */

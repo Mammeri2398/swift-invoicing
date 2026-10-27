@@ -16,6 +16,8 @@
                class="btn btn-secondary" th:title="#{invoiceList.exportCsv}"><span class="icon">download</span>CSV</a>
             <a th:href="@{/invoices/export/xlsx(search=${filter.search},kind=${filter.kind},status=${filter.status},year=${filter.year},client=${filter.client})}"
                class="btn btn-secondary" th:title="#{invoiceList.exportXlsx}"><span class="icon">table_view</span>Excel</a>
+            <a th:if="${u != null and u.can('CREATE_INVOICE')}" th:href="@{/recurring}" class="btn btn-secondary">
+                <span class="icon">event_repeat</span><th:block th:text="#{recurring.list.title}">Factures récurrentes</th:block></a>
             <a th:if="${u != null and u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="btn btn-primary">
                 <span class="icon">add_circle</span><th:block th:text="#{nav.newInvoice}">Nouvelle facture</th:block>
             </a>

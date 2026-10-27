@@ -288,6 +288,16 @@ public final class MessageProperties {
     public static final String PROFILE_ERROR_NOT_FOUND = "profile.error.notFound";
     public static final String PROFILE_SAVED = "profile.saved";
 
+    // ---- recurring -------------------------------------------------------------------------------------------
+    public static final String RECURRING_DELETED = "recurring.deleted";
+    public static final String RECURRING_ERROR_END_BEFORE_NEXT = "recurring.error.endBeforeNext";
+    public static final String RECURRING_ERROR_NOT_FOUND = "recurring.error.notFound";
+    public static final String RECURRING_GENERATED = "recurring.generated";
+    public static final String RECURRING_NONE_DUE = "recurring.noneDue";
+    public static final String RECURRING_PAUSED = "recurring.paused";
+    public static final String RECURRING_RESUMED = "recurring.resumed";
+    public static final String RECURRING_SAVED = "recurring.saved";
+
     // ---- setup -----------------------------------------------------------------------------------------------
     public static final String SETUP_ERROR_ALREADY_DONE = "setup.error.alreadyDone";
     public static final String SETUP_ERROR_PASSWORD_MISMATCH = "setup.error.passwordMismatch";

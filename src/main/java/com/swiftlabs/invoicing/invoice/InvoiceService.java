@@ -465,6 +465,11 @@ public class InvoiceService {
         return properties.stampDuty().compute(invoice.getTotalAmount());
     }
 
+    /** The rate a line may carry with the current issuer (same rules as a draft), for the models of recurring invoices. */
+    public BigDecimal lineVatRate(BigDecimal requested, int index) {
+        return vatRate(issuerService.getIssuer(), requested, index);
+    }
+
     /** TVA rate of a line: none for an auto-entrepreneur, one of invoice.vat-rates for a company. */
     private BigDecimal vatRate(Issuer issuer, BigDecimal requested, int index) {
         if (!issuer.isCompany()) {

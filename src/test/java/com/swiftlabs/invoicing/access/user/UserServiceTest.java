@@ -134,7 +134,7 @@ class UserServiceTest {
         user.recordFailedLogin(1, java.time.Duration.ofMinutes(15), java.time.LocalDateTime.now());
         assertThat(user.getLockedUntil()).isNotNull();
 
-        String temporary = userService.resetToTemporaryPassword(user.getId());
+        String temporary = userService.resetToTemporaryPassword(user.getId(), null);
 
         User reloaded = userRepository.findById(user.getId()).orElseThrow();
         assertThat(reloaded.getLockedUntil()).isNull();

@@ -4,6 +4,7 @@ import com.swiftlabs.invoicing.access.auth.ForcePasswordChangeFilter;
 import com.swiftlabs.invoicing.access.auth.RateLimitFilter;
 import com.swiftlabs.invoicing.access.auth.RateLimiter;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorFilter;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
 import com.swiftlabs.invoicing.company.CompanyFilter;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorLoginSuccessHandler;
 import com.swiftlabs.invoicing.common.Endpoints;
@@ -75,7 +76,8 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, SessionRegistry sessionRegistry, RateLimiter rateLimiter,
                                            SecurityProperties properties,
                                            TwoFactorLoginSuccessHandler loginSuccessHandler,
-                                           SetupService setupService, LicenceService licenceService) throws Exception {
+                                           SetupService setupService, LicenceService licenceService,
+                                           CompanyAccessService accessService) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_URLS).permitAll()
@@ -117,7 +119,7 @@ public class SecurityConfig {
             .addFilterAfter(new TwoFactorFilter(properties.twoFactor().requiredFor()), AuthorizationFilter.class)
             .addFilterAfter(new ForcePasswordChangeFilter(), TwoFactorFilter.class)
             // The signed-in user's company: the schema their requests work in (or the choice of one)
-            .addFilterAfter(new CompanyFilter(), ForcePasswordChangeFilter.class);
+            .addFilterAfter(new CompanyFilter(accessService), ForcePasswordChangeFilter.class);
         return http.build();
     }
 

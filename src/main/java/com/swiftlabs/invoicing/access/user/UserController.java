@@ -70,8 +70,12 @@ public class UserController {
     }
 
     @GetMapping
-    public String list(Model model) {
-        model.addAttribute(CommonCodes.Attributes.USERS, userService.findAll());
+    public String list(@AuthenticationPrincipal AppUserPrincipal me, Model model) {
+        List<User> users = userService.findVisibleTo(me.getId());
+        model.addAttribute(CommonCodes.Attributes.USERS, users);
+        // Password reset, two-factor reset and delete: only for the accounts of companies all managed here
+        model.addAttribute(CommonCodes.Attributes.MANAGED_USERS, users.stream()
+            .filter(user -> userService.fullyManages(me.getId(), user.getId())).map(User::getId).collect(Collectors.toSet()));
         // The profile of each user in the current company (none: no access to it)
         model.addAttribute(CommonCodes.Attributes.PROFILE_NAMES, accessService.profileNamesIn(CompanyContext.currentCompanyId()));
         model.addAttribute(CommonCodes.Attributes.NOW, LocalDateTime.now(clock));
@@ -125,9 +129,10 @@ public class UserController {
 
     /** New temporary password (forgotten password without mail, locked account...). */
     @PostMapping(Endpoints.USER_RESET_PASSWORD)
-    public String resetPassword(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String resetPassword(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal me,
+                                RedirectAttributes redirectAttributes) {
         try {
-            String temporaryPassword = userService.resetToTemporaryPassword(id);
+            String temporaryPassword = userService.resetToTemporaryPassword(id, me.getId());
             User user = userService.findById(id).orElseThrow();
             sessionService.expireSessions(user.getUsername(), null);
             redirectAttributes.addFlashAttribute(CommonCodes.Attributes.TEMPORARY_PASSWORD, temporaryPassword);
@@ -141,8 +146,15 @@ public class UserController {
 
     /** Lost phone and recovery codes: the user logs in with the password alone and sets it up again. */
     @PostMapping(Endpoints.USER_RESET_TWO_FACTOR)
-    public String resetTwoFactor(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String resetTwoFactor(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal me,
+                                 RedirectAttributes redirectAttributes) {
         User user = userService.findById(id).orElseThrow(() -> new ResourceNotFoundException(MessageProperties.USER_ERROR_NOT_FOUND));
+        try {
+            userService.requireFullyManaged(me.getId(), id);
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));
+            return Endpoints.REDIRECT + Endpoints.USERS;
+        }
         twoFactorService.reset(id);
         sessionService.expireSessions(user.getUsername(), null);
         redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.USER_TWO_FACTOR_RESET,
@@ -194,6 +206,8 @@ public class UserController {
         model.addAttribute(CommonCodes.Attributes.OTHER_ACCESSES, form.getId() == null ? List.of()
             : accessService.accessesOf(form.getId()).stream().filter(access -> !editable.contains(access.getCompany().getId())).toList());
         model.addAttribute(CommonCodes.Attributes.PROFILES, profileService.findAll());
+        // The account itself (name, email...) only for whoever manages all its companies
+        model.addAttribute(CommonCodes.Attributes.CAN_EDIT, form.getId() == null || userService.fullyManages(me.getId(), form.getId()));
         model.addAttribute(CommonCodes.Attributes.LANGUAGES, Language.values());
         return CommonCodes.Views.ACCESS_USER_FORM;
     }

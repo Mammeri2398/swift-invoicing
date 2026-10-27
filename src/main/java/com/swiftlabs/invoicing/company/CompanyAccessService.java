@@ -46,6 +46,12 @@ public class CompanyAccessService {
             .orElseThrow(() -> new BusinessException(MessageProperties.COMPANY_ERROR_NO_ACCESS));
     }
 
+    /** The user's access to an active company, with its profile and privileges (checked on every page). */
+    @Transactional(readOnly = true)
+    public Optional<CompanyAccess> findActive(Long userId, Long companyId) {
+        return accessRepository.findByUserIdAndCompanyId(userId, companyId).filter(access -> access.getCompany().isActive());
+    }
+
     /** The user's profile in the company, if they may work there. */
     @Transactional(readOnly = true)
     public Optional<Profile> profileIn(Long userId, Long companyId) {
@@ -76,6 +82,12 @@ public class CompanyAccessService {
             }
         }
         return companies;
+    }
+
+    /** Every company the user may work in, active or not. */
+    @Transactional(readOnly = true)
+    public Set<Long> companyIdsOf(Long userId) {
+        return new HashSet<>(accessRepository.findCompanyIdsByUserId(userId));
     }
 
     /** Takes away the user's access to the company (nothing when they had none). */

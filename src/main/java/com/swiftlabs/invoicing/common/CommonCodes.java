@@ -71,6 +71,7 @@ public final class CommonCodes {
         public static final String LOGO_DATA_URI = "logoDataUri";
         public static final String MAIL = "mail";
         public static final String MAIL_ENABLED = "mailEnabled";
+        public static final String MANAGED_USERS = "managedUsers";
         public static final String MAX_COMPANIES = "maxCompanies";
         public static final String MAX_USERS = "maxUsers";
         public static final String MESSAGE = "message";

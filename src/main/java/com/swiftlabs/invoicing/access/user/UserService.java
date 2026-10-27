@@ -90,11 +90,19 @@ public class UserService {
         return new NewAccount(saved, temporaryPassword);
     }
 
-    /** Username and password are not editable here. An administrator cannot disable their own account. */
+    /**
+     * Username and password are not editable here. An administrator cannot disable their own account. Who does not
+     * manage every company of the user changes only their access to their own companies: the account itself (name,
+     * email, language, active) belongs to the administrators of all its companies.
+     */
     @Transactional
     public User update(UserForm form, Long actingUserId) {
         User existing = require(form.getId());
         Map<Long, Profile> accesses = plannedAccesses(existing.getId(), form, actingUserId);
+        if (!fullyManages(actingUserId, existing.getId())) {
+            applyAccesses(existing, accesses);
+            return existing;
+        }
         if (!form.getEmail().equals(existing.getEmail()) && userRepository.existsByEmail(form.getEmail())) {
             throw BusinessException.onField("email", MessageProperties.USER_ERROR_EMAIL_USED);
         }
@@ -157,7 +165,8 @@ public class UserService {
 
     /** Administrator action: new random temporary password, to change at next login. Unlocks the account. */
     @Transactional
-    public String resetToTemporaryPassword(Long userId) {
+    public String resetToTemporaryPassword(Long userId, Long actingUserId) {
+        requireFullyManaged(actingUserId, userId);
         User user = require(userId);
         String temporaryPassword = passwordPolicy.generateTemporary();
         user.assignTemporaryPassword(passwordEncoder.encode(temporaryPassword), now());
@@ -169,6 +178,7 @@ public class UserService {
         if (Objects.equals(id, actingUserId)) {
             throw new BusinessException(MessageProperties.USER_ERROR_DELETE_SELF);
         }
+        requireFullyManaged(actingUserId, id);
         userRepository.delete(require(id));
     }
 
@@ -219,6 +229,34 @@ public class UserService {
                 accessService.grant(user, companyId, profile);
             }
         });
+    }
+
+    /**
+     * The administrator manages every company the user works in (or the user works in none): the account is theirs
+     * to change, reset or delete. Otherwise taking over the account would open companies the administrator cannot
+     * manage. {@code actingUserId} null: the application itself.
+     */
+    @Transactional(readOnly = true)
+    public boolean fullyManages(Long actingUserId, Long userId) {
+        return actingUserId == null || accessService.companiesManagedBy(actingUserId).containsAll(accessService.companyIdsOf(userId));
+    }
+
+    /** Refuses an action on the account of a user who works in a company the administrator does not manage. */
+    @Transactional(readOnly = true)
+    public void requireFullyManaged(Long actingUserId, Long userId) {
+        if (!fullyManages(actingUserId, userId)) {
+            throw new BusinessException(MessageProperties.USER_ERROR_OTHER_COMPANIES);
+        }
+    }
+
+    /** The users an administrator sees: those of the companies they manage, and those of no company yet. */
+    @Transactional(readOnly = true)
+    public List<User> findVisibleTo(Long actingUserId) {
+        Set<Long> managed = accessService.companiesManagedBy(actingUserId);
+        return userRepository.findAll().stream().filter(user -> {
+            Set<Long> companies = accessService.companyIdsOf(user.getId());
+            return companies.isEmpty() || companies.stream().anyMatch(managed::contains);
+        }).toList();
     }
 
     private User require(Long id) {

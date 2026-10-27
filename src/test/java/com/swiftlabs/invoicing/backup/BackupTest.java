@@ -312,6 +312,54 @@ class BackupTest {
         assertThat(PostgresConnection.parse("jdbc:h2:mem:test", "sa", "")).isEmpty();
     }
 
+    @Test
+    void aRealCompanyRestoreScriptIsAccepted() throws IOException {
+        // pg_restore --clean --if-exists --no-owner --no-privileges --schema=company_1 of a company's tables (no rows)
+        try (var script = getClass().getResourceAsStream("/backup/company-schema-restore.sql")) {
+            List<String> lines = new String(script.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).lines().toList();
+            assertThat(lines).hasSizeGreaterThan(100)
+                .allSatisfy(line -> assertThat(PostgresTools.isSafeStatement(CompanySchemas.FIRST, line)).as(line).isTrue());
+        }
+    }
+
+    @Test
+    void aRestoreScriptThatReachesBeyondItsCompanyIsRefused() {
+        for (String line : List.of(
+                "CREATE VIEW company_1.client AS SELECT * FROM company_2.client;",
+                "ALTER TABLE ONLY company_1.invoice ADD CONSTRAINT x FOREIGN KEY (a) REFERENCES company_2.invoice(id);",
+                "DELETE FROM public.app_user;",
+                "UPDATE \"public\".app_user SET password = 'x';",
+                "SET search_path = company_2;",
+                "SELECT pg_catalog.set_config('search_path', 'company_2', false);",
+                "CREATE FUNCTION company_1.f() RETURNS void AS $$ BEGIN END $$ LANGUAGE plpgsql;",
+                "CREATE TRIGGER t AFTER INSERT ON company_1.client FOR EACH ROW EXECUTE FUNCTION company_1.f();",
+                "DO $$ BEGIN PERFORM 1; END $$;",
+                "SET ROLE postgres;",
+                "COPY company_1.client TO PROGRAM 'rm -rf /';",
+                "\\! rm -rf /",
+                "\\i /etc/passwd")) {
+            assertThat(PostgresTools.isSafeStatement(CompanySchemas.FIRST, line)).as(line).isFalse();
+        }
+        for (String line : List.of(
+                "SELECT pg_catalog.setval('company_1.client_id_seq', 3, true);",
+                "ALTER TABLE ONLY company_1.invoice_line ADD CONSTRAINT f FOREIGN KEY (invoice_id) REFERENCES company_1.invoice(id) ON DELETE CASCADE;",
+                "\\restrict 98Esbp8LHRub")) {
+            assertThat(PostgresTools.isSafeStatement(CompanySchemas.FIRST, line)).as(line).isTrue();
+        }
+    }
+
+    @Test
+    void aBackupWithViewsOrFunctionsInTheCompanyIsRefused() throws Exception {
+        when(tools.contents(any())).thenReturn(List.of(
+            "220; 1259 16400 TABLE company_1 invoice invoicing",
+            "230; 1259 16500 VIEW company_1 client invoicing"));
+        mockMvc.perform(multipart("/settings/backups/import")
+                .file(new MockMultipartFile("file", "piege.dump", "application/octet-stream", "PGDMP trap".getBytes()))
+                .with(admin()).with(csrf()))
+            .andExpect(flash().attribute("error", containsString("ne concernent pas cette société")));
+        assertThat(backupService.list()).isEmpty();
+    }
+
     private static org.springframework.test.web.servlet.request.RequestPostProcessor admin() {
         return org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("admin")
             .authorities(() -> "MANAGE_BACKUPS", () -> "VIEW_CLIENTS");

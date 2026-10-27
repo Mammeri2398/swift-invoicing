@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -47,6 +48,10 @@ public class BackupService {
     /** Every backup file starts with this: written by pg_dump in custom format. */
     private static final byte[] MAGIC = "PGDMP".getBytes();
     /** A company's invoice table in the table of contents of a backup ("TABLE company_1 invoice"). */
+    /** One entry of "pg_restore --list": "215; 1259 16390 TABLE company_1 invoice owner" (group 1 from its type on). */
+    private static final Pattern CONTENTS_ENTRY = Pattern.compile("\\d+; \\d+ \\d+ (.*)");
+    private static final Pattern ALLOWED_ENTRY = Pattern.compile(
+        "(TABLE DATA|TABLE|SEQUENCE SET|SEQUENCE OWNED BY|SEQUENCE|DEFAULT|FK CONSTRAINT|CONSTRAINT|INDEX|SCHEMA) ");
     private static final Pattern COMPANY_INVOICES = Pattern.compile(" TABLE company_[0-9]+ invoice ");
 
     private final BackupProperties properties;
@@ -160,7 +165,7 @@ public class BackupService {
     }
 
     private List<BackupFile> list(String owner) {
-        Path folder = directory();
+        Path folder = folderOf(owner);
         if (!Files.isDirectory(folder)) {
             return List.of();
         }
@@ -208,7 +213,7 @@ public class BackupService {
         try {
             BackupFile file = backupLocked(owner(), kind);
             if (kind == BackupKind.AUTO) {
-                deleteOldAutomaticBackups(list(), settings().getKeepCount());
+                deleteOldAutomaticBackups(directory(), list(), settings().getKeepCount());
             }
             return file;
         } finally {
@@ -227,7 +232,7 @@ public class BackupService {
         }
         try {
             BackupFile file = backupLocked(BackupFile.SHARED, BackupKind.AUTO);
-            deleteOldAutomaticBackups(listShared(), properties.keep());
+            deleteOldAutomaticBackups(sharedDirectory(), listShared(), properties.keep());
             return file;
         } finally {
             running.unlock();
@@ -237,7 +242,7 @@ public class BackupService {
     private BackupFile backupLocked(String owner, BackupKind kind) {
         PostgresConnection target = requireAvailable().withSchema(BackupFile.SHARED.equals(owner) ? "public" : owner);
         try {
-            Path folder = createdDirectory();
+            Path folder = created(folderOf(owner));
             LocalDateTime now = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
             String name = BackupFile.nameFor(owner, now, kind);
             Path file = folder.resolve(name);
@@ -266,10 +271,10 @@ public class BackupService {
         }
     }
 
-    private void deleteOldAutomaticBackups(List<BackupFile> backups, int keep) {
+    private void deleteOldAutomaticBackups(Path folder, List<BackupFile> backups, int keep) {
         List<BackupFile> automatic = backups.stream().filter(file -> file.kind() == BackupKind.AUTO).toList();
         for (BackupFile old : automatic.subList(Math.min(keep, automatic.size()), automatic.size())) {
-            PostgresTools.deleteQuietly(directory().resolve(old.name()));
+            PostgresTools.deleteQuietly(folder.resolve(old.name()));
             log.info("Old automatic backup deleted: {}", old.name());
         }
     }
@@ -288,7 +293,7 @@ public class BackupService {
         if (!BackupFile.isValidName(name)) {
             throw new BusinessException(MessageProperties.BACKUP_ERROR_NOT_FOUND);
         }
-        Path file = directory().resolve(name);
+        Path file = folderOf(owner).resolve(name);
         if (!Files.isRegularFile(file) || BackupFile.of(file, 0).filter(backup -> backup.owner().equals(owner)).isEmpty()) {
             throw new BusinessException(MessageProperties.BACKUP_ERROR_NOT_FOUND);
         }
@@ -315,7 +320,7 @@ public class BackupService {
             throw new BusinessException(MessageProperties.BACKUP_ERROR_FILE_UNREADABLE);
         }
         try {
-            Path folder = createdDirectory();
+            Path folder = created(directory());
             String name = BackupFile.nameFor(owner(), LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS), BackupKind.IMPORTED);
             Path partial = folder.resolve(name + ".part");
             Path file = folder.resolve(name);
@@ -369,6 +374,13 @@ public class BackupService {
     private void checkContents(Path file) {
         String schema = owner();
         List<String> contents = tools.contents(file);
+        // Only what a company's backup holds, in its schema: no views, functions, triggers...
+        for (String line : contents) {
+            Matcher entry = CONTENTS_ENTRY.matcher(line);
+            if (entry.matches() && line.contains(" " + schema + " ") && !ALLOWED_ENTRY.matcher(entry.group(1)).lookingAt()) {
+                throw new BusinessException(MessageProperties.BACKUP_ERROR_UNSAFE);
+            }
+        }
         if (contents.stream().noneMatch(line -> line.contains(" TABLE " + schema + " invoice "))) {
             throw new BusinessException(contents.stream().anyMatch(line -> COMPANY_INVOICES.matcher(line).find()
                     || line.contains(" TABLE public invoice "))
@@ -383,8 +395,19 @@ public class BackupService {
         return database.connection().orElseThrow(() -> new BusinessException(MessageProperties.BACKUP_ERROR_NEEDS_POSTGRES));
     }
 
-    private Path createdDirectory() throws IOException {
-        Path folder = directory();
+    /**
+     * The folder of the shared data's backups: the installation's (app.backup.directory), whatever folder a company
+     * chose for its own; read without a company.
+     */
+    private Path sharedDirectory() {
+        return Path.of(properties.directory()).toAbsolutePath().normalize();
+    }
+
+    private Path folderOf(String owner) {
+        return BackupFile.SHARED.equals(owner) ? sharedDirectory() : directory();
+    }
+
+    private static Path created(Path folder) throws IOException {
         try {
             Files.createDirectories(folder);
         } catch (AccessDeniedException ex) {

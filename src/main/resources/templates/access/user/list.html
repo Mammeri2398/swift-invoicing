@@ -66,16 +66,17 @@
                     <td>
                         <div class="flex justify-end gap-1">
                             <a th:href="@{/users/{id}/edit(id=${user.id})}" class="btn-icon" th:title="#{action.edit}" th:aria-label="#{action.edit}"><span class="icon">edit</span></a>
-                            <form th:action="@{/users/{id}/reset-password(id=${user.id})}" method="post"
+                            <!--/* The account itself: only for whoever manages all the user's companies */-->
+                            <form th:if="${managedUsers.contains(user.id)}" th:action="@{/users/{id}/reset-password(id=${user.id})}" method="post"
                                   th:data-confirm="#{user.resetPassword.confirm(${user.username})}">
                                 <button type="submit" class="btn-icon" th:title="#{user.resetPassword}" th:aria-label="#{user.resetPassword}"><span class="icon">lock_reset</span></button>
                             </form>
-                            <form th:if="${user.totpEnabled}" th:action="@{/users/{id}/reset-two-factor(id=${user.id})}" method="post"
+                            <form th:if="${user.totpEnabled and managedUsers.contains(user.id)}" th:action="@{/users/{id}/reset-two-factor(id=${user.id})}" method="post"
                                   th:data-confirm="#{user.resetTwoFactor.confirm(${user.username})}">
                                 <button type="submit" class="btn-icon" th:title="#{user.resetTwoFactor}"
                                         th:aria-label="#{user.resetTwoFactor}"><span class="icon">phonelink_erase</span></button>
                             </form>
-                            <form th:action="@{/users/{id}/delete(id=${user.id})}" method="post"
+                            <form th:if="${managedUsers.contains(user.id)}" th:action="@{/users/{id}/delete(id=${user.id})}" method="post"
                                   th:data-confirm="#{user.delete.confirm(${user.username})}">
                                 <button type="submit" class="btn-icon danger" th:title="#{action.delete}" th:aria-label="#{action.delete}"><span class="icon">delete</span></button>
                             </form>

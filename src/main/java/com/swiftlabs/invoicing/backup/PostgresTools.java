@@ -16,6 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
@@ -85,6 +87,43 @@ public class PostgresTools {
         }
     }
 
+    private static final Pattern PSQL_LOCK = Pattern.compile("\\\\(un)?restrict [A-Za-z0-9]+");
+    private static final Pattern COPY_FROM_STDIN = Pattern.compile("COPY .* FROM stdin;");
+    private static final Pattern COMPANY_SCHEMA = Pattern.compile("\\bcompany_\\d+\\b", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FORBIDDEN = Pattern.compile(String.join("|",
+        "\\bpublic\"?\\s*\\.", "search_path", "\\bset\\s+role\\b", "session\\s+authorization",
+        "\\bcreate\\s+(or\\s+replace\\s+)?(function|procedure|trigger|rule|view|materialized|extension|event|policy|schema|role|user)\\b",
+        "\\bdo\\s+\\$", "\\bcall\\b", "\\bgrant\\b", "\\brevoke\\b", "\\balter\\s+(role|user|system|schema|default|database|function)\\b",
+        "\\bcopy\\b.*\\b(program|to)\\b", "\\bdblink", "\\blo_(import|export)\\b", "\\bpg_(read|ls|stat)_", "\\bexecute\\b"),
+        Pattern.CASE_INSENSITIVE);
+    /** The one search_path statement of a backup's header (an empty path: every name is written with its schema). */
+    private static final String HEADER_SEARCH_PATH = "SELECT pg_catalog.set_config('search_path', '', false);";
+
+    /**
+     * A statement of a restore script is only what a backup of one company holds: its tables, sequences,
+     * constraints and indexes, named in its own schema. Anything else (another company's or the shared schema,
+     * functions, roles, a different search path) could reach beyond the company, as the script runs with the
+     * application's own database account: the whole restore is refused.
+     */
+    static boolean isSafeStatement(String schema, String line) {
+        if (line.equals(HEADER_SEARCH_PATH) || line.isBlank() || line.startsWith("--")) {
+            return true;
+        }
+        // psql commands (\! runs a program, \i reads a file...): only those recent tools write to lock the script
+        if (line.stripLeading().startsWith("\\")) {
+            return PSQL_LOCK.matcher(line).matches();
+        }
+        Matcher companies = COMPANY_SCHEMA.matcher(line);
+        while (companies.find()) {
+            if (!companies.group().equalsIgnoreCase(schema)) {
+                return false;
+            }
+        }
+        // pg_catalog.setval of the company's own sequences restores them
+        String withoutSetval = line.startsWith("SELECT pg_catalog.setval('" + schema + ".") ? "" : line;
+        return !FORBIDDEN.matcher(withoutSetval).find();
+    }
+
     private void writeRestoreScript(String schema, Path script, Path restoreScript) {
         try (BufferedReader reader = Files.newBufferedReader(script, StandardCharsets.UTF_8);
              BufferedWriter writer = Files.newBufferedWriter(restoreScript, StandardCharsets.UTF_8)) {
@@ -102,11 +141,22 @@ public class PostgresTools {
                 """.formatted(schema));
             String line;
             int lineNumber = 0;
+            boolean data = false;
             while ((line = reader.readLine()) != null) {
                 lineNumber++;
                 // Written by recent tools in the header, unknown to a PostgreSQL server older than 17
                 if (lineNumber < 50 && line.equals("SET transaction_timeout = 0;")) {
                     continue;
+                }
+                // The rows of a table (COPY ... FROM stdin; up to \.) are data, not statements
+                if (data) {
+                    data = !line.equals("\\.");
+                } else if (COPY_FROM_STDIN.matcher(line).matches()) {
+                    data = true;
+                } else if (!isSafeStatement(schema, line)) {
+                    log.warn("Restore refused: unexpected statement in the backup, line {}: {}", lineNumber,
+                        line.length() > 200 ? line.substring(0, 200) : line);
+                    throw new BusinessException(MessageProperties.BACKUP_ERROR_UNSAFE);
                 }
                 writer.write(line);
                 writer.newLine();

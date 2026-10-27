@@ -140,7 +140,7 @@ class AuthenticationSecurityTest {
             .andExpect(unauthenticated())
             .andExpect(redirectedUrl("/login?error"));
 
-        String temporary = userService.resetToTemporaryPassword(target.getId());
+        String temporary = userService.resetToTemporaryPassword(target.getId(), null);
         mockMvc.perform(formLogin("/perform-login").user("victim").password(temporary)).andExpect(authenticated());
     }
 

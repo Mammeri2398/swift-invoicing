@@ -99,6 +99,7 @@ public final class MessageProperties {
     public static final String BACKUP_ERROR_NOT_ENABLED = "backup.error.notEnabled";
     public static final String BACKUP_ERROR_NOT_FOUND = "backup.error.notFound";
     public static final String BACKUP_ERROR_NOT_OURS = "backup.error.notOurs";
+    public static final String BACKUP_ERROR_UNSAFE = "backup.error.unsafe";
     public static final String BACKUP_ERROR_OTHER_COMPANY = "backup.error.otherCompany";
     public static final String BACKUP_ERROR_TOOL_MISSING = "backup.error.toolMissing";
     public static final String BACKUP_ERROR_UNREADABLE_BACKUP = "backup.error.unreadableBackup";
@@ -339,6 +340,7 @@ public final class MessageProperties {
     public static final String USER_ERROR_EMAIL_USED = "user.error.emailUsed";
     public static final String USER_ERROR_NOT_FOUND = "user.error.notFound";
     public static final String USER_ERROR_NO_COMPANY = "user.error.noCompany";
+    public static final String USER_ERROR_OTHER_COMPANIES = "user.error.otherCompanies";
     public static final String USER_ERROR_PROFILE_NOT_FOUND = "user.error.profileNotFound";
     public static final String USER_ERROR_SAME_PASSWORD = "user.error.samePassword";
     public static final String USER_ERROR_USERNAME_USED = "user.error.usernameUsed";

@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 
 /**
  * The authenticated user stored in the session: an immutable snapshot taken at login,
- * never the JPA entity (which is not serializable and would go stale). Privilege changes
- * apply at the next login.
+ * never the JPA entity (which is not serializable and would go stale). Its company access and
+ * privileges are checked again on every page (CompanyFilter) and replaced when they changed.
  *
  * It carries the company the user works in and the privileges of their profile in that company; switching company
  * replaces it ({@link #withCompany}). No company yet (several to choose from): no privileges at all.

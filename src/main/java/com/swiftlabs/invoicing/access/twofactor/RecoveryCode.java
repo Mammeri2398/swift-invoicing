@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.access.twofactor;
 
 import com.swiftlabs.invoicing.access.user.User;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,7 +17,7 @@ import java.time.LocalDateTime;
 
 /** A single-use code that replaces the authenticator app (lost phone). Only its hash is stored. */
 @Entity
-@Table(name = "user_recovery_code")
+@Table(name = "user_recovery_code", schema = CompanySchemas.SHARED)
 public class RecoveryCode {
 
     @Id

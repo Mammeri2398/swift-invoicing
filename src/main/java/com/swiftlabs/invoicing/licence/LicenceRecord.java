@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.licence;
 
+import com.swiftlabs.invoicing.company.CompanySchemas;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -9,7 +11,7 @@ import java.time.LocalDateTime;
 
 /** The licence of this install (single row): the key as pasted, and the trial start. */
 @Entity
-@Table(name = "licence")
+@Table(name = "licence", schema = CompanySchemas.SHARED)
 public class LicenceRecord {
 
     static final long ID = 1L;

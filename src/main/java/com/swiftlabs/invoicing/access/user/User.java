@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.access.user;
 
 import com.swiftlabs.invoicing.access.profile.Profile;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import com.swiftlabs.invoicing.common.Language;
 
@@ -18,7 +19,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "app_user")
+@Table(name = "app_user", schema = CompanySchemas.SHARED)
 public class User {
 
     @Id

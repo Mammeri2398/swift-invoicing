@@ -98,8 +98,14 @@ public class PostgresTools {
                   FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = '%1$s' LOOP
                     EXECUTE format('DROP SEQUENCE IF EXISTS %%I.%%I CASCADE', '%1$s', r.sequencename);
                   END LOOP;
+                  %2$s
                 END $$;
-                """.formatted(schema));
+                """.formatted(schema, schema.equals("public")
+                    // The whole installation: the companies' schemas go too (a backup from before there were
+                    // several companies has its tables in public, Flyway moves them again)
+                    ? "FOR r IN SELECT nspname FROM pg_namespace WHERE nspname ~ '^company_[0-9]+$' LOOP "
+                        + "EXECUTE format('DROP SCHEMA %I CASCADE', r.nspname); END LOOP;"
+                    : ""));
             String line;
             int lineNumber = 0;
             while ((line = reader.readLine()) != null) {

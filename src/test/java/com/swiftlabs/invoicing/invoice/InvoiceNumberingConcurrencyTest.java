@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.invoice;
 import com.swiftlabs.invoicing.client.Client;
 import com.swiftlabs.invoicing.client.ClientRepository;
 import com.swiftlabs.invoicing.client.ClientType;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +36,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 class InvoiceNumberingConcurrencyTest {
 
+    /** Raw SQL runs outside the application's sessions: the company's tables are named with their schema. */
+    private static final String COMPANY = CompanySchemas.FIRST + ".";
+
     /** A year no other test uses: its numbering row does not exist yet. */
     private static final int YEAR = 2031;
     private static final int THREADS = 8;
@@ -60,10 +64,10 @@ class InvoiceNumberingConcurrencyTest {
 
     @AfterEach
     void cleanUp() {
-        jdbcTemplate.update("DELETE FROM invoice_line WHERE invoice_id IN (SELECT id FROM invoice WHERE client_id = ?)", client.getId());
-        jdbcTemplate.update("DELETE FROM invoice WHERE client_id = ?", client.getId());
-        jdbcTemplate.update("DELETE FROM client WHERE id = ?", client.getId());
-        jdbcTemplate.update("DELETE FROM invoice_sequence WHERE invoice_year = ?", YEAR);
+        jdbcTemplate.update("DELETE FROM " + COMPANY + "invoice_line WHERE invoice_id IN (SELECT id FROM " + COMPANY + "invoice WHERE client_id = ?)", client.getId());
+        jdbcTemplate.update("DELETE FROM " + COMPANY + "invoice WHERE client_id = ?", client.getId());
+        jdbcTemplate.update("DELETE FROM " + COMPANY + "client WHERE id = ?", client.getId());
+        jdbcTemplate.update("DELETE FROM " + COMPANY + "invoice_sequence WHERE invoice_year = ?", YEAR);
     }
 
     private List<Long> drafts(int count) {
@@ -124,6 +128,6 @@ class InvoiceNumberingConcurrencyTest {
         Set<String> numbers = issueConcurrently(drafts(THREADS));
         assertThat(numbers).isEqualTo(expectedNumbers(2, THREADS + 1));
         assertThat(jdbcTemplate.queryForObject(
-            "SELECT last_value FROM invoice_sequence WHERE invoice_year = ?", Integer.class, YEAR)).isEqualTo(THREADS + 1);
+            "SELECT last_value FROM " + COMPANY + "invoice_sequence WHERE invoice_year = ?", Integer.class, YEAR)).isEqualTo(THREADS + 1);
     }
 }

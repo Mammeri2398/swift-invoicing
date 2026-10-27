@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * public URL. One test, in order: the wizard can only run once per database.
  */
 @SpringBootTest(properties = {
-    "spring.datasource.url=jdbc:h2:mem:onpremise;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+    "spring.datasource.url=jdbc:h2:mem:onpremise;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
     "app.setup.wizard=true",
     "app.base-url=",
     "mail.enabled=true",

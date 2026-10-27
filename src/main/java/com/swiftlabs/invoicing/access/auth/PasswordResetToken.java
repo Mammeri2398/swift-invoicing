@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.access.auth;
 
 import com.swiftlabs.invoicing.access.user.User;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,7 +19,7 @@ import java.time.LocalDateTime;
  * exists only in the link sent to the user, so a database leak does not give usable links.
  */
 @Entity
-@Table(name = "password_reset_token")
+@Table(name = "password_reset_token", schema = CompanySchemas.SHARED)
 public class PasswordResetToken {
 
     @Id

@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.access.privilege;
 
+import com.swiftlabs.invoicing.company.CompanySchemas;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "privilege")
+@Table(name = "privilege", schema = CompanySchemas.SHARED)
 public class Privilege {
 
     @Id

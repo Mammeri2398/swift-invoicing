@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.access.profile;
 
 import com.swiftlabs.invoicing.access.privilege.Privilege;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,7 +18,7 @@ import java.util.Objects;
 import java.util.Set;
 
 @Entity
-@Table(name = "profile")
+@Table(name = "profile", schema = CompanySchemas.SHARED)
 public class Profile {
 
     @Id
@@ -33,6 +34,7 @@ public class Profile {
     @ManyToMany
     @JoinTable(
         name = "profile_privilege",
+        schema = CompanySchemas.SHARED,
         joinColumns = @JoinColumn(name = "profile_id"),
         inverseJoinColumns = @JoinColumn(name = "privilege_id")
     )

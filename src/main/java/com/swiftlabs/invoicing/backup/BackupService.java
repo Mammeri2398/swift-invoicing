@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.backup;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.MessageProperties;
+import com.swiftlabs.invoicing.company.CompanyMigrations;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
@@ -31,6 +32,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Pattern;
 
 /**
  * Backups of the database into a folder of the PC: automatic every day (see BackupScheduler), on
@@ -43,12 +45,15 @@ public class BackupService {
 
     /** Every backup file starts with this: written by pg_dump in custom format. */
     private static final byte[] MAGIC = "PGDMP".getBytes();
+    /** A company's invoice table in the table of contents of a backup ("TABLE company_1 invoice"). */
+    private static final Pattern COMPANY_INVOICES = Pattern.compile(" TABLE company_[0-9]+ invoice ");
 
     private final BackupProperties properties;
     private final BackupSettingsRepository settingsRepository;
     private final PostgresTools tools;
     private final BackupDatabase database;
     private final ObjectProvider<Flyway> flyway;
+    private final CompanyMigrations companyMigrations;
     private final DataSource dataSource;
     private final Clock clock;
     private final ReentrantLock running = new ReentrantLock();
@@ -56,12 +61,14 @@ public class BackupService {
     private volatile Failure lastFailure;
 
     public BackupService(BackupProperties properties, BackupSettingsRepository settingsRepository, PostgresTools tools,
-                         BackupDatabase database, ObjectProvider<Flyway> flyway, DataSource dataSource, Clock clock) {
+                         BackupDatabase database, ObjectProvider<Flyway> flyway, CompanyMigrations companyMigrations,
+                         DataSource dataSource, Clock clock) {
         this.properties = properties;
         this.settingsRepository = settingsRepository;
         this.tools = tools;
         this.database = database;
         this.flyway = flyway;
+        this.companyMigrations = companyMigrations;
         this.dataSource = dataSource;
         this.clock = clock;
     }
@@ -286,6 +293,7 @@ public class BackupService {
             log.warn("Restoring the backup {} (the data before it is in {})", name, safety.name());
             tools.restore(target, file, directory());
             flyway.ifAvailable(Flyway::migrate);
+            companyMigrations.migrateAll();
             if (dataSource instanceof HikariDataSource hikari && hikari.getHikariPoolMXBean() != null) {
                 hikari.getHikariPoolMXBean().softEvictConnections();
             }
@@ -300,8 +308,10 @@ public class BackupService {
     private void checkContents(Path file) {
         String schema = database.connection().map(PostgresConnection::schema).orElse("public");
         List<String> contents = tools.contents(file);
+        // The invoices are in a company's schema, or in the shared one in a backup from before there were several companies
         boolean ours = contents.stream().anyMatch(line -> line.contains(" TABLE " + schema + " flyway_schema_history "))
-            && contents.stream().anyMatch(line -> line.contains(" TABLE " + schema + " invoice "));
+            && contents.stream().anyMatch(line -> COMPANY_INVOICES.matcher(line).find()
+                || line.contains(" TABLE " + schema + " invoice "));
         if (!ours) {
             throw new BusinessException(MessageProperties.BACKUP_ERROR_NOT_OURS);
         }

@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.backup;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -120,7 +121,7 @@ class BackupTest {
 
     @Test
     void onlyTheNewestAutomaticBackupsAreKept() throws IOException {
-        jdbc.update("INSERT INTO backup_settings (id, directory, keep_count) VALUES (1, ?, 3)", FOLDER.toString());
+        jdbc.update("INSERT INTO " + CompanySchemas.FIRST + ".backup_settings (id, directory, keep_count) VALUES (1, ?, 3)", FOLDER.toString());
         LocalDateTime now = LocalDateTime.now();
         for (int day = 1; day <= 5; day++) {
             existing(now.minusDays(day), BackupKind.AUTO);

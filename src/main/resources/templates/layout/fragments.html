@@ -20,7 +20,8 @@
                 <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-on-primary shadow-sm">
                     <span class="icon">receipt_long</span>
                 </span>
-                <span class="hidden flex-col leading-tight sm:flex">
+                <!--/* The name beside the logo: not between xl and 2xl, where the full navigation needs the room */-->
+                <span class="hidden flex-col leading-tight sm:flex xl:hidden 2xl:flex">
                     <span class="text-title-sm text-primary">Swift Invoicing</span>
                     <span class="text-label-sm uppercase tracking-wider text-on-surface-variant"
                           th:text="${companyType?.company} ? #{app.tagline.company} : #{app.tagline.autoEntrepreneur}">Auto-entrepreneur ANAE</span>
@@ -28,7 +29,17 @@
             </a>
             <nav class="hidden items-center gap-1 xl:flex" th:if="${u != null}">
                 <th:block th:replace="~{layout/fragments :: navLinks}"></th:block>
-                <!--/* Settings and administration grouped: the bar has no room for each link on its own */-->
+                <!--/* Reports, settings and administration grouped: the bar has no room for each link on its own */-->
+                <details th:if="${u.can('VIEW_DASHBOARD')}" class="relative" data-dropdown>
+                    <summary class="nav-link inline-flex cursor-pointer list-none items-center gap-0.5"
+                             th:classappend="${currentPath == '/turnover' or #strings.startsWith(currentPath, '/vat')
+                                               or #strings.startsWith(currentPath, '/accounting')} ? 'active'">
+                        <th:block th:text="#{nav.reports}">Rapports</th:block><span class="icon icon-sm">expand_more</span>
+                    </summary>
+                    <div class="absolute start-0 mt-2 flex w-52 flex-col gap-1 rounded-xl bg-surface-container-lowest p-2 shadow-lg">
+                        <th:block th:replace="~{layout/fragments :: reportLinks}"></th:block>
+                    </div>
+                </details>
                 <details th:if="${u.can('VIEW_ISSUER') or u.can('MANAGE_USERS') or u.can('MANAGE_PROFILES') or u.can('MANAGE_PRIVILEGES') or u.can('MANAGE_COMPANIES')}"
                          class="relative" data-dropdown>
                     <summary class="nav-link inline-flex cursor-pointer list-none items-center gap-0.5"
@@ -79,6 +90,7 @@
                 <summary class="btn-icon list-none cursor-pointer" th:aria-label="#{nav.menu}"><span class="icon">menu</span></summary>
                 <nav class="absolute end-0 mt-2 flex w-56 flex-col gap-1 rounded-xl bg-surface-container-lowest p-2 shadow-lg">
                     <th:block th:replace="~{layout/fragments :: navLinks}"></th:block>
+                    <th:block th:replace="~{layout/fragments :: reportLinks}"></th:block>
                     <th:block th:replace="~{layout/fragments :: adminLinks}"></th:block>
                     <a th:if="${u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="nav-link sm:hidden" th:text="#{nav.newInvoice}">Nouvelle facture</a>
                     <a th:href="@{/account}" class="nav-link" th:text="#{nav.account}">Mon compte</a>
@@ -117,16 +129,20 @@
        th:classappend="${(#strings.startsWith(p, '/invoices') and p != '/invoices/lookup' and navSection != 'quotes') or #strings.startsWith(p, '/recurring')} ? 'active'" th:text="#{nav.invoices}">Factures</a>
     <a th:if="${u.can('VIEW_INVOICES')}" th:href="@{/quotes}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/quotes') or navSection == 'quotes'} ? 'active'" th:text="#{nav.quotes}">Devis</a>
+    <a th:if="${u.can('VIEW_CLIENTS')}" th:href="@{/clients}" class="nav-link"
+       th:classappend="${#strings.startsWith(p, '/clients')} ? 'active'" th:text="#{nav.clients}">Clients</a>
+    <a th:if="${u.can('MANAGE_CATALOG') or u.can('CREATE_INVOICE')}" th:href="@{/catalog}" class="nav-link"
+       th:classappend="${#strings.startsWith(p, '/catalog')} ? 'active'" th:text="#{nav.catalog}">Catalogue</a>
+</th:block>
+
+<!--/* Figures for the business and its accountant: the "Rapports" dropdown on wide screens, part of the list in the mobile menu */-->
+<th:block th:fragment="reportLinks" th:with="u=${currentUser}, p=${currentPath}">
     <a th:if="${u.can('VIEW_DASHBOARD')}" th:href="@{/turnover}" class="nav-link"
        th:classappend="${p == '/turnover'} ? 'active'" th:text="#{nav.turnover}">Chiffre d'affaires</a>
     <a th:if="${u.can('VIEW_DASHBOARD') and companyType?.company}" th:href="@{/vat}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/vat')} ? 'active'" th:text="#{nav.vat}">TVA</a>
     <a th:if="${u.can('VIEW_DASHBOARD')}" th:href="@{/accounting}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/accounting')} ? 'active'" th:text="#{nav.accounting}">Comptabilité</a>
-    <a th:if="${u.can('VIEW_CLIENTS')}" th:href="@{/clients}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/clients')} ? 'active'" th:text="#{nav.clients}">Clients</a>
-    <a th:if="${u.can('MANAGE_CATALOG') or u.can('CREATE_INVOICE')}" th:href="@{/catalog}" class="nav-link"
-       th:classappend="${#strings.startsWith(p, '/catalog')} ? 'active'" th:text="#{nav.catalog}">Catalogue</a>
 </th:block>
 
 <!--/* Settings and administration links: the "Réglages" dropdown on wide screens, part of the list in the mobile menu */-->

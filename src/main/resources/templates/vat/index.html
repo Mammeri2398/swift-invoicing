@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(#{vat.title}, ~{::main}, ~{})}">
+<body>
+<main class="page" th:with="s=${summary}, period=${monthNames[summary.month - 1] + ' ' + summary.year}">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow" th:text="#{vat.eyebrow}">Déclaration G50</p>
+            <h1 class="page-title" th:text="#{vat.title}">TVA du mois</h1>
+            <p class="page-subtitle" th:text="#{vat.subtitle}">Le chiffre d'affaires et la TVA collectée du mois, par taux.</p>
+        </div>
+    </div>
+
+    <section th:unless="${company}" class="card">
+        <div class="card-body flex items-start gap-3">
+            <span class="icon text-secondary">info</span>
+            <div>
+                <p class="font-semibold" th:text="#{vat.notCompany.title}">TVA non applicable</p>
+                <p class="text-on-surface-variant" th:text="#{vat.notCompany.text}">Un auto-entrepreneur ne facture pas de TVA.</p>
+            </div>
+        </div>
+    </section>
+
+    <th:block th:if="${company}">
+        <form th:action="@{/vat}" method="get" class="card mb-6">
+            <div class="card-body flex flex-wrap items-end gap-4">
+                <div class="field">
+                    <label class="label" for="month" th:text="#{vat.month}">Mois</label>
+                    <select class="input" id="month" name="month">
+                        <option th:each="name, it : ${monthNames}" th:value="${it.count}" th:selected="${it.count == s.month}" th:text="${name}">Octobre</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label class="label" for="year" th:text="#{vat.year}">Année</label>
+                    <select class="input" id="year" name="year">
+                        <option th:each="y : ${years}" th:value="${y}" th:selected="${y == s.year}" th:text="${y}">2026</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label class="label" for="basis" th:text="#{vat.basis}">Base de calcul</label>
+                    <select class="input" id="basis" name="basis">
+                        <option th:each="b : ${bases}" th:value="${b.name()}" th:selected="${b == s.basis}" th:text="#{${'vat.basis.' + b.name()}}">Facturation</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-secondary"><span class="icon">refresh</span><th:block th:text="#{vat.show}">Afficher</th:block></button>
+                <a th:href="@{/vat/export(year=${s.year}, month=${s.month}, basis=${s.basis.name()})}" class="btn btn-primary ms-auto">
+                    <span class="icon">download</span><th:block th:text="#{vat.export}">Excel</th:block></a>
+            </div>
+            <p class="card-footer hint" th:text="#{${'vat.basis.hint.' + s.basis.name()}}">Factures émises et avoirs datés du mois.</p>
+        </form>
+
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[3fr_2fr]">
+            <section class="card">
+                <div class="card-header"><h2 class="card-title"><span class="icon">receipt</span><span th:text="#{vat.summary.title(${period})}">Récapitulatif d'octobre 2026</span></h2></div>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th scope="col" th:text="#{vat.col.operation}">Opérations</th>
+                            <th scope="col" class="num" th:text="#{vat.col.base}">Chiffre d'affaires HT</th>
+                            <th scope="col" class="num" th:text="#{vat.col.vat}">TVA</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="r : ${s.rates}">
+                            <td th:text="#{vat.rate(${r.rate.stripTrailingZeros().toPlainString()})}">Opérations imposables à 19 %</td>
+                            <td class="num" th:text="${amountUtils.format(r.base)}">0,00 DA</td>
+                            <td class="num" th:text="${amountUtils.format(r.vat)}">0,00 DA</td>
+                        </tr>
+                        <tr>
+                            <td th:text="#{vat.exempt}">Opérations exonérées ou non imposables</td>
+                            <td class="num" th:text="${amountUtils.format(s.exemptBase)}">0,00 DA</td>
+                            <td class="num text-on-surface-variant">—</td>
+                        </tr>
+                        <tr class="font-semibold">
+                            <td th:text="#{vat.total}">Total</td>
+                            <td class="num" th:text="${amountUtils.format(s.exclVat())}">0,00 DA</td>
+                            <td class="num" th:text="${amountUtils.format(s.vat())}">0,00 DA</td>
+                        </tr>
+                        <tr>
+                            <td th:text="#{vat.stampDuty}">Droit de timbre perçu</td>
+                            <td class="num" th:text="${amountUtils.format(s.stampDuty)}">0,00 DA</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td th:text="#{vat.totalInclVat}">Total TTC</td>
+                            <td class="num" th:text="${amountUtils.format(s.inclVat())}">0,00 DA</td>
+                            <td></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer flex flex-wrap items-center justify-between gap-3">
+                    <span class="font-semibold" th:text="#{vat.toDeclare}">TVA collectée à déclarer</span>
+                    <span class="text-title-sm text-primary" th:text="${amountUtils.format(s.vat())}">0,00 DA</span>
+                </div>
+                <p th:if="${s.empty}" class="card-body text-on-surface-variant" th:text="#{vat.empty}">Aucune opération sur ce mois.</p>
+            </section>
+
+            <section class="card">
+                <div class="card-header"><h2 class="card-title"><span class="icon">calendar_month</span><span th:text="#{vat.yearTitle(${s.year})}">Année 2026</span></h2></div>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th scope="col" th:text="#{vat.col.month}">Mois</th>
+                            <th scope="col" class="num" th:text="#{vat.col.exclVat}">HT</th>
+                            <th scope="col" class="num" th:text="#{vat.col.vat}">TVA</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="m : ${months}" th:classappend="${m.month == s.month} ? 'bg-primary-fixed/30 font-semibold'">
+                            <td><a th:href="@{/vat(year=${m.year}, month=${m.month}, basis=${s.basis.name()})}" class="hover:text-primary"
+                                   th:text="${monthNames[m.month - 1]}">Janvier</a></td>
+                            <td class="num" th:text="${m.empty} ? '—' : ${amountUtils.format(m.exclVat())}">—</td>
+                            <td class="num" th:text="${m.empty} ? '—' : ${amountUtils.format(m.vat())}">—</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div class="alert alert-info my-6">
+            <span class="icon">gavel</span><span th:text="#{vat.notice}">Aide à la déclaration : faites vérifier ces montants par votre comptable.</span>
+        </div>
+
+        <section class="card">
+            <div class="card-header"><h2 class="card-title"><span class="icon">list_alt</span><span th:text="#{vat.details.title}">Détail des opérations</span></h2></div>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th scope="col" th:text="#{vat.details.date}">Date</th>
+                        <th scope="col" th:text="#{vat.details.document}">Document</th>
+                        <th scope="col" th:text="#{vat.details.client}">Client</th>
+                        <th scope="col" class="num" th:text="#{vat.details.exclVat}">HT</th>
+                        <th scope="col" class="num" th:text="#{vat.details.vat}">TVA</th>
+                        <th scope="col" class="num" th:text="#{vat.details.stamp}">Timbre</th>
+                        <th scope="col" class="num" th:text="#{vat.details.total}">TTC</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="e : ${s.entries}">
+                        <td class="tabular-nums" th:text="${#temporals.format(e.date, 'dd/MM/yyyy')}">01/10/2026</td>
+                        <td><a th:href="@{/invoices/{id}(id=${e.invoiceId})}" class="font-mono hover:text-primary" th:text="${e.number}">FA-2026-0001</a>
+                            <span th:if="${e.kind.name() == 'CREDIT_NOTE'}" class="badge badge-neutral ms-1" th:text="${@messages.label(e.kind)}">Avoir</span></td>
+                        <td th:text="${e.client}">Client</td>
+                        <td class="num" th:text="${amountUtils.format(e.exclVat)}">0,00 DA</td>
+                        <td class="num" th:text="${amountUtils.format(e.vat)}">0,00 DA</td>
+                        <td class="num" th:text="${e.stampDuty.signum() == 0} ? '—' : ${amountUtils.format(e.stampDuty)}">—</td>
+                        <td class="num font-semibold" th:text="${amountUtils.format(e.total)}">0,00 DA</td>
+                    </tr>
+                    <tr th:if="${s.empty}">
+                        <td colspan="7" class="table-empty" th:text="#{vat.empty}">Aucune opération sur ce mois.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </th:block>
+</main>
+</body>
+</html>

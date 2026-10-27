@@ -269,6 +269,30 @@ public final class MessageProperties {
     public static final String USER_TWO_FACTOR_RESET = "user.twoFactorReset";
     public static final String USER_UPDATED = "user.updated";
 
+    // ---- vat -------------------------------------------------------------------------------------------------
+    public static final String VAT_BASIS = "vat.basis";
+    public static final String VAT_COL_BASE = "vat.col.base";
+    public static final String VAT_COL_OPERATION = "vat.col.operation";
+    public static final String VAT_COL_VAT = "vat.col.vat";
+    public static final String VAT_DETAILS_CLIENT = "vat.details.client";
+    public static final String VAT_DETAILS_DATE = "vat.details.date";
+    public static final String VAT_DETAILS_DOCUMENT = "vat.details.document";
+    public static final String VAT_DETAILS_EXCL_VAT = "vat.details.exclVat";
+    public static final String VAT_DETAILS_STAMP = "vat.details.stamp";
+    public static final String VAT_DETAILS_TOTAL = "vat.details.total";
+    public static final String VAT_DETAILS_VAT = "vat.details.vat";
+    public static final String VAT_EXEMPT = "vat.exempt";
+    public static final String VAT_EXPORT_FILE = "vat.export.file";
+    public static final String VAT_EXPORT_SHEET_DETAILS = "vat.export.sheet.details";
+    public static final String VAT_EXPORT_SHEET_SUMMARY = "vat.export.sheet.summary";
+    public static final String VAT_RATE = "vat.rate";
+    public static final String VAT_STAMP_DUTY = "vat.stampDuty";
+    public static final String VAT_SUMMARY_TITLE = "vat.summary.title";
+    public static final String VAT_TOTAL = "vat.total";
+    public static final String VAT_TOTAL_INCL_VAT = "vat.totalInclVat";
+    /** Completed with the basis: VAT_BASIS_PREFIX + VatBasis.INVOICED.name(). */
+    public static final String VAT_BASIS_PREFIX = "vat.basis.";
+
     // ---- keys completed in the code with a document kind (INVOICE, CREDIT_NOTE, QUOTE, PROFORMA) -------------
     public static final String INVOICE_FLASH_DRAFT_SAVED_PREFIX = "invoice.flash.draftSaved.";
     public static final String INVOICE_FLASH_ISSUED_PREFIX = "invoice.flash.issued.";

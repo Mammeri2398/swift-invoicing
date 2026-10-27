@@ -26,6 +26,7 @@ public final class CommonCodes {
         public static final String BACKUP_DIRECTORY = "backupDirectory";
         public static final String BACKUP_WARNING = "backupWarning";
         public static final String BALANCES = "balances";
+        public static final String BASES = "bases";
         public static final String CAN_EDIT = "canEdit";
         public static final String CATALOG_ITEMS = "catalogItems";
         public static final String CLIENT = "client";
@@ -66,6 +67,8 @@ public final class CommonCodes {
         public static final String MAIL_ENABLED = "mailEnabled";
         public static final String MAX_USERS = "maxUsers";
         public static final String MESSAGE = "message";
+        public static final String MONTHS = "months";
+        public static final String MONTH_NAMES = "monthNames";
         public static final String NAV_SECTION = "navSection";
         public static final String NETWORK_ADDRESSES = "networkAddresses";
         public static final String NOW = "now";
@@ -100,6 +103,7 @@ public final class CommonCodes {
         public static final String STATUS = "status";
         public static final String STATUSES = "statuses";
         public static final String SUCCESS = "success";
+        public static final String SUMMARY = "summary";
         public static final String SUPPORT_CONTACT = "supportContact";
         public static final String TEMPORARY_PASSWORD = "temporaryPassword";
         public static final String TEMPORARY_PASSWORD_USER = "temporaryPasswordUser";
@@ -178,5 +182,8 @@ public final class CommonCodes {
 
         // setup
         public static final String SETUP_SETUP = "setup/setup";
+
+        // vat
+        public static final String VAT_INDEX = "vat/index";
     }
 }

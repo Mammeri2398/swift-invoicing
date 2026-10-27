@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -100,6 +101,12 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
     List<MonthlyTotal> monthlyTotals(@Param("year") Integer year);
 
     /** The years that have issued invoices, most recent first. */
+    /** Issued (or paid) documents of a period with their lines, for the TVA summary. */
+    @Query("SELECT i FROM Invoice i LEFT JOIN FETCH i.lines LEFT JOIN FETCH i.client WHERE i.kind IN :kinds AND i.status IN :statuses"
+        + " AND i.issueDate BETWEEN :from AND :to ORDER BY i.issueDate, i.id")
+    List<Invoice> findForPeriod(@Param("kinds") List<DocumentKind> kinds, @Param("statuses") List<InvoiceStatus> statuses,
+                                @Param("from") LocalDate from, @Param("to") LocalDate to);
+
     @Query("SELECT DISTINCT i.invoiceYear FROM Invoice i WHERE i.invoiceYear IS NOT NULL ORDER BY i.invoiceYear DESC")
     List<Integer> findInvoiceYears();
 

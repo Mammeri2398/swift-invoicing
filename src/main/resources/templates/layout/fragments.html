@@ -88,6 +88,8 @@
        th:classappend="${#strings.startsWith(p, '/quotes') or navSection == 'quotes'} ? 'active'" th:text="#{nav.quotes}">Devis</a>
     <a th:if="${u.can('VIEW_DASHBOARD')}" th:href="@{/turnover}" class="nav-link"
        th:classappend="${p == '/turnover'} ? 'active'" th:text="#{nav.turnover}">Chiffre d'affaires</a>
+    <a th:if="${u.can('VIEW_DASHBOARD') and companyType?.company}" th:href="@{/vat}" class="nav-link"
+       th:classappend="${#strings.startsWith(p, '/vat')} ? 'active'" th:text="#{nav.vat}">TVA</a>
     <a th:if="${u.can('VIEW_CLIENTS')}" th:href="@{/clients}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/clients')} ? 'active'" th:text="#{nav.clients}">Clients</a>
     <a th:if="${u.can('MANAGE_CATALOG') or u.can('CREATE_INVOICE')}" th:href="@{/catalog}" class="nav-link"

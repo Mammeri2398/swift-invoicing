@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public interface InvoicePaymentRepository extends JpaRepository<InvoicePayment, Long> {
@@ -29,4 +30,9 @@ public interface InvoicePaymentRepository extends JpaRepository<InvoicePayment, 
     /** Payments of a client's invoices, oldest first (client statement). */
     @Query("SELECT p FROM InvoicePayment p JOIN FETCH p.invoice i WHERE i.client.id = :clientId ORDER BY p.paidOn, p.id")
     List<InvoicePayment> findByClient(@Param("clientId") Long clientId);
+
+    /** Payments received in a period on invoices, oldest first, for the TVA summary on collections. */
+    @Query("SELECT p FROM InvoicePayment p JOIN FETCH p.invoice i WHERE i.kind = 'INVOICE' AND p.paidOn BETWEEN :from AND :to"
+        + " ORDER BY p.paidOn, p.id")
+    List<InvoicePayment> findReceivedBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
 }

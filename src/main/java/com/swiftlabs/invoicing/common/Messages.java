@@ -32,6 +32,7 @@ public class Messages {
         "i18n/dashboard",
         "i18n/settings",
         "i18n/help",
+        "i18n/vat",
     };
 
     private static volatile MessageSource french;

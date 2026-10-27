@@ -131,6 +131,10 @@ public final class Endpoints {
 
     public static final String QUOTES = "/quotes";
 
+    // ---- TVA du mois (help for the G50 declaration) -------------------------------------------------------------
+    public static final String VAT = "/vat";
+    public static final String VAT_EXPORT = "/export";
+
     // ---- Help -------------------------------------------------------------------------------------------------------
     public static final String HELP = "/help";
 

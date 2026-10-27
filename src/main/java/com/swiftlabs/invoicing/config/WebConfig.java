@@ -12,14 +12,20 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final CompanyFormGuard companyFormGuard;
+    private final ActivityLog activityLog;
 
-    public WebConfig(CompanyFormGuard companyFormGuard) {
+    public WebConfig(CompanyFormGuard companyFormGuard, ActivityLog activityLog) {
         this.companyFormGuard = companyFormGuard;
+        this.activityLog = activityLog;
     }
 
-    /** A form shown in one company and sent after switching to another (in another tab) is refused. */
+    /**
+     * Every page and action is written to the log (activity), refused ones included; then a form shown in one
+     * company and sent after switching to another (in another tab) is refused.
+     */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(activityLog);
         registry.addInterceptor(companyFormGuard);
     }
 

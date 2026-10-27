@@ -44,4 +44,12 @@ public record PostgresConnection(String host, int port, String database, String 
     boolean isDefaultSchema() {
         return schema.equals("public");
     }
+
+    /** The same database, for one schema (a company's, or the shared one). */
+    PostgresConnection withSchema(String otherSchema) {
+        if (!IDENTIFIER.matcher(otherSchema).matches()) {
+            throw new IllegalArgumentException("Not a schema name: " + otherSchema);
+        }
+        return new PostgresConnection(host, port, database, otherSchema, username, password);
+    }
 }

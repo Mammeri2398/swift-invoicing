@@ -1,5 +1,9 @@
 package com.swiftlabs.invoicing.recurring;
 
+import com.swiftlabs.invoicing.company.Company;
+import com.swiftlabs.invoicing.company.CompanyContext;
+import com.swiftlabs.invoicing.company.CompanyService;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,13 +17,18 @@ import org.springframework.scheduling.annotation.Scheduled;
 public class RecurringInvoiceScheduler {
 
     private final RecurringInvoiceService service;
+    private final CompanyService companyService;
 
-    public RecurringInvoiceScheduler(RecurringInvoiceService service) {
+    public RecurringInvoiceScheduler(RecurringInvoiceService service, CompanyService companyService) {
         this.service = service;
+        this.companyService = companyService;
     }
 
+    /** Each active company in turn: its drafts are prepared in its own schema. */
     @Scheduled(initialDelayString = "PT1M", fixedDelayString = "PT1H")
     public void prepareDueInvoices() {
-        service.generateDue();
+        for (Company company : companyService.findActive()) {
+            CompanyContext.runAs(company.getSchemaName(), service::generateDue);
+        }
     }
 }

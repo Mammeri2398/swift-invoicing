@@ -9,6 +9,7 @@ import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.Language;
 import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanyRepository;
 import com.swiftlabs.invoicing.company.CompanySchemas;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
@@ -39,13 +40,15 @@ public class SetupService {
     private final PasswordPolicy passwordPolicy;
     private final IssuerService issuerService;
     private final CompanyAccessService accessService;
+    private final CompanyRepository companyRepository;
     private final Clock clock;
     private final boolean wizard;
     /** Once a user exists it stays so: no query per request after that. */
     private volatile boolean done;
 
     public SetupService(UserRepository userRepository, ProfileRepository profileRepository, PasswordEncoder passwordEncoder,
-                        PasswordPolicy passwordPolicy, IssuerService issuerService, CompanyAccessService accessService, Clock clock,
+                        PasswordPolicy passwordPolicy, IssuerService issuerService, CompanyAccessService accessService,
+                        CompanyRepository companyRepository, Clock clock,
                         @Value("${app.setup.wizard:false}") boolean wizard) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
@@ -53,6 +56,7 @@ public class SetupService {
         this.passwordPolicy = passwordPolicy;
         this.issuerService = issuerService;
         this.accessService = accessService;
+        this.companyRepository = companyRepository;
         this.clock = clock;
         this.wizard = wizard;
     }
@@ -84,6 +88,8 @@ public class SetupService {
         }
         // Same checks as the Paramètres page (identifiers required by legal status)
         issuerService.save(form.toIssuerForm());
+        // The first company was named after the placeholder details of a new installation
+        companyRepository.findById(CompanySchemas.FIRST_ID).ifPresent(company -> company.setName(form.toIssuerForm().getFullName().trim()));
 
         Profile profile = profileRepository.findByName(ADMIN_PROFILE);
         if (profile == null) {

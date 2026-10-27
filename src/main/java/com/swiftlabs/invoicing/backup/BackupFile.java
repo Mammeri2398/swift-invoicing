@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.backup;
 
+import com.swiftlabs.invoicing.company.CompanySchemas;
+
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -10,17 +12,25 @@ import java.util.regex.Pattern;
 /**
  * A backup in the backup folder: swift-invoicing-2026-10-26-143005-auto.dump. Only files named this
  * way are listed, downloaded or restored, so a name sent by the browser can never reach another file.
+ *
+ * Its owner is in the name: nothing for the first company (the names of backups made before there could be several),
+ * the company's schema for the others (swift-invoicing-company_2-...), "commun" for the data shared by the
+ * companies (users, profiles, licence). Several companies can therefore share a folder.
  */
-public record BackupFile(String name, LocalDateTime createdAt, BackupKind kind, long size) {
+public record BackupFile(String name, String owner, LocalDateTime createdAt, BackupKind kind, long size) {
 
     static final String EXTENSION = ".dump";
 
+    /** The owner of the backups of the shared data. */
+    static final String SHARED = "commun";
+
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss");
     private static final Pattern NAME = Pattern.compile(
-        "swift-invoicing-(\\d{4}-\\d{2}-\\d{2}-\\d{6})-(auto|manuelle|avant-restauration|importee)\\.dump");
+        "swift-invoicing-(?:(company_\\d{1,18}|commun)-)?(\\d{4}-\\d{2}-\\d{2}-\\d{6})-(auto|manuelle|avant-restauration|importee)\\.dump");
 
-    static String nameFor(LocalDateTime createdAt, BackupKind kind) {
-        return "swift-invoicing-" + createdAt.format(STAMP) + "-" + kind.suffix() + EXTENSION;
+    static String nameFor(String owner, LocalDateTime createdAt, BackupKind kind) {
+        String prefix = CompanySchemas.FIRST.equals(owner) ? "" : owner + "-";
+        return "swift-invoicing-" + prefix + createdAt.format(STAMP) + "-" + kind.suffix() + EXTENSION;
     }
 
     static boolean isValidName(String name) {
@@ -32,8 +42,9 @@ public record BackupFile(String name, LocalDateTime createdAt, BackupKind kind, 
         if (!matcher.matches()) {
             return Optional.empty();
         }
-        return Optional.of(new BackupFile(matcher.group(0), LocalDateTime.parse(matcher.group(1), STAMP),
-            BackupKind.fromSuffix(matcher.group(2)), size));
+        String owner = matcher.group(1) != null ? matcher.group(1) : CompanySchemas.FIRST;
+        return Optional.of(new BackupFile(matcher.group(0), owner, LocalDateTime.parse(matcher.group(2), STAMP),
+            BackupKind.fromSuffix(matcher.group(3)), size));
     }
 
     /** Size for people, in French (logs): 512 Ko, 3,4 Mo. Pages use backup.size.kb / backup.size.mb. */

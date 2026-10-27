@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.invoice;
 
+import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.client.Client;
 import com.swiftlabs.invoicing.client.ClientRepository;
 import com.swiftlabs.invoicing.client.ClientType;
@@ -9,12 +10,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.security.test.context.support.TestExecutionEvent;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -33,6 +37,9 @@ class InvoiceLookupTest {
     private MockMvc mockMvc;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private InvoiceService invoiceService;
 
     @Autowired
@@ -43,6 +50,8 @@ class InvoiceLookupTest {
     @BeforeEach
     @WithMockUser
     void data() {
+        // The seeded admin signs in for one test: its temporary password counts as chosen
+        userRepository.findByUsername("admin").ifPresent(admin -> admin.changePassword(admin.getPassword(), LocalDateTime.now()));
         Client client = new Client();
         client.setType(ClientType.PARTICULIER);
         client.setName("Client Confidentiel");
@@ -93,8 +102,9 @@ class InvoiceLookupTest {
             .andExpect(content().string(containsString("Aucune facture ne porte le numéro")));
     }
 
+    /** A real signed-in user: the link needs their company to be the invoice's. */
     @Test
-    @WithMockUser(authorities = "VIEW_INVOICES")
+    @WithUserDetails(value = "admin", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     void userAllowedToViewInvoicesGetsTheLink() throws Exception {
         mockMvc.perform(get("/invoices/lookup").param("number", issued.getInvoiceNumber()))
             .andExpect(content().string(containsString("href=\"/invoices/" + issued.getId() + "\"")))

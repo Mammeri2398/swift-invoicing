@@ -59,7 +59,6 @@ public final class CommonCodes {
         public static final String HISTORY = "history";
         public static final String INITIALS = "initials";
         public static final String INVOICE = "invoice";
-        public static final String INVOICE_ID = "invoiceId";
         public static final String INVOICE_OF = "invoiceOf";
         public static final String ISSUER = "issuer";
         public static final String ITEM = "item";
@@ -111,6 +110,7 @@ public final class CommonCodes {
         public static final String SECURITIES = "securities";
         public static final String SETTINGS = "settings";
         public static final String SETUP = "setup";
+        public static final String SHARED_BACKUPS = "sharedBackups";
         public static final String STAMP_DUTY_RULES = "stampDutyRules";
         public static final String STATEMENT = "statement";
         public static final String STATS = "stats";
@@ -129,7 +129,7 @@ public final class CommonCodes {
         public static final String USER_COUNTS = "userCounts";
         public static final String VAT_MENTION = "vatMention";
         public static final String VAT_RATES = "vatRates";
-        public static final String VERIFICATION = "verification";
+        public static final String VERIFICATIONS = "verifications";
         public static final String VERSION = "version";
         public static final String YEARS = "years";
     }

@@ -1,11 +1,13 @@
 package com.swiftlabs.invoicing.setup;
 
-import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.access.user.PasswordPolicy;
+import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.CommonCodes;
 import com.swiftlabs.invoicing.common.Endpoints;
 import com.swiftlabs.invoicing.common.FormErrors;
 import com.swiftlabs.invoicing.common.Messages;
+import com.swiftlabs.invoicing.company.CompanySchemas;
+import com.swiftlabs.invoicing.company.CompanyWork;
 
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -23,11 +25,13 @@ public class SetupController {
 
     private final SetupService setupService;
     private final PasswordPolicy passwordPolicy;
+    private final CompanyWork companyWork;
     private final Messages messages;
 
-    public SetupController(SetupService setupService, PasswordPolicy passwordPolicy, Messages messages) {
+    public SetupController(SetupService setupService, PasswordPolicy passwordPolicy, CompanyWork companyWork, Messages messages) {
         this.setupService = setupService;
         this.passwordPolicy = passwordPolicy;
+        this.companyWork = companyWork;
         this.messages = messages;
     }
 
@@ -41,7 +45,8 @@ public class SetupController {
     public String complete(@Valid @ModelAttribute(CommonCodes.Attributes.SETUP) SetupForm form, BindingResult result, Model model) {
         if (!result.hasErrors()) {
             try {
-                setupService.complete(form, messages.current());
+                // Nobody is signed in yet: the details are those of the first company, named explicitly
+                companyWork.inCompany(CompanySchemas.FIRST, () -> setupService.complete(form, messages.current()));
                 return Endpoints.REDIRECT + Endpoints.LOGIN + "?setup";
             } catch (BusinessException ex) {
                 FormErrors.reject(result, ex);

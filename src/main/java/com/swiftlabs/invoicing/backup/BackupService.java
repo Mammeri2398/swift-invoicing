@@ -2,13 +2,12 @@ package com.swiftlabs.invoicing.backup;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.MessageProperties;
+import com.swiftlabs.invoicing.company.CompanyContext;
 import com.swiftlabs.invoicing.company.CompanyMigrations;
 
 import com.zaxxer.hikari.HikariDataSource;
-import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,7 +29,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
@@ -52,22 +53,21 @@ public class BackupService {
     private final BackupSettingsRepository settingsRepository;
     private final PostgresTools tools;
     private final BackupDatabase database;
-    private final ObjectProvider<Flyway> flyway;
     private final CompanyMigrations companyMigrations;
     private final DataSource dataSource;
     private final Clock clock;
     private final ReentrantLock running = new ReentrantLock();
 
-    private volatile Failure lastFailure;
+    /** The last failure of each company's backups (and of the shared data's), by owner. */
+    private final Map<String, Failure> lastFailures = new ConcurrentHashMap<>();
 
     public BackupService(BackupProperties properties, BackupSettingsRepository settingsRepository, PostgresTools tools,
-                         BackupDatabase database, ObjectProvider<Flyway> flyway, CompanyMigrations companyMigrations,
+                         BackupDatabase database, CompanyMigrations companyMigrations,
                          DataSource dataSource, Clock clock) {
         this.properties = properties;
         this.settingsRepository = settingsRepository;
         this.tools = tools;
         this.database = database;
-        this.flyway = flyway;
         this.companyMigrations = companyMigrations;
         this.dataSource = dataSource;
         this.clock = clock;
@@ -93,8 +93,21 @@ public class BackupService {
         return properties.enabled() && database.connection().isPresent();
     }
 
+    /** The last failure of the current company's backups, cleared by the next one that works. */
     public Failure lastFailure() {
-        return lastFailure;
+        return lastFailures.get(owner());
+    }
+
+    /**
+     * Whose backups: the current company's (its schema). Backups always belong to a company; the data shared by
+     * the companies has its own backups ({@link #backupShared}).
+     */
+    private static String owner() {
+        String schema = CompanyContext.currentSchema();
+        if (CompanyContext.currentCompanyId() == null) {
+            throw new IllegalStateException("Backups belong to a company: none is set (" + schema + ")");
+        }
+        return schema;
     }
 
     @Transactional(readOnly = true)
@@ -136,8 +149,17 @@ public class BackupService {
         log.info("Backup settings changed: folder {}, {} automatic backups kept", folder, keepCount);
     }
 
-    /** The backups of the folder, newest first. */
+    /** The current company's backups of the folder, newest first. */
     public List<BackupFile> list() {
+        return list(owner());
+    }
+
+    /** The backups of the data shared by the companies (users, profiles, licence), newest first. */
+    public List<BackupFile> listShared() {
+        return list(BackupFile.SHARED);
+    }
+
+    private List<BackupFile> list(String owner) {
         Path folder = directory();
         if (!Files.isDirectory(folder)) {
             return List.of();
@@ -145,7 +167,7 @@ public class BackupService {
         List<BackupFile> files = new ArrayList<>();
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(folder, "*" + BackupFile.EXTENSION)) {
             for (Path file : stream) {
-                BackupFile.of(file, Files.size(file)).ifPresent(files::add);
+                BackupFile.of(file, Files.size(file)).filter(backup -> backup.owner().equals(owner)).ifPresent(files::add);
             }
         } catch (IOException ex) {
             log.warn("Cannot list the backups of {}: {}", folder, ex.getMessage());
@@ -160,11 +182,20 @@ public class BackupService {
         return list().stream().findFirst();
     }
 
-    /** True when the newest automatic backup is old enough for the next one (or there is none). */
+    /** True when the current company's newest automatic backup is old enough for the next one (or there is none). */
     public boolean isAutomaticBackupDue() {
+        return isDue(list());
+    }
+
+    /** The same for the shared data. */
+    public boolean isSharedBackupDue() {
+        return isDue(listShared());
+    }
+
+    private boolean isDue(List<BackupFile> backups) {
         LocalDateTime now = LocalDateTime.now(clock);
         // An hour of slack: the scheduler checks every hour
-        return list().stream().filter(file -> file.kind() == BackupKind.AUTO).findFirst()
+        return backups.stream().filter(file -> file.kind() == BackupKind.AUTO).findFirst()
             .map(file -> !file.createdAt().plus(properties.every()).minusHours(1).isAfter(now))
             .orElse(true);
     }
@@ -175,9 +206,9 @@ public class BackupService {
             throw new BusinessException(MessageProperties.BACKUP_ERROR_BUSY);
         }
         try {
-            BackupFile file = backupLocked(kind);
+            BackupFile file = backupLocked(owner(), kind);
             if (kind == BackupKind.AUTO) {
-                deleteOldAutomaticBackups();
+                deleteOldAutomaticBackups(list(), settings().getKeepCount());
             }
             return file;
         } finally {
@@ -185,12 +216,30 @@ public class BackupService {
         }
     }
 
-    private BackupFile backupLocked(BackupKind kind) {
-        PostgresConnection target = requireAvailable();
+    /**
+     * Backs up the data shared by the companies: users, profiles, privileges, licence, the companies and their
+     * accesses. Kept in the default backup folder, as many as the configured number of automatic backups. Restored
+     * by hand only (pg_restore): a restore page would let one company's administrator change everyone's access.
+     */
+    public BackupFile backupShared() {
+        if (!running.tryLock()) {
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_BUSY);
+        }
+        try {
+            BackupFile file = backupLocked(BackupFile.SHARED, BackupKind.AUTO);
+            deleteOldAutomaticBackups(listShared(), properties.keep());
+            return file;
+        } finally {
+            running.unlock();
+        }
+    }
+
+    private BackupFile backupLocked(String owner, BackupKind kind) {
+        PostgresConnection target = requireAvailable().withSchema(BackupFile.SHARED.equals(owner) ? "public" : owner);
         try {
             Path folder = createdDirectory();
             LocalDateTime now = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
-            String name = BackupFile.nameFor(now, kind);
+            String name = BackupFile.nameFor(owner, now, kind);
             Path file = folder.resolve(name);
             Path partial = folder.resolve(name + ".part");
             try {
@@ -202,37 +251,45 @@ public class BackupService {
                 PostgresTools.deleteQuietly(partial);
             }
             BackupFile backup = BackupFile.of(file, Files.size(file)).orElseThrow();
-            lastFailure = null;
+            lastFailures.remove(owner);
             log.info("Backup made: {} ({})", file, backup.displaySize());
             return backup;
         } catch (BusinessException ex) {
-            lastFailure = new Failure(LocalDateTime.now(clock), ex);
-            log.error("Backup failed: {}", ex.getMessage());
+            lastFailures.put(owner, new Failure(LocalDateTime.now(clock), ex));
+            log.error("Backup of {} failed: {}", owner, ex.getMessage());
             throw ex;
         } catch (IOException ex) {
             BusinessException error = new BusinessException(MessageProperties.BACKUP_ERROR_FOLDER_INACCESSIBLE, String.valueOf(ex.getMessage()));
-            lastFailure = new Failure(LocalDateTime.now(clock), error);
-            log.error("Backup failed", ex);
+            lastFailures.put(owner, new Failure(LocalDateTime.now(clock), error));
+            log.error("Backup of {} failed", owner, ex);
             throw error;
         }
     }
 
-    private void deleteOldAutomaticBackups() {
-        int keep = settings().getKeepCount();
-        List<BackupFile> automatic = list().stream().filter(file -> file.kind() == BackupKind.AUTO).toList();
+    private void deleteOldAutomaticBackups(List<BackupFile> backups, int keep) {
+        List<BackupFile> automatic = backups.stream().filter(file -> file.kind() == BackupKind.AUTO).toList();
         for (BackupFile old : automatic.subList(Math.min(keep, automatic.size()), automatic.size())) {
             PostgresTools.deleteQuietly(directory().resolve(old.name()));
             log.info("Old automatic backup deleted: {}", old.name());
         }
     }
 
-    /** The file of a backup of the folder, for download or restore. */
+    /** The file of one of the current company's backups, for download or restore. */
     public Path file(String name) {
+        return file(name, owner());
+    }
+
+    /** The file of a backup of the shared data, for download. */
+    public Path sharedFile(String name) {
+        return file(name, BackupFile.SHARED);
+    }
+
+    private Path file(String name, String owner) {
         if (!BackupFile.isValidName(name)) {
             throw new BusinessException(MessageProperties.BACKUP_ERROR_NOT_FOUND);
         }
         Path file = directory().resolve(name);
-        if (!Files.isRegularFile(file)) {
+        if (!Files.isRegularFile(file) || BackupFile.of(file, 0).filter(backup -> backup.owner().equals(owner)).isEmpty()) {
             throw new BusinessException(MessageProperties.BACKUP_ERROR_NOT_FOUND);
         }
         return file;
@@ -259,7 +316,7 @@ public class BackupService {
         }
         try {
             Path folder = createdDirectory();
-            String name = BackupFile.nameFor(LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS), BackupKind.IMPORTED);
+            String name = BackupFile.nameFor(owner(), LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS), BackupKind.IMPORTED);
             Path partial = folder.resolve(name + ".part");
             Path file = folder.resolve(name);
             try {
@@ -277,23 +334,24 @@ public class BackupService {
     }
 
     /**
-     * Replaces all the data with the backup. A backup of the current data is made first, so a restore
-     * can always be undone. Afterwards the schema is brought up to date (a backup of an older version)
-     * and the database connections are renewed.
+     * Replaces the current company's data with the backup; the other companies and the shared data are not
+     * touched. A backup of the company's current data is made first, so a restore can always be undone.
+     * Afterwards its schema is brought up to date (a backup of an older version) and the database connections are
+     * renewed.
      */
     public BackupFile restore(String name) {
-        PostgresConnection target = requireAvailable();
+        String owner = owner();
+        PostgresConnection target = requireAvailable().withSchema(owner);
         Path file = file(name);
         if (!running.tryLock()) {
             throw new BusinessException(MessageProperties.BACKUP_ERROR_BUSY);
         }
         try {
             checkContents(file);
-            BackupFile safety = backupLocked(BackupKind.BEFORE_RESTORE);
-            log.warn("Restoring the backup {} (the data before it is in {})", name, safety.name());
+            BackupFile safety = backupLocked(owner, BackupKind.BEFORE_RESTORE);
+            log.warn("Restoring the backup {} of {} (the data before it is in {})", name, owner, safety.name());
             tools.restore(target, file, directory());
-            flyway.ifAvailable(Flyway::migrate);
-            companyMigrations.migrateAll();
+            companyMigrations.migrate(owner);
             if (dataSource instanceof HikariDataSource hikari && hikari.getHikariPoolMXBean() != null) {
                 hikari.getHikariPoolMXBean().softEvictConnections();
             }
@@ -304,16 +362,17 @@ public class BackupService {
         }
     }
 
-    /** Refuses files that are readable backups but not of this application (or of another schema). */
+    /**
+     * Refuses files that are readable backups but not of the current company: another company's, a backup of the
+     * shared data, or one made before the companies had their own schema.
+     */
     private void checkContents(Path file) {
-        String schema = database.connection().map(PostgresConnection::schema).orElse("public");
+        String schema = owner();
         List<String> contents = tools.contents(file);
-        // The invoices are in a company's schema, or in the shared one in a backup from before there were several companies
-        boolean ours = contents.stream().anyMatch(line -> line.contains(" TABLE " + schema + " flyway_schema_history "))
-            && contents.stream().anyMatch(line -> COMPANY_INVOICES.matcher(line).find()
-                || line.contains(" TABLE " + schema + " invoice "));
-        if (!ours) {
-            throw new BusinessException(MessageProperties.BACKUP_ERROR_NOT_OURS);
+        if (contents.stream().noneMatch(line -> line.contains(" TABLE " + schema + " invoice "))) {
+            throw new BusinessException(contents.stream().anyMatch(line -> COMPANY_INVOICES.matcher(line).find()
+                    || line.contains(" TABLE public invoice "))
+                ? MessageProperties.BACKUP_ERROR_OTHER_COMPANY : MessageProperties.BACKUP_ERROR_NOT_OURS);
         }
     }
 

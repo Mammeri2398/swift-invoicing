@@ -40,13 +40,10 @@ public class PostgresTools {
         return new DefaultMessageSourceResolvable(new String[] {code}, null, (String) null);
     }
 
-    /** Writes a backup of the application's data to {@code target}. */
+    /** Writes a backup of one schema (a company's, or the shared data) to {@code target}. */
     public void dump(PostgresConnection connection, Path target) {
         List<String> command = command("pg_dump", connection);
-        command.addAll(List.of("--format=custom", "--file=" + target));
-        if (!connection.isDefaultSchema()) {
-            command.add("--schema=" + connection.schema());
-        }
+        command.addAll(List.of("--format=custom", "--file=" + target, "--schema=" + connection.schema()));
         deleteQuietly(run(command, connection, target.getParent(), step(MessageProperties.BACKUP_TOOL_DUMP)));
     }
 
@@ -72,8 +69,11 @@ public class PostgresTools {
         Path script = workDirectory.resolve("restauration-" + System.nanoTime() + ".sql");
         Path restoreScript = workDirectory.resolve("restauration-" + System.nanoTime() + "-complete.sql");
         try {
+            // Only the schema restored: a backup of the whole database (made before the companies had their own
+            // backups) gives back that company alone
             deleteQuietly(run(new ArrayList<>(List.of(tool("pg_restore"), "--clean", "--if-exists", "--no-owner", "--no-privileges",
-                "--file=" + script, backup.toString())), null, workDirectory, step(MessageProperties.BACKUP_TOOL_READ)));
+                "--schema=" + connection.schema(), "--file=" + script, backup.toString())), null, workDirectory,
+                step(MessageProperties.BACKUP_TOOL_READ)));
             writeRestoreScript(connection.schema(), script, restoreScript);
             List<String> command = command("psql", connection);
             command.addAll(List.of("--no-psqlrc", "--quiet", "--single-transaction", "--set=ON_ERROR_STOP=1",
@@ -98,14 +98,8 @@ public class PostgresTools {
                   FOR r IN SELECT sequencename FROM pg_sequences WHERE schemaname = '%1$s' LOOP
                     EXECUTE format('DROP SEQUENCE IF EXISTS %%I.%%I CASCADE', '%1$s', r.sequencename);
                   END LOOP;
-                  %2$s
                 END $$;
-                """.formatted(schema, schema.equals("public")
-                    // The whole installation: the companies' schemas go too (a backup from before there were
-                    // several companies has its tables in public, Flyway moves them again)
-                    ? "FOR r IN SELECT nspname FROM pg_namespace WHERE nspname ~ '^company_[0-9]+$' LOOP "
-                        + "EXECUTE format('DROP SCHEMA %I CASCADE', r.nspname); END LOOP;"
-                    : ""));
+                """.formatted(schema));
             String line;
             int lineNumber = 0;
             while ((line = reader.readLine()) != null) {

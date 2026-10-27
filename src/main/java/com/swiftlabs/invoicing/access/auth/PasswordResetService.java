@@ -6,6 +6,11 @@ import com.swiftlabs.invoicing.access.user.UserService;
 import com.swiftlabs.invoicing.common.Endpoints;
 import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
+import com.swiftlabs.invoicing.company.Company;
+import com.swiftlabs.invoicing.company.CompanyAccess;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
+import com.swiftlabs.invoicing.company.CompanyWork;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 import com.swiftlabs.invoicing.mail.MailGateway;
 
@@ -13,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -26,6 +32,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -40,6 +47,8 @@ public class PasswordResetService {
     private final UserService userService;
     private final SessionService sessionService;
     private final MailGateway mailGateway;
+    private final CompanyAccessService accessService;
+    private final CompanyWork companyWork;
     private final Messages messages;
     private final String baseUrl;
     private final Duration validity;
@@ -53,6 +62,8 @@ public class PasswordResetService {
                                 SecurityProperties properties,
                                 Clock clock,
                                 MailGateway mailGateway,
+                                CompanyAccessService accessService,
+                                CompanyWork companyWork,
                                 Messages messages,
                                 @Value("${app.base-url:}") String baseUrl) {
         this.messages = messages;
@@ -63,6 +74,8 @@ public class PasswordResetService {
         this.validity = properties.resetTokenValidity();
         this.clock = clock;
         this.mailGateway = mailGateway;
+        this.accessService = accessService;
+        this.companyWork = companyWork;
         this.baseUrl = baseUrl;
     }
 
@@ -130,22 +143,43 @@ public class PasswordResetService {
         }
     }
 
+    /** The email settings of one company: whether they can send, from which address, with which server. */
+    private record Transport(boolean configured, String from, JavaMailSender sender) {
+    }
+
+    /**
+     * Each company has its own email settings: the link is sent with those of the company the user worked in last
+     * (else their first company, else the first company of the installation).
+     */
+    private Transport transportFor(User user) {
+        List<CompanyAccess> accesses = accessService.accessesOf(user.getId());
+        String schema = accesses.stream().map(CompanyAccess::getCompany)
+            .filter(company -> company.getId().equals(user.getLastCompanyId())).findFirst()
+            .or(() -> accesses.stream().map(CompanyAccess::getCompany).findFirst())
+            .map(Company::getSchemaName)
+            .orElse(CompanySchemas.FIRST);
+        return companyWork.inCompany(schema, () -> mailGateway.isServerConfigured()
+            ? new Transport(true, mailGateway.fromAddress(), mailGateway.sender())
+            : new Transport(false, null, null));
+    }
+
     private void sendLink(User user, String resetUrl) {
-        if (!mailGateway.isServerConfigured()) {
+        Transport transport = transportFor(user);
+        if (!transport.configured()) {
             // Development only: the link gives access to the account, never enable this in production
             log.warn("Mail disabled - password reset link for '{}': {}", user.getUsername(), resetUrl);
             return;
         }
         SimpleMailMessage message = new SimpleMailMessage();
-        if (!mailGateway.fromAddress().isBlank()) {
-            message.setFrom(mailGateway.fromAddress());
+        if (!transport.from().isBlank()) {
+            message.setFrom(transport.from());
         }
         message.setTo(user.getEmail());
         // In the user's own language, whatever the language of the page that asked for it
         message.setSubject(messages.get(user.getLanguage(), MessageProperties.AUTH_RESET_MAIL_SUBJECT));
         message.setText(messages.get(user.getLanguage(), MessageProperties.AUTH_RESET_MAIL_BODY, user.getUsername(), resetUrl, validity.toMinutes()));
         try {
-            mailGateway.sender().send(message);
+            transport.sender().send(message);
         } catch (Exception ex) {
             log.error("Could not send the password reset email to user '{}'", user.getUsername(), ex);
         }

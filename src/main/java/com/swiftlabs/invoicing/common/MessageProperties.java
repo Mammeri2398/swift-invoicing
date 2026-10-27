@@ -99,10 +99,12 @@ public final class MessageProperties {
     public static final String BACKUP_ERROR_NOT_ENABLED = "backup.error.notEnabled";
     public static final String BACKUP_ERROR_NOT_FOUND = "backup.error.notFound";
     public static final String BACKUP_ERROR_NOT_OURS = "backup.error.notOurs";
+    public static final String BACKUP_ERROR_OTHER_COMPANY = "backup.error.otherCompany";
     public static final String BACKUP_ERROR_TOOL_MISSING = "backup.error.toolMissing";
     public static final String BACKUP_ERROR_UNREADABLE_BACKUP = "backup.error.unreadableBackup";
     public static final String BACKUP_IMPORTED = "backup.imported";
     public static final String BACKUP_RESTORE_WORD = "backup.restore.word";
+    public static final String BACKUP_RESTORED = "backup.restored";
     public static final String BACKUP_RESTORE_CANCELLED = "backup.restoreCancelled";
     public static final String BACKUP_SETTINGS_SAVED = "backup.settingsSaved";
     public static final String BACKUP_SIZE_KB = "backup.size.kb";

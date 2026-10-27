@@ -185,6 +185,7 @@ public final class Endpoints {
     public static final String BACKUP_SETTINGS = "/settings";
     public static final String BACKUP_IMPORT = "/import";
     public static final String BACKUP_FILE = "/{name}";
+    public static final String BACKUP_SHARED_FILE = "/shared/{name}";
     public static final String BACKUP_DELETE = "/{name}/delete";
     public static final String BACKUP_RESTORE = "/{name}/restore";
 

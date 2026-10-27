@@ -65,10 +65,10 @@ class BackupTest {
         }
     }
 
-    /** What pg_restore --list prints for a backup of the application. */
+    /** What pg_restore --list prints for a backup of the first company. */
     private static final List<String> OUR_CONTENTS = List.of(
-        "215; 1259 16390 TABLE public flyway_schema_history invoicing",
-        "220; 1259 16400 TABLE public invoice invoicing");
+        "215; 1259 16390 TABLE company_1 flyway_schema_history invoicing",
+        "220; 1259 16400 TABLE company_1 invoice invoicing");
 
     @DynamicPropertySource
     static void folder(DynamicPropertyRegistry registry) {
@@ -105,7 +105,7 @@ class BackupTest {
     }
 
     private Path existing(LocalDateTime createdAt, BackupKind kind) throws IOException {
-        return Files.writeString(FOLDER.resolve(BackupFile.nameFor(createdAt, kind)), "PGDMP old");
+        return Files.writeString(FOLDER.resolve(BackupFile.nameFor(CompanySchemas.FIRST, createdAt, kind)), "PGDMP old");
     }
 
     @Test
@@ -116,7 +116,7 @@ class BackupTest {
         assertThat(FOLDER.resolve(backup.name())).hasContent("PGDMP fake backup");
         assertThat(backupService.list()).containsExactly(backup);
         // Written aside, then renamed: never a half-written backup in the list
-        verify(tools).dump(eq(connection), eq(FOLDER.resolve(backup.name() + ".part")));
+        verify(tools).dump(eq(connection.withSchema(CompanySchemas.FIRST)), eq(FOLDER.resolve(backup.name() + ".part")));
     }
 
     @Test
@@ -210,16 +210,50 @@ class BackupTest {
     }
 
     @Test
-    void restoringKeepsTheCurrentDataAsideThenSignsEveryoneOut() throws Exception {
+    void restoringKeepsTheCurrentDataAsideAndTouchesOnlyThisCompany() throws Exception {
         Path file = existing(LocalDateTime.now().minusDays(1), BackupKind.AUTO);
 
         mockMvc.perform(post("/settings/backups/" + file.getFileName() + "/restore").param("confirmation", "restaurer").with(admin()).with(csrf()))
-            .andExpect(redirectedUrl("/login?restored"));
+            .andExpect(redirectedUrl("/settings/backups"))
+            .andExpect(flash().attribute("success", containsString("restaurée pour cette société")));
 
-        verify(tools).restore(connection, file, FOLDER);
+        // The company's schema alone, after a backup of its current data
+        verify(tools).restore(connection.withSchema(CompanySchemas.FIRST), file, FOLDER);
+        verify(tools).dump(eq(connection.withSchema(CompanySchemas.FIRST)), any());
         assertThat(backupService.list()).extracting(BackupFile::kind).contains(BackupKind.BEFORE_RESTORE);
-        mockMvc.perform(get("/login").param("restored", ""))
-            .andExpect(content().string(containsString("Sauvegarde restaurée")));
+    }
+
+    @Test
+    void anotherCompanysBackupIsNeitherListedNorRestored() throws Exception {
+        Path theirs = Files.writeString(FOLDER.resolve(BackupFile.nameFor("company_2", LocalDateTime.now().minusDays(1), BackupKind.AUTO)),
+            "PGDMP theirs");
+        Path mine = existing(LocalDateTime.now().minusDays(2), BackupKind.AUTO);
+        assertThat(theirs.getFileName().toString()).startsWith("swift-invoicing-company_2-");
+        assertThat(mine.getFileName().toString()).doesNotContain("company_");
+
+        // A shared folder: each company sees its own backups only
+        assertThat(backupService.list()).extracting(BackupFile::name).containsExactly(mine.getFileName().toString());
+        mockMvc.perform(post("/settings/backups/" + theirs.getFileName() + "/restore").param("confirmation", "RESTAURER").with(admin()).with(csrf()))
+            .andExpect(flash().attribute("error", "Sauvegarde introuvable."));
+
+        // Imported from elsewhere: refused when it holds another company's data
+        when(tools.contents(any())).thenReturn(List.of("220; 1259 16400 TABLE company_2 invoice invoicing"));
+        mockMvc.perform(multipart("/settings/backups/import")
+                .file(new MockMultipartFile("file", "autre.dump", "application/octet-stream", "PGDMP other".getBytes()))
+                .with(admin()).with(csrf()))
+            .andExpect(flash().attribute("error", containsString("n'est pas celle de cette société")));
+        verify(tools, never()).restore(any(), any(), any());
+    }
+
+    @Test
+    void theDataSharedByTheCompaniesHasItsOwnBackups() {
+        BackupFile shared = backupService.backupShared();
+
+        assertThat(shared.name()).startsWith("swift-invoicing-commun-");
+        verify(tools).dump(eq(connection.withSchema("public")), any());
+        assertThat(backupService.listShared()).extracting(BackupFile::name).containsExactly(shared.name());
+        assertThat(backupService.list()).isEmpty();
+        assertThat(backupService.isSharedBackupDue()).isFalse();
     }
 
     @Test

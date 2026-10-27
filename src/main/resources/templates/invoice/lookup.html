@@ -22,26 +22,29 @@
     </form>
 
     <th:block th:if="${number != null}">
-        <div th:if="${verification == null}" class="alert alert-error">
+        <div th:if="${verifications.isEmpty()}" class="alert alert-error">
             <span class="icon">error</span>
             <span><th:block th:text="#{invoiceLookup.notFound}">Aucune facture ne porte le numéro</th:block> <strong th:text="${number}">FA-2026-0001</strong><th:block th:text="#{invoiceLookup.notFound.end}">.</th:block></span>
         </div>
-        <!-- Existence, status and date only: never the client or the amount -->
-        <section th:if="${verification != null}" class="card">
+        <!-- Existence, issuer, status and date only: never the client or the amount. Several companies of the
+             installation may use the same number: one card each, told apart by the issuer -->
+        <section th:each="verification : ${verifications}" class="card mb-4">
             <div class="card-header">
                 <h2 class="card-title"><span class="icon icon-fill text-tertiary">verified</span>
                     <th:block th:text="#{invoiceLookup.authentic(${@messages.label(verification.kind)})}">Facture authentique</th:block></h2>
                 <span th:replace="~{layout/fragments :: statusBadge(${verification.status})}"></span>
             </div>
             <dl class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div th:if="${verification.issuer != null}" class="sm:col-span-2"><dt class="hint" th:text="#{invoiceLookup.field.issuer}">Émetteur</dt>
+                    <dd class="font-semibold" th:text="${verification.issuer}">Atlas Services</dd></div>
                 <div><dt class="hint" th:text="#{invoiceLookup.field.number}">Numéro</dt><dd class="font-semibold" th:text="${verification.number}">FA-2026-0001</dd></div>
                 <div><dt class="hint" th:text="#{invoiceLookup.field.issueDate}">Date d'émission</dt><dd class="font-semibold" th:text="${#temporals.format(verification.issueDate, 'dd/MM/yyyy')}">01/01/2026</dd></div>
             </dl>
             <div th:if="${verification.status.name() == 'CANCELLED'}" class="card-body pt-0">
                 <p class="alert alert-warning"><span class="icon">warning</span><span th:text="#{invoiceLookup.cancelled}">Cette facture a été annulée par l'émetteur.</span></p>
             </div>
-            <div th:if="${invoiceId}" class="card-footer justify-end">
-                <a th:href="@{/invoices/{id}(id=${invoiceId})}" class="btn btn-ghost btn-sm"><th:block th:text="#{invoiceLookup.open}">Ouvrir la facture</th:block><span class="icon rtl-flip">arrow_forward</span></a>
+            <div th:if="${verification.invoiceId}" class="card-footer justify-end">
+                <a th:href="@{/invoices/{id}(id=${verification.invoiceId})}" class="btn btn-ghost btn-sm"><th:block th:text="#{invoiceLookup.open}">Ouvrir la facture</th:block><span class="icon rtl-flip">arrow_forward</span></a>
             </div>
         </section>
         <p class="hint mt-4" th:text="#{invoiceLookup.contact}">Pour toute question sur le contenu d'une facture, contactez directement son émetteur.</p>

@@ -32,6 +32,10 @@ public class CompanyWork {
     }
 
     public <T> T inCompany(String schema, Supplier<T> work) {
+        if (schema.equals(CompanyContext.currentSchema())) {
+            // Already there: the current session is the company's
+            return required.execute(status -> work.get());
+        }
         return CompanyContext.runAs(schema, () -> {
             if (TransactionSynchronizationManager.isActualTransactionActive()) {
                 // A transaction suspended by REQUIRES_NEW takes its session with it

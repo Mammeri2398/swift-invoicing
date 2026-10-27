@@ -9,8 +9,6 @@ import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.common.Privileges;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
@@ -18,7 +16,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -59,6 +56,7 @@ public class BackupController {
         model.addAttribute(CommonCodes.Attributes.ENABLED, backupService.isEnabled());
         model.addAttribute(CommonCodes.Attributes.AVAILABLE, backupService.isAvailable());
         model.addAttribute(CommonCodes.Attributes.BACKUPS, backupService.list());
+        model.addAttribute(CommonCodes.Attributes.SHARED_BACKUPS, backupService.listShared());
         model.addAttribute(CommonCodes.Attributes.DIRECTORY, backupService.directory().toString());
         model.addAttribute(CommonCodes.Attributes.SETTINGS, settings);
         model.addAttribute(CommonCodes.Attributes.FAILURE, backupService.lastFailure());
@@ -122,30 +120,36 @@ public class BackupController {
     }
 
     /**
-     * Restores a backup, then signs everyone out: the users, their profiles and passwords are those of
-     * the backup now.
+     * Restores one of the company's backups. Only this company's data changes: the other companies, the users and
+     * their passwords stay as they are, so nobody is signed out.
      */
     @PostMapping(Endpoints.BACKUP_RESTORE)
     public String restore(@PathVariable String name, @RequestParam(defaultValue = "") String confirmation,
-                          HttpServletRequest request, RedirectAttributes redirectAttributes) {
+                          RedirectAttributes redirectAttributes) {
         if (!isRestoreConfirmed(confirmation)) {
             redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.get(MessageProperties.BACKUP_RESTORE_CANCELLED,
                 messages.get(MessageProperties.BACKUP_RESTORE_WORD)));
             return Endpoints.REDIRECT + Endpoints.BACKUPS;
         }
         try {
-            backupService.restore(name);
+            BackupFile safety = backupService.restore(name);
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS,
+                messages.get(MessageProperties.BACKUP_RESTORED, name, safety.name()));
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));
-            return Endpoints.REDIRECT + Endpoints.BACKUPS;
         }
-        sessionService.expireAll();
-        SecurityContextHolder.clearContext();
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
-        return Endpoints.REDIRECT + Endpoints.LOGIN + "?restored";
+        return Endpoints.REDIRECT + Endpoints.BACKUPS;
+    }
+
+    /** A backup of the data shared by the companies (users, profiles, licence): for whoever manages the companies. */
+    @GetMapping(Endpoints.BACKUP_SHARED_FILE)
+    @PreAuthorize(Privileges.Has.MANAGE_BACKUPS + " and " + Privileges.Has.MANAGE_COMPANIES)
+    public ResponseEntity<Resource> downloadShared(@PathVariable String name) {
+        Path file = backupService.sharedFile(name);
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(name).build().toString())
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(new FileSystemResource(file));
     }
 
     /** The confirmation word of any language: the user may have switched language since the page was shown. */

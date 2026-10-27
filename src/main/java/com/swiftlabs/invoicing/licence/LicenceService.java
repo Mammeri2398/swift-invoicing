@@ -2,6 +2,8 @@ package com.swiftlabs.invoicing.licence;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.MessageProperties;
+import com.swiftlabs.invoicing.company.CompanySchemas;
+import com.swiftlabs.invoicing.company.CompanyWork;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import org.slf4j.Logger;
@@ -35,13 +37,16 @@ public class LicenceService {
 
     private final LicenceRecordRepository repository;
     private final IssuerService issuerService;
+    private final CompanyWork companyWork;
     private final LicenceProperties properties;
     private final Clock clock;
     private final PublicKey publicKey;
 
-    public LicenceService(LicenceRecordRepository repository, IssuerService issuerService, LicenceProperties properties, Clock clock) {
+    public LicenceService(LicenceRecordRepository repository, IssuerService issuerService, CompanyWork companyWork,
+                          LicenceProperties properties, Clock clock) {
         this.repository = repository;
         this.issuerService = issuerService;
+        this.companyWork = companyWork;
         this.properties = properties;
         this.clock = clock;
         this.publicKey = properties.required() ? LicenceCodec.publicKey(publicKeyText(properties)) : null;
@@ -153,12 +158,14 @@ public class LicenceService {
         return now;
     }
 
-    /** A licence is for one company: its NIF must be the one of the issuer profile. */
+    /**
+     * A licence is for the business that bought it: its NIF must be the one of the first company of the
+     * installation (the others are added under its licence), whichever company the user works in.
+     */
     private InvalidLicenceException nifMismatch(Licence licence) {
-        String issuerNif = digits(issuerService.getIssuer().getNif());
-        return digits(licence.nif()).equals(issuerNif) ? null
-            : new InvalidLicenceException(MessageProperties.LICENCE_ERROR_NIF_MISMATCH, licence.nif(), licence.company(),
-                issuerService.getIssuer().getNif());
+        String firstCompanyNif = companyWork.inCompany(CompanySchemas.FIRST, () -> issuerService.getIssuer().getNif());
+        return digits(licence.nif()).equals(digits(firstCompanyNif)) ? null
+            : new InvalidLicenceException(MessageProperties.LICENCE_ERROR_NIF_MISMATCH, licence.nif(), licence.company(), firstCompanyNif);
     }
 
     private static String digits(String value) {

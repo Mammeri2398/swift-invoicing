@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.company;
 
 import org.hibernate.cfg.MultiTenancySettings;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.flyway.autoconfigure.FlywayMigrationStrategy;
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -13,7 +14,10 @@ import javax.sql.DataSource;
 public class MultiCompanyConfig {
 
     @Bean
-    public CompanyMigrations companyMigrations(DataSource dataSource) {
+    public CompanyMigrations companyMigrations(DataSource dataSource,
+                                               @Value("${app.companies.default-schema:}") String defaultSchema) {
+        // Where work without a company goes: nowhere in the application, the first company in the tests
+        CompanyContext.setFallback(defaultSchema);
         return new CompanyMigrations(dataSource);
     }
 

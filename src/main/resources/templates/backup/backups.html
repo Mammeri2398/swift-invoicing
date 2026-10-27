@@ -87,6 +87,20 @@
         </div>
     </form>
 
+    <!--/* Users, profiles, licence: for whoever manages the companies (they hold every account) */-->
+    <section th:if="${available and currentUser != null and currentUser.can('MANAGE_COMPANIES')}" class="card mb-6">
+        <div class="card-header"><h2 class="card-title"><span class="icon">group</span><th:block th:text="#{backup.shared.title}">Données communes aux sociétés</th:block></h2></div>
+        <p class="card-body hint" th:text="#{backup.shared.text}">Utilisateurs, profils, licence.</p>
+        <p th:if="${sharedBackups.isEmpty()}" class="card-body text-on-surface-variant" th:text="#{backup.shared.empty}">Aucune sauvegarde.</p>
+        <ul th:unless="${sharedBackups.isEmpty()}" class="divide-y divide-surface-container">
+            <li th:each="b : ${sharedBackups}" class="flex flex-wrap items-center justify-between gap-3 px-6 py-3">
+                <span class="font-mono text-body-sm" th:text="${b.name}">swift-invoicing-commun-2026-10-27-120000-auto.dump</span>
+                <a th:href="@{/settings/backups/shared/{name}(name=${b.name})}" class="btn-icon" th:title="#{action.download}" th:aria-label="#{action.download}">
+                    <span class="icon">download</span></a>
+            </li>
+        </ul>
+    </section>
+
     <form th:if="${available}" th:action="@{/settings/backups/import}" method="post" enctype="multipart/form-data" class="card">
         <div class="card-header"><h2 class="card-title"><span class="icon">upload</span><th:block th:text="#{backup.import.title}">Importer une sauvegarde</th:block></h2></div>
         <div class="card-body flex flex-col gap-3">

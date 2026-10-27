@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -106,6 +107,11 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
         + " AND i.issueDate BETWEEN :from AND :to ORDER BY i.issueDate, i.id")
     List<Invoice> findForPeriod(@Param("kinds") List<DocumentKind> kinds, @Param("statuses") List<InvoiceStatus> statuses,
                                 @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /** Invoices issued then cancelled during a period (cancelledAt in [from, to[), for the accounting reversal entries. */
+    @Query("SELECT i FROM Invoice i LEFT JOIN FETCH i.lines LEFT JOIN FETCH i.client WHERE i.kind = 'INVOICE' AND i.status = 'CANCELLED'"
+        + " AND i.invoiceNumber IS NOT NULL AND i.cancelledAt >= :from AND i.cancelledAt < :to ORDER BY i.cancelledAt, i.id")
+    List<Invoice> findCancelledBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @Query("SELECT DISTINCT i.invoiceYear FROM Invoice i WHERE i.invoiceYear IS NOT NULL ORDER BY i.invoiceYear DESC")
     List<Integer> findInvoiceYears();

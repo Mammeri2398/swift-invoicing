@@ -135,6 +135,12 @@ public final class Endpoints {
     public static final String VAT = "/vat";
     public static final String VAT_EXPORT = "/export";
 
+    // ---- Comptabilité (export for the accountant) -------------------------------------------------------------------
+    public static final String ACCOUNTING = "/accounting";
+    public static final String ACCOUNTING_XLSX = "/export/xlsx";
+    public static final String ACCOUNTING_CSV = "/export/csv";
+    public static final String ACCOUNTING_ACCOUNTS = "/accounts";
+
     // ---- Help -------------------------------------------------------------------------------------------------------
     public static final String HELP = "/help";
 

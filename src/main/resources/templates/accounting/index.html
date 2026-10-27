@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(#{accounting.title}, ~{::main}, ~{})}">
+<body>
+<main class="page" th:with="j=${journal}, fromIso=${j.from.toString()}, toIso=${j.to.toString()}">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow" th:text="#{accounting.eyebrow}">Pour le comptable</p>
+            <h1 class="page-title" th:text="#{accounting.title}">Comptabilité</h1>
+            <p class="page-subtitle" th:text="#{accounting.subtitle}">Les écritures de la période, prêtes à saisir ou à importer.</p>
+        </div>
+    </div>
+
+    <form th:action="@{/accounting}" method="get" class="card mb-6">
+        <div class="card-body flex flex-col gap-4">
+            <div class="flex flex-wrap gap-2">
+                <a th:each="p : ${periods}" th:href="@{/accounting(from=${p.from}, to=${p.to})}" class="btn btn-sm"
+                   th:classappend="${p.from == j.from and p.to == j.to} ? 'btn-primary' : 'btn-secondary'"
+                   th:text="#{${p.labelKey}}">Mois précédent</a>
+            </div>
+            <div class="flex flex-wrap items-end gap-4">
+                <div class="field">
+                    <label class="label" for="from" th:text="#{accounting.from}">Du</label>
+                    <input class="input" type="date" id="from" name="from" th:value="${fromIso}" required/>
+                </div>
+                <div class="field">
+                    <label class="label" for="to" th:text="#{accounting.to}">Au</label>
+                    <input class="input" type="date" id="to" name="to" th:value="${toIso}" required/>
+                </div>
+                <button type="submit" class="btn btn-secondary"><span class="icon">refresh</span><th:block th:text="#{accounting.show}">Afficher</th:block></button>
+                <div class="ms-auto flex flex-wrap gap-2">
+                    <a th:href="@{/accounting/export/csv(from=${fromIso}, to=${toIso})}" class="btn btn-secondary"
+                       th:title="#{accounting.csv.hint}"><span class="icon">data_object</span><th:block th:text="#{accounting.csv}">CSV</th:block></a>
+                    <a th:href="@{/accounting/export/xlsx(from=${fromIso}, to=${toIso})}" class="btn btn-primary">
+                        <span class="icon">download</span><th:block th:text="#{accounting.xlsx}">Excel</th:block></a>
+                </div>
+            </div>
+        </div>
+        <p class="card-footer hint" th:text="#{accounting.export.hint}">Le fichier Excel contient les écritures, les ventes, les encaissements et les comptes utilisés.</p>
+    </form>
+
+    <section class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="stat">
+            <div class="flex items-center justify-between">
+                <span class="stat-label" th:text="#{accounting.stat.sales}">Ventes nettes</span>
+                <span class="stat-icon bg-primary-fixed/40 text-primary"><span class="icon">receipt_long</span></span>
+            </div>
+            <div>
+                <p class="stat-value" th:text="${amountUtils.format(j.salesTotal())}">0,00 DA</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="#{accounting.stat.documents(${j.sales.size()})}">0 document</p>
+            </div>
+        </div>
+        <div class="stat">
+            <div class="flex items-center justify-between">
+                <span class="stat-label" th:text="#{accounting.stat.receipts}">Encaissements</span>
+                <span class="stat-icon bg-secondary-container/40 text-secondary"><span class="icon">payments</span></span>
+            </div>
+            <div>
+                <p class="stat-value" th:text="${amountUtils.format(j.receiptsTotal())}">0,00 DA</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="#{accounting.stat.payments(${j.receipts.size()})}">0 paiement</p>
+            </div>
+        </div>
+        <div class="stat">
+            <div class="flex items-center justify-between">
+                <span class="stat-label" th:text="#{accounting.stat.entries}">Lignes d'écritures</span>
+                <span class="stat-icon bg-surface-container-high text-outline"><span class="icon">list_alt</span></span>
+            </div>
+            <div>
+                <p class="stat-value" th:text="${j.entries.size()}">0</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="#{accounting.period(${#temporals.format(j.from, 'dd/MM/yyyy')}, ${#temporals.format(j.to, 'dd/MM/yyyy')})}">Du 01/09/2026 au 30/09/2026</p>
+            </div>
+        </div>
+        <div class="stat">
+            <div class="flex items-center justify-between">
+                <span class="stat-label" th:text="#{accounting.stat.balance}">Débit = crédit</span>
+                <span class="stat-icon" th:classappend="${j.balanced} ? 'bg-primary-fixed/40 text-primary' : 'bg-error-container text-error'">
+                    <span class="icon" th:text="${j.balanced} ? 'check_circle' : 'error'">check_circle</span></span>
+            </div>
+            <div>
+                <p class="stat-value" th:text="${amountUtils.format(j.totalDebit())}">0,00 DA</p>
+                <p class="text-body-sm text-on-surface-variant" th:text="${j.balanced} ? #{accounting.stat.balanced} : #{accounting.stat.unbalanced}">Écritures équilibrées</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="card mb-6">
+        <div class="card-header"><h2 class="card-title"><span class="icon">menu_book</span><span th:text="#{accounting.entries.title}">Écritures</span></h2></div>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{accounting.col.journal}">Journal</th>
+                    <th scope="col" th:text="#{accounting.col.date}">Date</th>
+                    <th scope="col" th:text="#{accounting.col.piece}">Pièce</th>
+                    <th scope="col" th:text="#{accounting.col.account}">Compte</th>
+                    <th scope="col" th:text="#{accounting.col.label}">Libellé</th>
+                    <th scope="col" class="num" th:text="#{accounting.col.debit}">Débit</th>
+                    <th scope="col" class="num" th:text="#{accounting.col.credit}">Crédit</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="e, it : ${j.entries}" th:if="${it.index < previewLimit}">
+                    <td><span class="badge badge-code" th:text="${e.journal}">VT</span></td>
+                    <td class="tabular-nums whitespace-nowrap" th:text="${#temporals.format(e.date, 'dd/MM/yyyy')}">01/09/2026</td>
+                    <td class="whitespace-nowrap"><a th:href="@{/invoices/{id}(id=${e.invoiceId})}" class="font-mono hover:text-primary" th:text="${e.piece}">FA-2026-0001</a></td>
+                    <td class="font-mono" th:text="${e.account}">411</td>
+                    <td th:text="${e.label}">Facture FA-2026-0001 – Client</td>
+                    <td class="num" th:text="${e.debit.signum() == 0} ? '' : ${amountUtils.format(e.debit)}">0,00 DA</td>
+                    <td class="num" th:text="${e.credit.signum() == 0} ? '' : ${amountUtils.format(e.credit)}">0,00 DA</td>
+                </tr>
+                <tr th:if="${j.empty}">
+                    <td colspan="7" class="table-empty" th:text="#{accounting.empty}">Aucune écriture sur cette période.</td>
+                </tr>
+                </tbody>
+                <tfoot th:unless="${j.empty}">
+                <tr class="font-semibold">
+                    <td colspan="5" th:text="#{accounting.total}">Total</td>
+                    <td class="num" th:text="${amountUtils.format(j.totalDebit())}">0,00 DA</td>
+                    <td class="num" th:text="${amountUtils.format(j.totalCredit())}">0,00 DA</td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+        <p th:if="${j.entries.size() > previewLimit}" class="card-footer hint"
+           th:text="#{accounting.preview(${previewLimit}, ${j.entries.size()})}">Les 300 premières lignes sont affichées ; les fichiers contiennent tout.</p>
+    </section>
+
+    <div class="alert alert-info mb-6">
+        <span class="icon">gavel</span><span th:text="#{accounting.notice}">Comptes du SCF proposés par défaut : faites-les valider par votre comptable.</span>
+    </div>
+
+    <!--/* The accounts: open after a failed save; read only without the right to change the company settings */-->
+    <details class="card" th:object="${accounts}" th:open="${#fields.hasAnyErrors()}">
+        <summary class="card-header cursor-pointer list-none">
+            <h2 class="card-title"><span class="icon">account_tree</span><span th:text="#{accounting.accounts.title}">Comptes et journaux</span></h2>
+            <span class="icon text-on-surface-variant">expand_more</span>
+        </summary>
+        <form th:action="@{/accounting/accounts(from=${fromIso}, to=${toIso})}" method="post" th:object="${accounts}">
+            <div class="card-body flex flex-col gap-5">
+                <div th:replace="~{layout/fragments :: formErrors}"></div>
+                <p class="hint" th:text="#{accounting.accounts.hint}">Numéros de compte en chiffres ; codes journal en lettres.</p>
+                <div class="form-grid">
+                    <div class="field" th:each="f : ${ {'customerAccount', 'salesAccount', 'vatAccount', 'stampAccount', 'bankAccount', 'cashAccount'} }">
+                        <label class="label" th:for="${f}" th:text="#{${'accounting.form.' + f}}">Clients</label>
+                        <input class="input font-mono" type="text" inputmode="numeric" maxlength="20" required th:field="*{__${f}__}"
+                               th:errorclass="input-invalid" th:disabled="${!canEdit}"/>
+                        <p th:replace="~{layout/fragments :: fieldError(${f})}"></p>
+                    </div>
+                    <div class="field" th:each="f : ${ {'salesJournal', 'bankJournal', 'cashJournal'} }">
+                        <label class="label" th:for="${f}" th:text="#{${'accounting.form.' + f}}">Journal des ventes</label>
+                        <input class="input font-mono uppercase" type="text" maxlength="10" required th:field="*{__${f}__}"
+                               th:errorclass="input-invalid" th:disabled="${!canEdit}"/>
+                        <p th:replace="~{layout/fragments :: fieldError(${f})}"></p>
+                    </div>
+                </div>
+            </div>
+            <div th:if="${canEdit}" class="card-footer justify-end">
+                <button type="submit" class="btn btn-primary"><span class="icon">save</span><th:block th:text="#{action.save}">Enregistrer</th:block></button>
+            </div>
+        </form>
+    </details>
+</main>
+</body>
+</html>

@@ -17,6 +17,57 @@ public final class MessageProperties {
     public static final String ACCOUNT_PASSWORD_MISMATCH = "account.password.mismatch";
     public static final String ACCOUNT_SAVED = "account.saved";
 
+    // ---- accounting ------------------------------------------------------------------------------------------
+    public static final String ACCOUNTING_ACCOUNTS_SAVED = "accounting.accounts.saved";
+    public static final String ACCOUNTING_ACCOUNT_BANK = "accounting.account.bank";
+    public static final String ACCOUNTING_ACCOUNT_CASH = "accounting.account.cash";
+    public static final String ACCOUNTING_ACCOUNT_CUSTOMER = "accounting.account.customer";
+    public static final String ACCOUNTING_ACCOUNT_SALES = "accounting.account.sales";
+    public static final String ACCOUNTING_ACCOUNT_STAMP = "accounting.account.stamp";
+    public static final String ACCOUNTING_ACCOUNT_VAT = "accounting.account.vat";
+    public static final String ACCOUNTING_COL_ACCOUNT = "accounting.col.account";
+    public static final String ACCOUNTING_COL_AMOUNT = "accounting.col.amount";
+    public static final String ACCOUNTING_COL_CLIENT = "accounting.col.client";
+    public static final String ACCOUNTING_COL_CREDIT = "accounting.col.credit";
+    public static final String ACCOUNTING_COL_DATE = "accounting.col.date";
+    public static final String ACCOUNTING_COL_DEBIT = "accounting.col.debit";
+    public static final String ACCOUNTING_COL_EXCL_VAT = "accounting.col.exclVat";
+    public static final String ACCOUNTING_COL_JOURNAL = "accounting.col.journal";
+    public static final String ACCOUNTING_COL_KIND = "accounting.col.kind";
+    public static final String ACCOUNTING_COL_LABEL = "accounting.col.label";
+    public static final String ACCOUNTING_COL_METHOD = "accounting.col.method";
+    public static final String ACCOUNTING_COL_NIF = "accounting.col.nif";
+    public static final String ACCOUNTING_COL_NUMBER = "accounting.col.number";
+    public static final String ACCOUNTING_COL_ORIGINAL = "accounting.col.original";
+    public static final String ACCOUNTING_COL_PARTY = "accounting.col.party";
+    public static final String ACCOUNTING_COL_PIECE = "accounting.col.piece";
+    public static final String ACCOUNTING_COL_REFERENCE = "accounting.col.reference";
+    public static final String ACCOUNTING_COL_STAMP = "accounting.col.stamp";
+    public static final String ACCOUNTING_COL_TOTAL = "accounting.col.total";
+    public static final String ACCOUNTING_COL_VAT = "accounting.col.vat";
+    public static final String ACCOUNTING_EXPORT_FILE = "accounting.export.file";
+    public static final String ACCOUNTING_EXPORT_SHEET_ACCOUNTS = "accounting.export.sheet.accounts";
+    public static final String ACCOUNTING_EXPORT_SHEET_ENTRIES = "accounting.export.sheet.entries";
+    public static final String ACCOUNTING_EXPORT_SHEET_RECEIPTS = "accounting.export.sheet.receipts";
+    public static final String ACCOUNTING_EXPORT_SHEET_SALES = "accounting.export.sheet.sales";
+    public static final String ACCOUNTING_JOURNAL_BANK = "accounting.journal.bank";
+    public static final String ACCOUNTING_JOURNAL_CASH = "accounting.journal.cash";
+    public static final String ACCOUNTING_JOURNAL_SALES = "accounting.journal.sales";
+    public static final String ACCOUNTING_KIND_CANCELLATION = "accounting.kind.cancellation";
+    public static final String ACCOUNTING_LABEL_CANCELLATION = "accounting.label.cancellation";
+    public static final String ACCOUNTING_LABEL_CREDIT_NOTE = "accounting.label.creditNote";
+    public static final String ACCOUNTING_LABEL_INVOICE = "accounting.label.invoice";
+    public static final String ACCOUNTING_LABEL_PAYMENT = "accounting.label.payment";
+    public static final String ACCOUNTING_LABEL_STAMP = "accounting.label.stamp";
+    public static final String ACCOUNTING_LABEL_VAT = "accounting.label.vat";
+    public static final String ACCOUNTING_PERIOD = "accounting.period";
+    public static final String ACCOUNTING_PERIOD_CURRENT_MONTH = "accounting.period.currentMonth";
+    public static final String ACCOUNTING_PERIOD_CURRENT_YEAR = "accounting.period.currentYear";
+    public static final String ACCOUNTING_PERIOD_PREVIOUS_MONTH = "accounting.period.previousMonth";
+    public static final String ACCOUNTING_PERIOD_PREVIOUS_QUARTER = "accounting.period.previousQuarter";
+    public static final String ACCOUNTING_PERIOD_PREVIOUS_YEAR = "accounting.period.previousYear";
+    public static final String ACCOUNTING_TOTAL = "accounting.total";
+
     // ---- auth ------------------------------------------------------------------------------------------------
     public static final String AUTH_FORGOT_SENT = "auth.forgot.sent";
     public static final String AUTH_LOGIN_ERROR = "auth.login.error";

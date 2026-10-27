@@ -17,6 +17,7 @@ public final class CommonCodes {
         }
 
         public static final String ACCOUNT = "account";
+        public static final String ACCOUNTS = "accounts";
         public static final String ACTIVE_USERS = "activeUsers";
         public static final String ALL_PRIVILEGES = "allPrivileges";
         public static final String AMOUNT_IN_WORDS = "amountInWords";
@@ -58,6 +59,7 @@ public final class CommonCodes {
         public static final String ISSUER = "issuer";
         public static final String ITEM = "item";
         public static final String ITEMS = "items";
+        public static final String JOURNAL = "journal";
         public static final String LANGUAGES = "languages";
         public static final String LICENCE = "licence";
         public static final String LINK_VALIDITY_MINUTES = "linkValidityMinutes";
@@ -84,6 +86,8 @@ public final class CommonCodes {
         public static final String PAYMENT_FORM = "paymentForm";
         public static final String PAYMENT_METHODS = "paymentMethods";
         public static final String PAYMENT_TERMS = "paymentTerms";
+        public static final String PERIODS = "periods";
+        public static final String PREVIEW_LIMIT = "previewLimit";
         public static final String PRIVILEGE = "privilege";
         public static final String PRIVILEGES = "privileges";
         public static final String PROFILE = "profile";
@@ -140,6 +144,9 @@ public final class CommonCodes {
         public static final String ACCESS_TWO_FACTOR_VERIFY = "access/two-factor-verify";
         public static final String ACCESS_USER_FORM = "access/user/form";
         public static final String ACCESS_USER_LIST = "access/user/list";
+
+        // accounting
+        public static final String ACCOUNTING_INDEX = "accounting/index";
 
         // backup
         public static final String BACKUP_BACKUPS = "backup/backups";

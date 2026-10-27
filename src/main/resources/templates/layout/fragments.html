@@ -20,8 +20,9 @@
                 <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-on-primary shadow-sm">
                     <span class="icon">receipt_long</span>
                 </span>
-                <!--/* The name beside the logo: not between xl and 2xl, where the full navigation needs the room */-->
-                <span class="hidden flex-col leading-tight sm:flex xl:hidden 2xl:flex">
+                <!--/* The name beside the logo: not with the full navigation (xl and up), which needs the room: the bar
+                       never grows beyond max-w-7xl, however wide the screen */-->
+                <span class="hidden flex-col leading-tight sm:flex xl:hidden">
                     <span class="text-title-sm text-primary">Swift Invoicing</span>
                     <span class="text-label-sm uppercase tracking-wider text-on-surface-variant"
                           th:text="${companyType?.company} ? #{app.tagline.company} : #{app.tagline.autoEntrepreneur}">Auto-entrepreneur ANAE</span>

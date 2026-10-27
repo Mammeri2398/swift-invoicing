@@ -2,11 +2,11 @@ package com.swiftlabs.invoicing.access.profile;
 
 import com.swiftlabs.invoicing.access.privilege.Privilege;
 import com.swiftlabs.invoicing.access.privilege.PrivilegeRepository;
-import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
+import com.swiftlabs.invoicing.company.CompanyAccessRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,13 +25,13 @@ public class ProfileService {
 
     private final ProfileRepository profileRepository;
     private final PrivilegeRepository privilegeRepository;
-    private final UserRepository userRepository;
+    private final CompanyAccessRepository accessRepository;
 
     public ProfileService(ProfileRepository profileRepository, PrivilegeRepository privilegeRepository,
-                          UserRepository userRepository) {
+                          CompanyAccessRepository accessRepository) {
         this.profileRepository = profileRepository;
         this.privilegeRepository = privilegeRepository;
-        this.userRepository = userRepository;
+        this.accessRepository = accessRepository;
     }
 
     public List<Profile> findAll() {
@@ -86,7 +86,7 @@ public class ProfileService {
         boolean hadIt = profile.getPrivileges().stream().anyMatch(p -> MANAGE_PROFILES.equals(p.getCode()));
         boolean keepsIt = newPrivileges.stream().anyMatch(p -> MANAGE_PROFILES.equals(p.getCode()));
         return hadIt && !keepsIt
-            && !userRepository.existsEnabledUserWithPrivilegeOutsideProfile(MANAGE_PROFILES, profile.getId());
+            && !accessRepository.existsEnabledUserWithPrivilegeOutsideProfile(MANAGE_PROFILES, profile.getId());
     }
 
     @Transactional

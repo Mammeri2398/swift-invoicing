@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.access.user;
 
 import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
 import com.swiftlabs.invoicing.access.auth.SessionService;
+import com.swiftlabs.invoicing.access.profile.Profile;
 import com.swiftlabs.invoicing.access.profile.ProfileService;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorService;
 import com.swiftlabs.invoicing.common.BusinessException;
@@ -13,6 +14,8 @@ import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanyContext;
 
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,11 +42,13 @@ public class UserController {
     private final ProfileService profileService;
     private final SessionService sessionService;
     private final TwoFactorService twoFactorService;
+    private final CompanyAccessService accessService;
     private final Messages messages;
     private final Clock clock;
 
     public UserController(UserService userService, ProfileService profileService, SessionService sessionService,
-                          TwoFactorService twoFactorService, Messages messages, Clock clock) {
+                          TwoFactorService twoFactorService, CompanyAccessService accessService, Messages messages, Clock clock) {
+        this.accessService = accessService;
         this.messages = messages;
         this.userService = userService;
         this.profileService = profileService;
@@ -55,6 +60,8 @@ public class UserController {
     @GetMapping
     public String list(Model model) {
         model.addAttribute(CommonCodes.Attributes.USERS, userService.findAll());
+        // The profile of each user in the current company (none: no access to it)
+        model.addAttribute(CommonCodes.Attributes.PROFILE_NAMES, accessService.profileNamesIn(CompanyContext.currentCompanyId()));
         model.addAttribute(CommonCodes.Attributes.NOW, LocalDateTime.now(clock));
         return CommonCodes.Views.ACCESS_USER_LIST;
     }
@@ -72,7 +79,8 @@ public class UserController {
     public String editForm(@PathVariable Long id, Model model) {
         User user = userService.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.USER_ERROR_NOT_FOUND));
-        model.addAttribute(CommonCodes.Attributes.USER, UserForm.from(user));
+        Long profileId = accessService.profileIn(user.getId(), CompanyContext.currentCompanyId()).map(Profile::getId).orElse(null);
+        model.addAttribute(CommonCodes.Attributes.USER, UserForm.from(user, profileId));
         return formView(model);
     }
 

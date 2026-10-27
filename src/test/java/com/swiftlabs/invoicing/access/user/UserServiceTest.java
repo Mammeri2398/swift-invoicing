@@ -1,6 +1,8 @@
 package com.swiftlabs.invoicing.access.user;
 
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,9 @@ class UserServiceTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CompanyAccessService accessService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -76,14 +81,14 @@ class UserServiceTest {
         edit.setId(created.getId());
         assertThatThrownBy(() -> userService.update(edit, null))
             .isInstanceOf(BusinessException.class);
-        assertThat(userRepository.findById(created.getId()).orElseThrow().getProfile().getId()).isEqualTo(1L);
+        assertThat(accessService.profileIn(created.getId(), CompanySchemas.FIRST_ID).orElseThrow().getId()).isEqualTo(1L);
     }
 
     @Test
     void administratorCannotDisableOrDeleteTheirOwnAccount() {
         User me = userService.create(newUser("selfadmin", 1L)).user();
 
-        UserForm disableMe = UserForm.from(me);
+        UserForm disableMe = UserForm.from(me, 1L);
         disableMe.setEnabled(false);
         assertThatThrownBy(() -> userService.update(disableMe, me.getId()))
             .hasMessage("Vous ne pouvez pas désactiver votre propre compte.");
@@ -134,9 +139,11 @@ class UserServiceTest {
     }
 
     @Test
-    void databaseRejectsUserWithoutProfile() {
-        assertThatThrownBy(() -> jdbcTemplate.update(
-                "INSERT INTO app_user (username, email, password) VALUES ('rawsql', 'rawsql@example.test', 'x')"))
+    void databaseRejectsAnAccessWithoutProfile() {
+        User created = userService.create(newUser("noprofile", 1L)).user();
+        userRepository.flush();
+        // The profile is per company (user_company): an access always has one
+        assertThatThrownBy(() -> jdbcTemplate.update("UPDATE public.user_company SET profile_id = NULL WHERE user_id = ?", created.getId()))
             .isInstanceOf(DataIntegrityViolationException.class);
     }
 }

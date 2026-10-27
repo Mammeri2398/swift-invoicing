@@ -45,7 +45,9 @@
                              th:text="${user.fullName}">Karim Benali</div>
                     </td>
                     <td class="text-on-surface-variant" th:text="${user.email}">admin@exemple.dz</td>
-                    <td><span class="badge badge-info" th:text="${user.profile.name}">Administrateur</span></td>
+                    <!--/* The profile in the current company; none: no access to it */-->
+                    <td><span th:if="${profileNames[user.id] != null}" class="badge badge-info" th:text="${profileNames[user.id]}">Administrateur</span>
+                        <span th:if="${profileNames[user.id] == null}" class="badge badge-neutral" th:text="#{user.noAccess}">Pas d'accès</span></td>
                     <td class="text-on-surface-variant" th:lang="${user.language.code}" th:text="${user.language.nativeName}">Français</td>
                     <td>
                         <div class="flex flex-wrap gap-1">

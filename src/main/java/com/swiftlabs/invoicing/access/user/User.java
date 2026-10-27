@@ -1,6 +1,5 @@
 package com.swiftlabs.invoicing.access.user;
 
-import com.swiftlabs.invoicing.access.profile.Profile;
 import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import com.swiftlabs.invoicing.common.Language;
@@ -10,8 +9,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.Duration;
@@ -41,9 +38,9 @@ public class User {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "profile_id", nullable = false)
-    private Profile profile;
+    /** The company worked in last, opened again at the next login (the profile is per company: CompanyAccess). */
+    @Column(name = "last_company_id")
+    private Long lastCompanyId;
 
     @Column(name = "failed_login_attempts", nullable = false)
     private int failedLoginAttempts;
@@ -134,12 +131,12 @@ public class User {
         this.createdAt = createdAt;
     }
 
-    public Profile getProfile() {
-        return profile;
+    public Long getLastCompanyId() {
+        return lastCompanyId;
     }
 
-    public void setProfile(Profile profile) {
-        this.profile = profile;
+    public void setLastCompanyId(Long lastCompanyId) {
+        this.lastCompanyId = lastCompanyId;
     }
 
     public int getFailedLoginAttempts() {

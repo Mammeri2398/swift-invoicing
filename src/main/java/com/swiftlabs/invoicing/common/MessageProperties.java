@@ -141,6 +141,11 @@ public final class MessageProperties {
     public static final String CLIENT_STATEMENT_ENTRY_PAYMENT_BY = "clientStatement.entry.paymentBy";
     public static final String CLIENT_STATEMENT_ENTRY_WITH_REFERENCE = "clientStatement.entry.withReference";
 
+    // ---- company ---------------------------------------------------------------------------------------------
+    public static final String COMPANY_ERROR_NO_ACCESS = "company.error.noAccess";
+    public static final String COMPANY_ERROR_SWITCHED = "company.error.switched";
+    public static final String COMPANY_SWITCHED = "company.switched";
+
     // ---- error -----------------------------------------------------------------------------------------------
     public static final String ERROR_UNEXPECTED = "error.unexpected";
     public static final String ERROR_UPLOAD_TOO_LARGE = "error.uploadTooLarge";

@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.access.account;
 
 import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
 import com.swiftlabs.invoicing.access.auth.SessionService;
+import com.swiftlabs.invoicing.access.auth.SignedInUser;
 import com.swiftlabs.invoicing.access.user.PasswordPolicy;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserService;
@@ -17,12 +18,7 @@ import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -45,7 +41,6 @@ public class AccountController {
     private final PasswordPolicy passwordPolicy;
     private final SessionService sessionService;
     private final Messages messages;
-    private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     public AccountController(UserService userService, PasswordPolicy passwordPolicy, SessionService sessionService,
                              Messages messages) {
@@ -72,7 +67,7 @@ public class AccountController {
             try {
                 User user = userService.updateOwnDetails(principal.getId(), form.getFirstName(), form.getLastName(), form.getEmail());
                 // The header shows the new name straight away
-                refreshAuthentication(principal.withDisplayName(user.getDisplayName()), request, response);
+                SignedInUser.replace(principal.withDisplayName(user.getDisplayName()), request, response);
                 redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.ACCOUNT_SAVED));
                 return Endpoints.REDIRECT + Endpoints.ACCOUNT;
             } catch (BusinessException ex) {
@@ -89,7 +84,7 @@ public class AccountController {
                                  HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
         Language chosen = Language.of(language);
         userService.updateOwnLanguage(principal.getId(), chosen);
-        refreshAuthentication(principal.withLanguage(chosen), request, response);
+        SignedInUser.replace(principal.withLanguage(chosen), request, response);
         redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(chosen, MessageProperties.ACCOUNT_LANGUAGE_SAVED));
         return Endpoints.REDIRECT + Endpoints.ACCOUNT;
     }
@@ -123,7 +118,7 @@ public class AccountController {
             redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));
             return formUrl;
         }
-        refreshAuthentication(principal.withPasswordChanged(), request, response);
+        SignedInUser.replace(principal.withPasswordChanged(), request, response);
         // New session id, and the user's other sessions (other browsers) are ended
         String sessionId = request.changeSessionId();
         sessionService.expireSessions(principal.getUsername(), sessionId);
@@ -141,13 +136,5 @@ public class AccountController {
     private User user(AppUserPrincipal principal) {
         return userService.findById(principal.getId())
             .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.USER_ERROR_NOT_FOUND));
-    }
-
-    /** The session keeps an updated principal, without logging in again. */
-    private void refreshAuthentication(AppUserPrincipal updated, HttpServletRequest request, HttpServletResponse response) {
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(updated, null, updated.getAuthorities()));
-        SecurityContextHolder.setContext(context);
-        securityContextRepository.saveContext(context, request, response);
     }
 }

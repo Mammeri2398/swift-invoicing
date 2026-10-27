@@ -16,7 +16,8 @@ public final class CompanySchemas {
     public static final String SHARED = "public";
 
     /** The first company: the data of an installation from before there could be several. */
-    public static final String FIRST = "company_1";
+    public static final long FIRST_ID = 1L;
+    public static final String FIRST = "company_" + FIRST_ID;
 
     /** Schema names are written into SQL (search path, migrations): nothing but this shape is ever accepted. */
     private static final Pattern NAME = Pattern.compile("company_[0-9]{1,18}");
@@ -25,7 +26,16 @@ public final class CompanySchemas {
         return "company_" + companyId;
     }
 
+    /** The company's id from its schema; null for the shared schema. */
+    public static Long idOf(String schema) {
+        return SHARED.equals(schema) ? null : Long.valueOf(checked(schema).substring("company_".length()));
+    }
+
+    /** A company's schema, or the shared one (no company): never anything else. */
     static String checked(String schema) {
+        if (SHARED.equals(schema)) {
+            return schema;
+        }
         if (schema == null || !NAME.matcher(schema).matches()) {
             throw new IllegalArgumentException("Not a company schema: " + schema);
         }

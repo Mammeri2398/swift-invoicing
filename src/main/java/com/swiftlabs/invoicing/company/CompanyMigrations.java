@@ -36,7 +36,7 @@ public class CompanyMigrations {
     public void migrate(String schema) {
         int applied = Flyway.configure()
             .dataSource(dataSource)
-            .schemas(CompanySchemas.checked(schema))
+            .schemas(companySchema(schema))
             .createSchemas(true)
             .locations("classpath:db/tenant")
             .baselineOnMigrate(true)
@@ -48,6 +48,13 @@ public class CompanyMigrations {
         if (applied > 0) {
             log.info("Company schema {}: {} migration(s) applied", schema, applied);
         }
+    }
+
+    private static String companySchema(String schema) {
+        if (CompanySchemas.SHARED.equals(CompanySchemas.checked(schema))) {
+            throw new IllegalArgumentException("Not a company schema: " + schema);
+        }
+        return schema;
     }
 
     /** The companies' schemas, read with JDBC: this runs before JPA starts. */

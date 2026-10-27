@@ -3,6 +3,8 @@ package com.swiftlabs.invoicing.setup;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.common.Language;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 import com.swiftlabs.invoicing.issuer.CompanyType;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
@@ -47,6 +49,9 @@ class OnPremiseSetupTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CompanyAccessService accessService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -95,7 +100,8 @@ class OnPremiseSetupTest {
 
         User admin = userRepository.findByUsername("gerant").orElseThrow();
         assertThat(admin.isMustChangePassword()).isFalse();
-        assertThat(admin.getProfile().getName()).isEqualTo("Administrateur");
+        // Administrator of the first company, whose details the setup filled in
+        assertThat(accessService.profileIn(admin.getId(), CompanySchemas.FIRST_ID).orElseThrow().getName()).isEqualTo("Administrateur");
         assertThat(admin.getLanguage()).isEqualTo(Language.AR);
         // The rest of this test reads the French pages
         admin.setLanguage(Language.FR);

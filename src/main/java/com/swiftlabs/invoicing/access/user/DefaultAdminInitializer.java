@@ -2,6 +2,8 @@ package com.swiftlabs.invoicing.access.user;
 
 import com.swiftlabs.invoicing.access.profile.Profile;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 
 import org.slf4j.Logger;
@@ -33,18 +35,20 @@ public class DefaultAdminInitializer implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicy passwordPolicy;
     private final SecurityProperties properties;
+    private final CompanyAccessService accessService;
     private final Clock clock;
     private final boolean setupWizard;
 
     public DefaultAdminInitializer(UserRepository userRepository, ProfileRepository profileRepository,
                                    PasswordEncoder passwordEncoder, PasswordPolicy passwordPolicy,
-                                   SecurityProperties properties, Clock clock,
+                                   SecurityProperties properties, CompanyAccessService accessService, Clock clock,
                                    @Value("${app.setup.wizard:false}") boolean setupWizard) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicy = passwordPolicy;
         this.properties = properties;
+        this.accessService = accessService;
         this.clock = clock;
         this.setupWizard = setupWizard;
     }
@@ -67,9 +71,9 @@ public class DefaultAdminInitializer implements CommandLineRunner {
         User admin = new User();
         admin.setUsername(ADMIN_USERNAME);
         admin.setEmail("admin@swiftinvoicing.local");
-        admin.setProfile(adminProfile);
         admin.assignTemporaryPassword(passwordEncoder.encode(password), LocalDateTime.now(clock));
-        userRepository.save(admin);
+        // Administrator of the first company (the only one of a new installation)
+        accessService.grant(userRepository.save(admin), CompanySchemas.FIRST_ID, adminProfile);
 
         if (generated) {
             log.warn("Created the '{}' account with the temporary password: {} "

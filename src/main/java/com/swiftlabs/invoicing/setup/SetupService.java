@@ -8,6 +8,8 @@ import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.Language;
 import com.swiftlabs.invoicing.common.MessageProperties;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import org.slf4j.Logger;
@@ -36,19 +38,21 @@ public class SetupService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicy passwordPolicy;
     private final IssuerService issuerService;
+    private final CompanyAccessService accessService;
     private final Clock clock;
     private final boolean wizard;
     /** Once a user exists it stays so: no query per request after that. */
     private volatile boolean done;
 
     public SetupService(UserRepository userRepository, ProfileRepository profileRepository, PasswordEncoder passwordEncoder,
-                        PasswordPolicy passwordPolicy, IssuerService issuerService, Clock clock,
+                        PasswordPolicy passwordPolicy, IssuerService issuerService, CompanyAccessService accessService, Clock clock,
                         @Value("${app.setup.wizard:false}") boolean wizard) {
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordPolicy = passwordPolicy;
         this.issuerService = issuerService;
+        this.accessService = accessService;
         this.clock = clock;
         this.wizard = wizard;
     }
@@ -89,10 +93,11 @@ public class SetupService {
         admin.setUsername(form.getAdminUsername().trim());
         admin.setFirstName(form.getAdminFirstName());
         admin.setEmail(form.getAdminEmail().trim());
-        admin.setProfile(profile);
         admin.setLanguage(language);
         admin.changePassword(passwordEncoder.encode(form.getPassword()), LocalDateTime.now(clock));
         User saved = userRepository.save(admin);
+        // Administrator of the first company, whose details the setup just filled in
+        accessService.grant(saved, CompanySchemas.FIRST_ID, profile);
         done = true;
         log.info("Setup completed: administrator '{}' created", saved.getUsername());
         return saved;

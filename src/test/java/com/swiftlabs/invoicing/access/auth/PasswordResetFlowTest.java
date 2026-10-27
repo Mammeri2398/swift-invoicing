@@ -4,6 +4,8 @@ import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.common.Language;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +58,9 @@ class PasswordResetFlowTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CompanyAccessService accessService;
+
+    @Autowired
     private PasswordResetTokenRepository tokenRepository;
 
     @Autowired
@@ -73,8 +78,8 @@ class PasswordResetFlowTest {
         user.setEmail("reset-user@example.test");
         user.setPassword(passwordEncoder.encode("OldPass123"));
         user.setEnabled(true);
-        user.setProfile(profileRepository.findByName("Administrateur"));
         user = userRepository.save(user);
+        accessService.grant(user, CompanySchemas.FIRST_ID, profileRepository.findByName("Administrateur"));
     }
 
     private List<PasswordResetToken> tokensOfUser() {

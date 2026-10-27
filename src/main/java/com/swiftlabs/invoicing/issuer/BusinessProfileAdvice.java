@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.issuer;
 
 import com.swiftlabs.invoicing.common.CommonCodes;
+import com.swiftlabs.invoicing.company.CompanyContext;
 import com.swiftlabs.invoicing.config.InvoiceProperties;
 
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -23,6 +24,10 @@ public class BusinessProfileAdvice {
 
     @ModelAttribute(CommonCodes.Attributes.COMPANY_TYPE)
     public CompanyType companyType() {
+        // No company yet (choosing one): nothing to read
+        if (CompanyContext.currentCompanyId() == null) {
+            return CompanyType.AUTO_ENTREPRENEUR;
+        }
         try {
             return issuerService.getIssuer().getCompanyType();
         } catch (RuntimeException ex) {
@@ -33,6 +38,9 @@ public class BusinessProfileAdvice {
 
     @ModelAttribute(CommonCodes.Attributes.VAT_MENTION)
     public String vatMention() {
+        if (CompanyContext.currentCompanyId() == null) {
+            return properties.vatMention();
+        }
         try {
             String mention = issuerService.getIssuer().getVatMention();
             return mention != null ? mention : properties.vatMention();

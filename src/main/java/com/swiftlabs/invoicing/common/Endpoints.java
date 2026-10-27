@@ -151,6 +151,11 @@ public final class Endpoints {
     public static final String ACCOUNTING_CSV = "/export/csv";
     public static final String ACCOUNTING_ACCOUNTS = "/accounts";
 
+    // ---- Companies (choosing and switching) -----------------------------------------------------------------------
+    public static final String COMPANIES = "/companies";
+    public static final String COMPANY_SELECT = "/select";
+    public static final String COMPANY_SWITCH = "/switch";
+
     // ---- Help -------------------------------------------------------------------------------------------------------
     public static final String HELP = "/help";
 

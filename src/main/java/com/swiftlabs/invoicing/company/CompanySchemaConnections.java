@@ -37,7 +37,8 @@ class CompanySchemaConnections implements MultiTenantConnectionProvider<String> 
     public Connection getConnection(String schema) throws SQLException {
         Connection connection = dataSource.getConnection();
         try {
-            pointTo(connection, CompanySchemas.checked(schema));
+            String checked = CompanySchemas.checked(schema);
+            pointTo(connection, CompanySchemas.SHARED.equals(checked) ? null : checked);
             return connection;
         } catch (SQLException | RuntimeException ex) {
             connection.close();

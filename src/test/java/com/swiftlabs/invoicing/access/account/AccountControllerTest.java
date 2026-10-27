@@ -3,6 +3,8 @@ package com.swiftlabs.invoicing.access.account;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,9 @@ class AccountControllerTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CompanyAccessService accessService;
+
+    @Autowired
     private ProfileRepository profileRepository;
 
     @Autowired
@@ -53,8 +58,8 @@ class AccountControllerTest {
         user.setUsername("kbenali");
         user.setEmail("karim@example.test");
         user.setPassword(passwordEncoder.encode("Secret123"));
-        user.setProfile(profileRepository.findByName("Administrateur"));
         user = userRepository.save(user);
+        accessService.grant(user, CompanySchemas.FIRST_ID, profileRepository.findByName("Administrateur"));
         session = new MockHttpSession();
         mockMvc.perform(post("/perform-login").session(session).with(csrf()).param("username", "kbenali").param("password", "Secret123"))
             .andExpect(redirectedUrl("/"));
@@ -91,8 +96,7 @@ class AccountControllerTest {
         other.setUsername("other");
         other.setEmail("taken@example.test");
         other.setPassword(passwordEncoder.encode("Secret123"));
-        other.setProfile(profileRepository.findByName("Administrateur"));
-        userRepository.save(other);
+        accessService.grant(userRepository.save(other), CompanySchemas.FIRST_ID, profileRepository.findByName("Administrateur"));
 
         mockMvc.perform(post("/account/save").session(session).with(csrf())
                 .param("firstName", "Karim").param("email", "taken@example.test"))

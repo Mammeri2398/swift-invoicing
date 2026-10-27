@@ -6,6 +6,8 @@ import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.access.user.UserService;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,9 @@ class AuthenticationSecurityTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CompanyAccessService accessService;
+
+    @Autowired
     private ProfileRepository profileRepository;
 
     @Autowired
@@ -61,14 +66,15 @@ class AuthenticationSecurityTest {
         User user = new User();
         user.setUsername(username);
         user.setEmail(username + "@example.test");
-        user.setProfile(profile);
         user.setEnabled(true);
         if (mustChangePassword) {
             user.assignTemporaryPassword(passwordEncoder.encode(PASSWORD), LocalDateTime.now());
         } else {
             user.changePassword(passwordEncoder.encode(PASSWORD), LocalDateTime.now());
         }
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        accessService.grant(saved, CompanySchemas.FIRST_ID, profile);
+        return saved;
     }
 
     private User admin(String username) {

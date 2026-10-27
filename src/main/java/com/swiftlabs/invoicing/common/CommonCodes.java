@@ -32,6 +32,7 @@ public final class CommonCodes {
         public static final String CATALOG_ITEMS = "catalogItems";
         public static final String CLIENT = "client";
         public static final String CLIENTS = "clients";
+        public static final String COMPANIES = "companies";
         public static final String COMPANY = "company";
         public static final String COMPANY_TYPE = "companyType";
         public static final String CONFIRMATION = "confirmation";
@@ -94,6 +95,7 @@ public final class CommonCodes {
         public static final String PRIVILEGES = "privileges";
         public static final String PROFILE = "profile";
         public static final String PROFILES = "profiles";
+        public static final String PROFILE_NAMES = "profileNames";
         public static final String RECOVERY_CODES = "recoveryCodes";
         public static final String RECURRING = "recurring";
         public static final String REFUSED = "refused";
@@ -161,6 +163,9 @@ public final class CommonCodes {
         // client
         public static final String CLIENT_FORM = "client/form";
         public static final String CLIENT_LIST = "client/list";
+
+        // company
+        public static final String COMPANY_SELECT = "company/select";
 
         // dashboard
         public static final String DASHBOARD_INDEX = "dashboard/index";

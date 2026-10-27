@@ -3,6 +3,8 @@ package com.swiftlabs.invoicing.access.twofactor;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,9 @@ class TwoFactorSetupTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CompanyAccessService accessService;
+
+    @Autowired
     private ProfileRepository profileRepository;
 
     @Autowired
@@ -59,8 +64,8 @@ class TwoFactorSetupTest {
         user.setUsername("samia");
         user.setEmail("samia@example.test");
         user.setPassword(passwordEncoder.encode("Secret123"));
-        user.setProfile(profileRepository.findByName("Administrateur"));
         user = userRepository.save(user);
+        accessService.grant(user, CompanySchemas.FIRST_ID, profileRepository.findByName("Administrateur"));
         session = new MockHttpSession();
         mockMvc.perform(post("/perform-login").session(session).with(csrf()).param("username", "samia").param("password", "Secret123"))
             .andExpect(redirectedUrl("/"));

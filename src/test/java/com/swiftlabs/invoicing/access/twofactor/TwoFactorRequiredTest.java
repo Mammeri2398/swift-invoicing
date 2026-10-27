@@ -3,6 +3,8 @@ package com.swiftlabs.invoicing.access.twofactor;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,9 @@ class TwoFactorRequiredTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CompanyAccessService accessService;
+
+    @Autowired
     private ProfileRepository profileRepository;
 
     @Autowired
@@ -60,8 +65,9 @@ class TwoFactorRequiredTest {
         user.setUsername(username);
         user.setEmail(username + "@example.test");
         user.setPassword(passwordEncoder.encode("Secret123"));
-        user.setProfile(profileRepository.findByName(profile));
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        accessService.grant(saved, CompanySchemas.FIRST_ID, profileRepository.findByName(profile));
+        return saved;
     }
 
     private MockHttpSession login(String username) throws Exception {

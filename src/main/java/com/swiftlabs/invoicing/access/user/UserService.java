@@ -6,6 +6,8 @@ import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.Language;
 import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanyContext;
 import com.swiftlabs.invoicing.licence.LicenceService;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,11 +33,14 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordPolicy passwordPolicy;
     private final LicenceService licenceService;
+    private final CompanyAccessService accessService;
     private final Clock clock;
 
     public UserService(UserRepository userRepository, ProfileRepository profileRepository,
-                       PasswordEncoder passwordEncoder, PasswordPolicy passwordPolicy, LicenceService licenceService, Clock clock) {
+                       PasswordEncoder passwordEncoder, PasswordPolicy passwordPolicy, LicenceService licenceService,
+                       CompanyAccessService accessService, Clock clock) {
         this.licenceService = licenceService;
+        this.accessService = accessService;
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
@@ -69,11 +74,13 @@ public class UserService {
         user.setFirstName(form.getFirstName());
         user.setLastName(form.getLastName());
         user.setEmail(form.getEmail());
-        user.setProfile(profile);
         user.setLanguage(form.getLanguage());
         user.setEnabled(true);
         user.assignTemporaryPassword(passwordEncoder.encode(temporaryPassword), now());
-        return new NewAccount(userRepository.save(user), temporaryPassword);
+        User saved = userRepository.save(user);
+        // Works in the administrator's current company, with the profile chosen
+        accessService.grant(saved, currentCompany(), profile);
+        return new NewAccount(saved, temporaryPassword);
     }
 
     /** Username and password are not editable here. An administrator cannot disable their own account. */
@@ -94,7 +101,8 @@ public class UserService {
         existing.setLastName(form.getLastName());
         existing.setEmail(form.getEmail());
         existing.setEnabled(form.isEnabled());
-        existing.setProfile(profile);
+        // The profile in the administrator's current company (access given if the user had none there)
+        accessService.grant(existing, currentCompany(), profile);
         if (form.getLanguage() != null) {
             existing.setLanguage(form.getLanguage());
         }
@@ -161,6 +169,14 @@ public class UserService {
     private void setPassword(User user, String newPassword) {
         passwordPolicy.validate(newPassword, user.getUsername());
         user.changePassword(passwordEncoder.encode(newPassword), now());
+    }
+
+    private static Long currentCompany() {
+        Long companyId = CompanyContext.currentCompanyId();
+        if (companyId == null) {
+            throw new BusinessException(MessageProperties.COMPANY_ERROR_NO_ACCESS);
+        }
+        return companyId;
     }
 
     private User require(Long id) {

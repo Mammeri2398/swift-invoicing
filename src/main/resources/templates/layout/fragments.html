@@ -49,6 +49,18 @@
                th:title="#{nav.searchInvoice}" th:aria-label="#{nav.searchInvoice}"><span class="icon">search</span></a>
             <a th:if="${u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="btn btn-primary btn-sm hidden sm:inline-flex"
                th:title="#{nav.newInvoice}" th:aria-label="#{nav.newInvoice}"><span class="icon">add</span></a>
+            <!--/* The company worked in, and the others the user may switch to (only with more than one) */-->
+            <details th:if="${companies != null and companies.size() > 1}" class="relative hidden md:block" data-dropdown>
+                <summary class="flex max-w-[11rem] cursor-pointer list-none items-center gap-1 rounded-lg px-2 py-1 hover:bg-surface-container"
+                         th:title="#{company.switch}">
+                    <span class="icon icon-sm text-primary">domain</span>
+                    <span class="truncate text-label-md text-on-surface" th:text="${u.companyName}">Société</span>
+                    <span class="icon icon-sm text-on-surface-variant">expand_more</span>
+                </summary>
+                <div class="absolute end-0 mt-2 flex w-64 flex-col gap-1 rounded-xl bg-surface-container-lowest p-2 shadow-lg">
+                    <th:block th:replace="~{layout/fragments :: companyLinks}"></th:block>
+                </div>
+            </details>
             <a th:href="@{/help}" class="btn-icon hidden sm:inline-flex" th:classappend="${#strings.startsWith(currentPath, '/help')} ? 'bg-surface-container-high'"
                th:title="#{help.open}" th:aria-label="#{help.open}"><span class="icon">help</span></a>
             <a th:href="@{/account}" class="hidden max-w-[9rem] flex-col whitespace-nowrap rounded-lg px-2 py-1 text-end leading-tight hover:bg-surface-container md:flex"
@@ -71,11 +83,30 @@
                     <a th:if="${u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="nav-link sm:hidden" th:text="#{nav.newInvoice}">Nouvelle facture</a>
                     <a th:href="@{/account}" class="nav-link" th:text="#{nav.account}">Mon compte</a>
                     <a th:href="@{/help}" class="nav-link" th:text="#{help.open}">Aide</a>
+                    <th:block th:if="${companies != null and companies.size() > 1}">
+                        <p class="px-3 pt-2 text-label-sm uppercase tracking-wider text-on-surface-variant md:hidden" th:text="#{company.switch}">Changer de société</p>
+                        <div class="flex flex-col gap-1 md:hidden"><th:block th:replace="~{layout/fragments :: companyLinks}"></th:block></div>
+                    </th:block>
                 </nav>
             </details>
         </div>
     </div>
 </header>
+
+<!--/* The user's companies: the current one marked, a click on another switches to it (POST, as it changes the session) */-->
+<th:block th:fragment="companyLinks">
+    <form th:each="a : ${companies}" th:action="@{/companies/switch}" method="post">
+        <input type="hidden" name="companyId" th:value="${a.company.id}"/>
+        <button type="submit" class="nav-link flex w-full items-center gap-2 text-start" th:disabled="${a.company.id == currentUser.companyId}"
+                th:classappend="${a.company.id == currentUser.companyId} ? 'active'">
+            <span class="icon icon-sm" th:text="${a.company.id == currentUser.companyId} ? 'check' : 'domain'">domain</span>
+            <span class="flex min-w-0 flex-col">
+                <span class="truncate" th:text="${a.company.name}">Société</span>
+                <span class="truncate text-label-sm text-on-surface-variant" th:text="${a.profile.name}">Administrateur</span>
+            </span>
+        </button>
+    </form>
+</th:block>
 
 <!--/* Navigation links, reused by the desktop bar and the mobile menu (administration links: see adminLinks).
        Quotes are shown at /invoices/{id} like invoices: their pages set navSection = 'quotes'. */-->

@@ -3,6 +3,8 @@ package com.swiftlabs.invoicing.access.twofactor;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,9 @@ class TwoFactorLoginTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CompanyAccessService accessService;
+
+    @Autowired
     private ProfileRepository profileRepository;
 
     @Autowired
@@ -60,8 +65,8 @@ class TwoFactorLoginTest {
         user.setUsername("karim");
         user.setEmail("karim@example.test");
         user.setPassword(passwordEncoder.encode(PASSWORD));
-        user.setProfile(profileRepository.findByName("Administrateur"));
         user = userRepository.save(user);
+        accessService.grant(user, CompanySchemas.FIRST_ID, profileRepository.findByName("Administrateur"));
         secret = Totp.newSecret();
         recoveryCodes = twoFactorService.enable(user.getId(), secret, codeAt(Instant.now().minusSeconds(Totp.STEP_SECONDS)));
     }

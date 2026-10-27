@@ -3,6 +3,8 @@ package com.swiftlabs.invoicing.catalog;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 import com.swiftlabs.invoicing.issuer.CompanyType;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
@@ -50,6 +52,9 @@ class CatalogTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CompanyAccessService accessService;
+
+    @Autowired
     private ProfileRepository profileRepository;
 
     @Autowired
@@ -64,8 +69,7 @@ class CatalogTest {
         user.setUsername("catalog-admin");
         user.setEmail("catalog-admin@example.test");
         user.setPassword(passwordEncoder.encode("Secret123"));
-        user.setProfile(profileRepository.findByName("Administrateur"));
-        userRepository.save(user);
+        accessService.grant(userRepository.save(user), CompanySchemas.FIRST_ID, profileRepository.findByName("Administrateur"));
         MockHttpSession session = new MockHttpSession();
         mockMvc.perform(post("/perform-login").session(session).with(csrf()).param("username", "catalog-admin").param("password", "Secret123"));
         return session;

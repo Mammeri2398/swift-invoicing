@@ -4,6 +4,8 @@ import com.swiftlabs.invoicing.access.privilege.Privilege;
 import com.swiftlabs.invoicing.access.privilege.PrivilegeRepository;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -47,6 +49,9 @@ class ProfileControllerTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CompanyAccessService accessService;
 
     @Autowired
     private EntityManager entityManager;
@@ -149,8 +154,7 @@ class ProfileControllerTest {
         other.setEmail("secu@example.test");
         other.setPassword("x");
         other.setEnabled(true);
-        other.setProfile(profileRepository.findByName("Sécurité"));
-        userRepository.save(other);
+        accessService.grant(userRepository.save(other), CompanySchemas.FIRST_ID, profileRepository.findByName("Sécurité"));
 
         mockMvc.perform(save(1L, "Administrateur", "VIEW_DASHBOARD"))
             .andExpect(redirectedUrl("/profiles"));

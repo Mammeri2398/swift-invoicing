@@ -8,7 +8,7 @@
             <p class="page-eyebrow" th:text="#{account.title}">Mon compte</p>
             <h1 class="page-title" th:text="${user.fullName}">Karim Benali</h1>
             <p class="page-subtitle">
-                <span th:text="${user.profile.name}">Administrateur</span>
+                <span th:text="${currentUser.profileName}">Administrateur</span>
                 <th:block th:if="${user.lastLoginAt}"> · <th:block
                     th:text="#{account.lastLogin(${#temporals.format(user.lastLoginAt, 'dd/MM/yyyy HH:mm')})}">dernière connexion le 01/01/2026 10:00</th:block></th:block>
             </p>
@@ -44,7 +44,7 @@
                 </div>
                 <div class="field">
                     <label class="label" for="profile" th:text="#{account.profile}">Profil</label>
-                    <input class="input" id="profile" type="text" th:value="${user.profile.name}" readonly/>
+                    <input class="input" id="profile" type="text" th:value="${currentUser.companyName != null ? currentUser.profileName + ' — ' + currentUser.companyName : ''}" readonly/>
                 </div>
             </div>
             <p class="hint" th:text="#{account.adminOnly.hint}">Le nom d'utilisateur et le profil sont modifiés par un administrateur.</p>

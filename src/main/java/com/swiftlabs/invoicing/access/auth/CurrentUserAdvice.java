@@ -20,6 +20,6 @@ public class CurrentUserAdvice {
             return null;
         }
         return new CurrentUser(principal.getUsername(), principal.getDisplayName(), principal.getProfileName(),
-            authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet()));
+            principal.getCompanyId(), principal.getCompanyName(), authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet()));
     }
 }

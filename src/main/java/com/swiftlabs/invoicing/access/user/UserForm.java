@@ -36,7 +36,8 @@ public class UserForm {
     /** Language of the interface and of the emails sent to this user. */
     private Language language;
 
-    public static UserForm from(User user) {
+    /** {@code profileId}: the user's profile in the current company, null when they have no access to it. */
+    public static UserForm from(User user, Long profileId) {
         UserForm form = new UserForm();
         form.setId(user.getId());
         form.setUsername(user.getUsername());
@@ -44,7 +45,7 @@ public class UserForm {
         form.setLastName(user.getLastName());
         form.setEmail(user.getEmail());
         form.setEnabled(user.isEnabled());
-        form.setProfileId(user.getProfile() != null ? user.getProfile().getId() : null);
+        form.setProfileId(profileId);
         form.setLanguage(user.getLanguage());
         return form;
     }

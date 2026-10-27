@@ -4,6 +4,8 @@ import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.common.Language;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,9 @@ class LanguageTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CompanyAccessService accessService;
+
+    @Autowired
     private ProfileRepository profileRepository;
 
     @Autowired
@@ -47,9 +52,8 @@ class LanguageTest {
         user.setUsername(username);
         user.setEmail(username + "@example.test");
         user.setPassword(passwordEncoder.encode("Secret123"));
-        user.setProfile(profileRepository.findByName("Administrateur"));
         user.setLanguage(language);
-        userRepository.save(user);
+        accessService.grant(userRepository.save(user), CompanySchemas.FIRST_ID, profileRepository.findByName("Administrateur"));
         MockHttpSession session = new MockHttpSession();
         mockMvc.perform(post("/perform-login").session(session).with(csrf()).param("username", username).param("password", "Secret123"));
         return session;

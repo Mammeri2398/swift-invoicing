@@ -6,6 +6,8 @@ import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.client.Client;
 import com.swiftlabs.invoicing.client.ClientRepository;
 import com.swiftlabs.invoicing.client.ClientType;
+import com.swiftlabs.invoicing.company.CompanyAccessService;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 import com.swiftlabs.invoicing.invoice.Invoice;
 import com.swiftlabs.invoicing.invoice.InvoiceForm;
 import com.swiftlabs.invoicing.invoice.InvoiceLineForm;
@@ -73,6 +75,9 @@ class RecurringInvoiceTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CompanyAccessService accessService;
+
+    @Autowired
     private ProfileRepository profileRepository;
 
     @Autowired
@@ -126,8 +131,7 @@ class RecurringInvoiceTest {
         user.setUsername("recurring-admin");
         user.setEmail("recurring-admin@example.test");
         user.setPassword(passwordEncoder.encode("Secret123"));
-        user.setProfile(profileRepository.findByName("Administrateur"));
-        userRepository.save(user);
+        accessService.grant(userRepository.save(user), CompanySchemas.FIRST_ID, profileRepository.findByName("Administrateur"));
         MockHttpSession session = new MockHttpSession();
         mockMvc.perform(post("/perform-login").session(session).with(csrf()).param("username", "recurring-admin").param("password", "Secret123"));
         return session;

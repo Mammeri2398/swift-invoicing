@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(#{company.select.title}, ~{::main}, ~{})}">
+<body>
+<main class="page-narrow">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title" th:text="#{company.select.title}">Choisir une société</h1>
+            <p class="page-subtitle" th:text="#{company.select.subtitle}">Chaque société a ses propres clients, factures et réglages.</p>
+        </div>
+    </div>
+
+    <section th:if="${companies.isEmpty()}" class="card">
+        <div class="card-body flex items-start gap-3">
+            <span class="icon text-error">block</span>
+            <div>
+                <p class="font-semibold" th:text="#{company.select.none.title}">Aucune société</p>
+                <p class="text-on-surface-variant" th:text="#{company.select.none.text}">Aucune société ne vous est ouverte.</p>
+            </div>
+        </div>
+    </section>
+
+    <div th:unless="${companies.isEmpty()}" class="flex flex-col gap-3">
+        <form th:each="a : ${companies}" th:action="@{/companies/switch}" method="post">
+            <input type="hidden" name="companyId" th:value="${a.company.id}"/>
+            <button type="submit" class="card flex w-full items-center gap-4 p-5 text-start transition-shadow hover:shadow-md">
+                <span class="stat-icon bg-primary-fixed/40 text-primary"><span class="icon">domain</span></span>
+                <span class="flex min-w-0 flex-1 flex-col">
+                    <span class="truncate text-title-sm text-on-surface" th:text="${a.company.name}">Société</span>
+                    <span class="text-body-sm text-on-surface-variant" th:text="#{company.select.profile(${a.profile.name})}">Profil : Administrateur</span>
+                </span>
+                <span class="icon rtl-flip text-on-surface-variant">arrow_forward</span>
+            </button>
+        </form>
+    </div>
+</main>
+</body>
+</html>

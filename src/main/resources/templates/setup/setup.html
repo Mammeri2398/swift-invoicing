@@ -81,12 +81,12 @@
                 </div>
                 <div class="field">
                     <label class="label" for="nif"><span><th:block th:text="#{setup.company.nif}">NIF</th:block> <span class="required">*</span></span></label>
-                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" required maxlength="50" inputmode="numeric"/>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" required maxlength="20" inputmode="numeric"/>
                     <p th:replace="~{layout/fragments :: fieldError('nif')}"></p>
                 </div>
                 <div class="field">
                     <label class="label" for="nis"><th:block th:text="#{setup.company.nis}">NIS</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
-                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="50" inputmode="numeric"/>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="15" inputmode="numeric"/>
                     <p th:replace="~{layout/fragments :: fieldError('nis')}"></p>
                 </div>
                 <div class="field" data-show="AUTO_ENTREPRENEUR" th:classappend="${CO} ? 'hidden'">

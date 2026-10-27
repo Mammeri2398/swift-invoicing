@@ -239,7 +239,7 @@
 
             <div class="mentions">
                 <p th:if="${invoice.offer}" class="strong">Ce document n'est pas une facture.</p>
-                <p th:unless="${issuer.company}" th:text="${vatMention}">TVA non applicable</p>
+                <p th:unless="${issuer.company}" th:text="${issuer.vatMention}">TVA non applicable</p>
                 <p th:unless="${issuer.company}">Entrepreneur individuel titulaire de la carte nationale d'auto-entrepreneur (ANAE).</p>
             </div>
         </td>

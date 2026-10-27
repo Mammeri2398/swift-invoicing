@@ -43,6 +43,10 @@ public class Issuer {
     @Column(name = "ae_card_number")
     private String aeCardNumber;
 
+    /** Auto-entrepreneur: the TVA exemption mention printed on invoices; none: invoice.vat-mention. */
+    @Column(name = "vat_mention", length = 255)
+    private String vatMention;
+
     /** Company only: SARL, EURL, SPA... */
     @Column(name = "legal_form", length = 50)
     private String legalForm;
@@ -189,6 +193,14 @@ public class Issuer {
 
     public void setAeCardNumber(String aeCardNumber) {
         this.aeCardNumber = aeCardNumber;
+    }
+
+    public String getVatMention() {
+        return vatMention;
+    }
+
+    public void setVatMention(String vatMention) {
+        this.vatMention = vatMention;
     }
 
     public String getNif() {

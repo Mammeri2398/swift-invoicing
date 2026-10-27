@@ -35,6 +35,9 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long>, JpaSpec
 
     boolean existsByInvoiceNumber(String invoiceNumber);
 
+    /** The document of this kind numbered last in the year: the next one cannot be dated before it. */
+    Optional<Invoice> findFirstByKindAndInvoiceYearAndSequenceNumberNotNullOrderBySequenceNumberDesc(DocumentKind kind, Integer year);
+
     Optional<Invoice> findByInvoiceNumber(String invoiceNumber);
 
     long countByClientId(Long clientId);

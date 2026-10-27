@@ -42,6 +42,9 @@ public class IssuerForm {
     @Size(max = 50)
     private String aeCardNumber;
 
+    @Size(max = 255)
+    private String vatMention;
+
     // Required for a company only (checked by IssuerService)
     @Size(max = 50)
     private String legalForm;
@@ -58,11 +61,12 @@ public class IssuerForm {
 
     @NotBlank
     @Size(max = 50)
-    @Pattern(regexp = "[0-9]*")
+    // 15 digits, or 20 for the newer identifiers
+    @Pattern(regexp = "(\\d{15}|\\d{20})?")
     private String nif;
 
     @Size(max = 50)
-    @Pattern(regexp = "[0-9]*")
+    @Pattern(regexp = "(\\d{15})?")
     private String nis;
 
     @Size(max = 500)
@@ -105,6 +109,8 @@ public class IssuerForm {
     public void setEmail(String email) { this.email = email; }
     public String getAeCardNumber() { return aeCardNumber; }
     public void setAeCardNumber(String aeCardNumber) { this.aeCardNumber = aeCardNumber; }
+    public String getVatMention() { return vatMention; }
+    public void setVatMention(String vatMention) { this.vatMention = vatMention; }
     public String getNif() { return nif; }
     public void setNif(String nif) { this.nif = nif; }
     public String getNis() { return nis; }
@@ -131,6 +137,7 @@ public class IssuerForm {
         form.setPhone(issuer.getPhone());
         form.setEmail(issuer.getEmail());
         form.setAeCardNumber(issuer.getAeCardNumber());
+        form.setVatMention(issuer.getVatMention());
         form.setNif(issuer.getNif());
         form.setNis(issuer.getNis());
         form.setActivityDescription(issuer.getActivityDescription());

@@ -34,7 +34,8 @@ public class ClientForm {
     private String email;
 
     @Size(max = 50)
-    @Pattern(regexp = "[0-9]*")
+    // 15 digits, or 20 for the newer identifiers
+    @Pattern(regexp = "(\\d{15}|\\d{20})?")
     private String nif;
 
     // Professional clients; required at issue time when the issuer is a company (see InvoiceService)
@@ -42,7 +43,7 @@ public class ClientForm {
     private String rcNumber;
 
     @Size(max = 50)
-    @Pattern(regexp = "[0-9]*")
+    @Pattern(regexp = "(\\d{15})?")
     private String nis;
 
     @Size(max = 50)

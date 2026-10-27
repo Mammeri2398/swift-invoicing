@@ -41,7 +41,7 @@
                         <span><th:block th:text="#{client.form.nif}">NIF</th:block> <span class="required" data-nif-required>*</span></span>
                         <span class="optional" th:text="#{client.form.nifHint}">15 ou 20 chiffres</span>
                     </label>
-                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" maxlength="50" inputmode="numeric"/>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" maxlength="20" inputmode="numeric"/>
                     <p th:replace="~{layout/fragments :: fieldError('nif')}"></p>
                 </div>
                 <!-- Professional clients only (client-form.js hides them for a private person) -->
@@ -57,7 +57,7 @@
                 </div>
                 <div class="field" data-professional>
                     <label class="label" for="nis"><th:block th:text="#{client.form.nis}">NIS</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
-                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="50" inputmode="numeric"/>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="15" inputmode="numeric"/>
                     <p th:replace="~{layout/fragments :: fieldError('nis')}"></p>
                 </div>
                 <p class="hint md:col-span-2" data-professional th:if="${companyType?.company}" th:text="#{client.form.companyHint}">

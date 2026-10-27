@@ -102,17 +102,20 @@
                         </div>
                         <div class="field">
                             <label class="label" for="nif"><th:block th:text="#{issuer.nif}">NIF</th:block> <span class="required">*</span></label>
-                            <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" required maxlength="50"/>
+                            <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" required maxlength="20" inputmode="numeric"/>
                             <p th:replace="~{layout/fragments :: fieldError('nif')}"></p>
                         </div>
                         <div class="field">
                             <label class="label" for="nis"><th:block th:text="#{issuer.nis}">NIS</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
-                            <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="50"/>
+                            <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="15" inputmode="numeric"/>
                             <p th:replace="~{layout/fragments :: fieldError('nis')}"></p>
                         </div>
-                        <div class="alert alert-info md:col-span-2" data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">
-                            <span class="icon">receipt_long</span>
-                            <span><th:block th:text="#{issuer.vatMention}">Mention TVA imprimée sur les factures :</th:block> <strong th:text="${vatMention}">TVA non applicable</strong></span>
+                        <!--/* Empty: the default mention, shown as the placeholder */-->
+                        <div class="field md:col-span-2" data-show="AUTO_ENTREPRENEUR" th:classappend="${issuer.companyType != null and issuer.companyType.name() == 'COMPANY'} ? 'hidden'">
+                            <label class="label" for="vatMention"><th:block th:text="#{issuer.vatMention}">Mention d'exonération de TVA</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
+                            <input class="input" th:errorclass="input-invalid" th:field="*{vatMention}" type="text" maxlength="255" th:placeholder="${defaultVatMention}"/>
+                            <p th:replace="~{layout/fragments :: fieldError('vatMention')}"></p>
+                            <p class="hint" th:text="#{issuer.vatMention.hint(${defaultVatMention})}">Vide : la mention par défaut.</p>
                         </div>
                         <div class="alert alert-info md:col-span-2" data-show="COMPANY" th:classappend="${issuer.companyType == null or issuer.companyType.name() != 'COMPANY'} ? 'hidden'">
                             <span class="icon">receipt_long</span>

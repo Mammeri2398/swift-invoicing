@@ -26,10 +26,12 @@ public final class IssuerDetails {
     private final String nif;
     private final String nis;
     private final String bankAccount;
+    private final String vatMention;
 
     private IssuerDetails(CompanyType companyType, String fullName, String tradeName, String address, String city,
                           String phone, String email, String aeCardNumber, String legalForm, BigDecimal shareCapital,
-                          String rcNumber, String taxArticle, String nif, String nis, String bankAccount) {
+                          String rcNumber, String taxArticle, String nif, String nis, String bankAccount,
+                          String vatMention) {
         // Invoices issued before the type existed were all issued by an auto-entrepreneur
         this.companyType = companyType != null ? companyType : CompanyType.AUTO_ENTREPRENEUR;
         this.fullName = fullName;
@@ -46,20 +48,28 @@ public final class IssuerDetails {
         this.nif = nif;
         this.nis = nis;
         this.bankAccount = bankAccount;
+        this.vatMention = vatMention;
     }
 
-    public static IssuerDetails of(Invoice invoice, Issuer current) {
+    /** {@code defaultVatMention}: printed when no mention was set (and on invoices issued before it could be set). */
+    public static IssuerDetails of(Invoice invoice, Issuer current, String defaultVatMention) {
         if (invoice.isDraft()) {
             return new IssuerDetails(current.getCompanyType(), current.getFullName(), current.getTradeName(),
                 current.getAddress(), current.getCity(), current.getPhone(), current.getEmail(), current.getAeCardNumber(),
                 current.getLegalForm(), current.getShareCapital(), current.getRcNumber(), current.getTaxArticle(),
-                current.getNif(), current.getNis(), current.getBankOrCcpAccount());
+                current.getNif(), current.getNis(), current.getBankOrCcpAccount(),
+                current.getVatMention() != null ? current.getVatMention() : defaultVatMention);
         }
         return new IssuerDetails(invoice.getIssuerCompanyType(), invoice.getIssuerFullName(), invoice.getIssuerTradeName(),
             invoice.getIssuerAddress(), invoice.getIssuerCity(), invoice.getIssuerPhone(), invoice.getIssuerEmail(),
             invoice.getIssuerAeCardNumber(), invoice.getIssuerLegalForm(), invoice.getIssuerShareCapital(),
             invoice.getIssuerRcNumber(), invoice.getIssuerTaxArticle(), invoice.getIssuerNif(), invoice.getIssuerNis(),
-            invoice.getIssuerBankAccount());
+            invoice.getIssuerBankAccount(), invoice.getIssuerVatMention() != null ? invoice.getIssuerVatMention() : defaultVatMention);
+    }
+
+    /** Auto-entrepreneur: the TVA exemption mention printed on the invoice. */
+    public String getVatMention() {
+        return vatMention;
     }
 
     public CompanyType getCompanyType() {

@@ -144,7 +144,7 @@ public class InvoiceController {
         model.addAttribute(CommonCodes.Attributes.DOC_TITLE, invoice.getInvoiceNumber() != null
             ? messages.get(MessageProperties.INVOICE_VIEW_TITLE, messages.label(invoice.getKind()), invoice.getInvoiceNumber())
             : messages.get(MessageProperties.INVOICE_VIEW_DRAFT_TITLE_PREFIX + invoice.getKind().name()));
-        model.addAttribute(CommonCodes.Attributes.ISSUER, IssuerDetails.of(invoice, issuerService.getIssuer()));
+        model.addAttribute(CommonCodes.Attributes.ISSUER, IssuerDetails.of(invoice, issuerService.getIssuer(), properties.vatMention()));
         if (invoice.isOffer()) {
             model.addAttribute(CommonCodes.Attributes.INVOICE_OF, invoiceService.invoiceOf(id));
         } else if (!invoice.isCreditNote()) {

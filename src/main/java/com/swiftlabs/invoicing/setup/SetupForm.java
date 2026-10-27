@@ -52,11 +52,12 @@ public class SetupForm {
 
     @NotBlank
     @Size(max = 50)
-    @Pattern(regexp = "[0-9]*")
+    // 15 digits, or 20 for the newer identifiers
+    @Pattern(regexp = "(\\d{15}|\\d{20})?")
     private String nif;
 
     @Size(max = 50)
-    @Pattern(regexp = "[0-9]*")
+    @Pattern(regexp = "(\\d{15})?")
     private String nis;
 
     @Size(max = 50)

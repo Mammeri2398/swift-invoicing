@@ -117,6 +117,9 @@ public class Invoice {
     @Column(name = "issuer_company_type", length = 20)
     private CompanyType issuerCompanyType;
 
+    @Column(name = "issuer_vat_mention", length = 255)
+    private String issuerVatMention;
+
     @Column(name = "issuer_ae_card_number")
     private String issuerAeCardNumber;
 
@@ -570,6 +573,14 @@ public class Invoice {
 
     public BigDecimal getVatAmount() {
         return vatAmount;
+    }
+
+    public String getIssuerVatMention() {
+        return issuerVatMention;
+    }
+
+    public void setIssuerVatMention(String issuerVatMention) {
+        this.issuerVatMention = issuerVatMention;
     }
 
     public CompanyType getIssuerCompanyType() {

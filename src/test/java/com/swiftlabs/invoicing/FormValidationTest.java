@@ -52,7 +52,7 @@ class FormValidationTest {
             .andExpect(model().attributeHasFieldErrorCode("client", "email", "Email"))
             .andExpect(model().attributeHasFieldErrorCode("client", "city", "Size"))
             .andExpect(content().string(containsString("Ce champ est obligatoire.")))
-            .andExpect(content().string(containsString("Le NIF ne contient que des chiffres.")))
+            .andExpect(content().string(containsString("Le NIF compte 15 ou 20 chiffres, sans espace.")))
             .andExpect(content().string(containsString("Adresse email invalide.")))
             // {1} of @Size is "max": the arguments are resolved, not printed raw
             .andExpect(content().string(containsString("Ce texte est trop long (255 caractères au maximum).")))

@@ -7,6 +7,7 @@ import com.swiftlabs.invoicing.common.FormErrors;
 import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.common.Privileges;
+import com.swiftlabs.invoicing.config.InvoiceProperties;
 import com.swiftlabs.invoicing.dashboard.DashboardService;
 import com.swiftlabs.invoicing.setup.NetworkAddresses;
 
@@ -37,13 +38,15 @@ public class IssuerController {
     private final DashboardService dashboardService;
     private final NetworkAddresses networkAddresses;
     private final Messages messages;
+    private final InvoiceProperties properties;
 
     public IssuerController(IssuerService issuerService, DashboardService dashboardService, NetworkAddresses networkAddresses,
-                            Messages messages) {
+                            Messages messages, InvoiceProperties properties) {
         this.issuerService = issuerService;
         this.dashboardService = dashboardService;
         this.networkAddresses = networkAddresses;
         this.messages = messages;
+        this.properties = properties;
     }
 
     @GetMapping
@@ -111,6 +114,8 @@ public class IssuerController {
         model.addAttribute(CommonCodes.Attributes.HAS_LOGO, issuer.hasLogo());
         model.addAttribute(CommonCodes.Attributes.STATS, dashboardService.stats(null));
         model.addAttribute(CommonCodes.Attributes.NETWORK_ADDRESSES, networkAddresses.urls());
+        // Printed when the auto-entrepreneur leaves the mention empty
+        model.addAttribute(CommonCodes.Attributes.DEFAULT_VAT_MENTION, properties.vatMention());
         model.addAttribute(CommonCodes.Attributes.CAN_EDIT, authentication.getAuthorities().stream()
             .anyMatch(a -> Privileges.EDIT_ISSUER.equals(a.getAuthority())));
         return CommonCodes.Views.ISSUER_FORM;

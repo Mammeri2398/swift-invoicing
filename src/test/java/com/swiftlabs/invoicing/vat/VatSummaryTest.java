@@ -111,12 +111,12 @@ class VatSummaryTest {
     void onInvoicingTheMonthCountsItsInvoicesLessItsCreditNotes() {
         Invoice mixed = issued(LocalDate.of(2026, 9, 10), PaymentMethod.BANK_TRANSFER,
             line("1000.00", "19"), line("500.00", "9"), line("200.00", "0"));
+        // Not counted: a draft, a cancelled invoice, an invoice of the next month (issued in date order, as numbers follow dates)
+        draft(LocalDate.of(2026, 9, 12), PaymentMethod.CASH, line("9999.00", "19"));
+        invoiceService.cancel(issued(LocalDate.of(2026, 9, 15), PaymentMethod.CASH, line("7777.00", "19")).getId());
         // Cash: 1 190,00 TTC, droit de timbre 1 % = 11,90, rounded up to 12
         issued(LocalDate.of(2026, 9, 20), PaymentMethod.CASH, line("1000.00", "19"));
         creditNote(mixed, LocalDate.of(2026, 9, 25));
-        // Not counted: a draft, a cancelled invoice, an invoice of the next month
-        draft(LocalDate.of(2026, 9, 12), PaymentMethod.CASH, line("9999.00", "19"));
-        invoiceService.cancel(issued(LocalDate.of(2026, 9, 15), PaymentMethod.CASH, line("7777.00", "19")).getId());
         issued(LocalDate.of(2026, 10, 1), PaymentMethod.BANK_TRANSFER, line("5555.00", "19"));
 
         VatSummary september = vatService.month(2026, 9, VatBasis.INVOICED);

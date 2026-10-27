@@ -71,6 +71,8 @@ public class IssuerService {
         issuer.setEmail(form.getEmail());
         // The other status's identifiers are kept, in case the type is switched back
         issuer.setAeCardNumber(form.getAeCardNumber());
+        // Empty: the default mention (invoice.vat-mention)
+        issuer.setVatMention(form.getVatMention() == null || form.getVatMention().isBlank() ? null : form.getVatMention().trim());
         issuer.setLegalForm(form.getLegalForm());
         issuer.setShareCapital(form.getShareCapital());
         issuer.setRcNumber(form.getRcNumber());

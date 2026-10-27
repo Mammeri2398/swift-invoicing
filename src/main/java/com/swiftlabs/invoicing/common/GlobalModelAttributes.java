@@ -1,20 +1,12 @@
 package com.swiftlabs.invoicing.common;
 
-import com.swiftlabs.invoicing.config.InvoiceProperties;
-
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-/** Helpers and settings available to every view. */
+/** Helpers available to every view (the TVA exemption mention: see BusinessProfileAdvice). */
 @ControllerAdvice
 public class GlobalModelAttributes {
-
-    private final InvoiceProperties properties;
-
-    public GlobalModelAttributes(InvoiceProperties properties) {
-        this.properties = properties;
-    }
 
     @ModelAttribute(CommonCodes.Attributes.AMOUNT_UTILS)
     public AmountUtils amountUtils() {
@@ -24,11 +16,6 @@ public class GlobalModelAttributes {
     @ModelAttribute(CommonCodes.Attributes.AMOUNT_IN_WORDS)
     public AmountInWords amountInWords() {
         return new AmountInWords();
-    }
-
-    @ModelAttribute(CommonCodes.Attributes.VAT_MENTION)
-    public String vatMention() {
-        return properties.vatMention();
     }
 
     /** Request path, used by the navigation to highlight the current section. */

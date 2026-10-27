@@ -158,6 +158,7 @@ public final class MessageProperties {
     public static final String INVOICE_ERROR_CREDIT_NOTE_NOT_CANCELLABLE = "invoice.error.creditNoteNotCancellable";
     public static final String INVOICE_ERROR_CREDIT_NOTE_NOT_PAYABLE = "invoice.error.creditNoteNotPayable";
     public static final String INVOICE_ERROR_CREDIT_NOTE_TOO_HIGH = "invoice.error.creditNoteTooHigh";
+    public static final String INVOICE_ERROR_DATE_BEFORE_LAST = "invoice.error.dateBeforeLast";
     public static final String INVOICE_ERROR_DELETE_DRAFT_ONLY = "invoice.error.deleteDraftOnly";
     public static final String INVOICE_ERROR_FULLY_CREDITED = "invoice.error.fullyCredited";
     public static final String INVOICE_ERROR_HAS_CREDIT_NOTE = "invoice.error.hasCreditNote";

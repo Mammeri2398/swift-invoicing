@@ -58,8 +58,7 @@ public class InvoicePdfService {
         // A document for the client: always in French, whatever the language of the user who prints it
         Context context = new Context(Locale.FRENCH);
         context.setVariable(CommonCodes.Attributes.INVOICE, invoice);
-        context.setVariable(CommonCodes.Attributes.VAT_MENTION, properties.vatMention());
-        context.setVariable(CommonCodes.Attributes.ISSUER, IssuerDetails.of(invoice, issuer));
+        context.setVariable(CommonCodes.Attributes.ISSUER, IssuerDetails.of(invoice, issuer, properties.vatMention()));
         // Embedded in the document: no URL to resolve while rendering
         context.setVariable(CommonCodes.Attributes.LOGO_DATA_URI, issuer.hasLogo()
             ? "data:" + issuer.getLogoContentType() + ";base64," + Base64.getEncoder().encodeToString(issuer.getLogoData())

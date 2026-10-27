@@ -28,6 +28,8 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class InvoiceService {
 
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
     private final InvoiceRepository invoiceRepository;
     private final InvoiceSequenceRepository sequenceRepository;
     private final CreditNoteSequenceRepository creditNoteSequenceRepository;
@@ -176,6 +178,14 @@ public class InvoiceService {
             throw new BusinessException(MessageProperties.INVOICE_ERROR_VAT_FOR_AUTO_ENTREPRENEUR);
         }
         int year = invoice.getIssueDate().getYear();
+        lockCounter(invoice.getKind(), year);
+        // Numbers follow the dates: never dated before the document issued last (checked once the counter is locked)
+        invoiceRepository.findFirstByKindAndInvoiceYearAndSequenceNumberNotNullOrderBySequenceNumberDesc(invoice.getKind(), year)
+            .filter(last -> invoice.getIssueDate().isBefore(last.getIssueDate()))
+            .ifPresent(last -> {
+                throw BusinessException.onField("issueDate", MessageProperties.INVOICE_ERROR_DATE_BEFORE_LAST,
+                    invoice.getIssueDate().format(DATE), last.getInvoiceNumber(), last.getIssueDate().format(DATE));
+            });
         int number = nextNumber(invoice.getKind(), year);
         String prefix = prefix(invoice.getKind());
         String invoiceNumber = prefix + "-" + year + "-" + String.format("%04d", number);
@@ -210,6 +220,17 @@ public class InvoiceService {
      * on the counter's row lock: numbers stay unique and gap-free, and the first document of a
      * year cannot fail on the row creation.
      */
+    /** Locks the year's counter of an invoice or credit note until the end of the transaction (nextNumber locks it too). */
+    private void lockCounter(DocumentKind kind, int year) {
+        if (kind == DocumentKind.CREDIT_NOTE) {
+            creditNoteSequenceRepository.createIfAbsent(year);
+            creditNoteSequenceRepository.lockByYear(year);
+        } else if (kind == DocumentKind.INVOICE) {
+            sequenceRepository.createIfAbsent(year);
+            sequenceRepository.lockByYear(year);
+        }
+    }
+
     private int nextNumber(DocumentKind kind, int year) {
         if (!kind.isAccounting()) {
             return documentSequenceRepository.next(kind, year);
@@ -289,7 +310,7 @@ public class InvoiceService {
         invoice.setPaymentMethod(document.getPaymentMethod());
         // Printed on the invoice, which stays in French
         String reference = (document.isQuote() ? "devis " : "facture pro forma ") + document.getInvoiceNumber()
-            + " du " + document.getIssueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            + " du " + document.getIssueDate().format(DATE);
         invoice.setNotes(document.getNotes() != null ? document.getNotes() : "Selon " + reference + ".");
         invoice.replaceLines(document.getLines().stream()
             .map(line -> InvoiceLine.of(line.getDescription(), line.getUnit(), line.getQuantity(), line.getUnitPrice(),
@@ -336,7 +357,7 @@ public class InvoiceService {
         creditNote.setPaymentMethod(original.getPaymentMethod());
         // Printed on the credit note, which stays in French
         creditNote.setNotes("Avoir sur la facture " + original.getInvoiceNumber() + " du "
-            + original.getIssueDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) + ".");
+            + original.getIssueDate().format(DATE) + ".");
         creditNote.replaceLines(original.getLines().stream()
             .map(line -> InvoiceLine.of(line.getDescription(), line.getUnit(), line.getQuantity(), line.getUnitPrice(),
                 line.getVatRate()))
@@ -465,6 +486,11 @@ public class InvoiceService {
         return properties.stampDuty().compute(invoice.getTotalAmount());
     }
 
+    /** The TVA exemption mention of an auto-entrepreneur: the one set in the company settings, else invoice.vat-mention. */
+    public String vatMention(Issuer issuer) {
+        return issuer.getVatMention() != null ? issuer.getVatMention() : properties.vatMention();
+    }
+
     /** The rate a line may carry with the current issuer (same rules as a draft), for the models of recurring invoices. */
     public BigDecimal lineVatRate(BigDecimal requested, int index) {
         return vatRate(issuerService.getIssuer(), requested, index);
@@ -498,6 +524,8 @@ public class InvoiceService {
         invoice.setIssuerPhone(issuer.getPhone());
         invoice.setIssuerEmail(issuer.getEmail());
         invoice.setIssuerAeCardNumber(issuer.getAeCardNumber());
+        // Auto-entrepreneur: the exemption mention as printed on this invoice, kept even if the setting changes later
+        invoice.setIssuerVatMention(issuer.isCompany() ? null : vatMention(issuer));
         invoice.setIssuerNif(issuer.getNif());
         invoice.setIssuerNis(issuer.getNis());
         invoice.setIssuerBankAccount(issuer.getBankOrCcpAccount());

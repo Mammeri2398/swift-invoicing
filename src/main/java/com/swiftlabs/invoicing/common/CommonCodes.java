@@ -39,6 +39,7 @@ public final class CommonCodes {
         public static final String CREDIT_NOTE_OF = "creditNoteOf";
         public static final String CURRENT_PATH = "currentPath";
         public static final String CURRENT_USER = "currentUser";
+        public static final String DEFAULT_VAT_MENTION = "defaultVatMention";
         public static final String DIRECTORY = "directory";
         public static final String DOC_TITLE = "docTitle";
         public static final String ENABLED = "enabled";

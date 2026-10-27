@@ -23,6 +23,7 @@ public final class CommonCodes {
         public static final String AMOUNT_UTILS = "amountUtils";
         public static final String AVAILABLE = "available";
         public static final String BACKUPS = "backups";
+        public static final String BACKUP_DIRECTORY = "backupDirectory";
         public static final String BACKUP_WARNING = "backupWarning";
         public static final String BALANCES = "balances";
         public static final String CAN_EDIT = "canEdit";
@@ -99,6 +100,7 @@ public final class CommonCodes {
         public static final String STATUS = "status";
         public static final String STATUSES = "statuses";
         public static final String SUCCESS = "success";
+        public static final String SUPPORT_CONTACT = "supportContact";
         public static final String TEMPORARY_PASSWORD = "temporaryPassword";
         public static final String TEMPORARY_PASSWORD_USER = "temporaryPasswordUser";
         public static final String TOKEN = "token";
@@ -109,6 +111,7 @@ public final class CommonCodes {
         public static final String VAT_MENTION = "vatMention";
         public static final String VAT_RATES = "vatRates";
         public static final String VERIFICATION = "verification";
+        public static final String VERSION = "version";
         public static final String YEARS = "years";
     }
 
@@ -151,6 +154,9 @@ public final class CommonCodes {
 
         // error
         public static final String ERROR = "error";
+
+        // help
+        public static final String HELP_INDEX = "help/index";
 
         // invoice
         public static final String INVOICE_EMAIL = "invoice/email";

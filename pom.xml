@@ -181,6 +181,14 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<!-- META-INF/build-info.properties: the version shown in Aide > À propos -->
+					<execution>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<!-- Compiles src/main/frontend/css/app.css into static/css/app.css.
 			     The CLI is downloaded once into the local Maven repository cache and checksum-verified. -->

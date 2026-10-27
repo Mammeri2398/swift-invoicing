@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--/*
+    Aide. The guide itself is in help/content/<language>.html (fr, en, ar): each defines the fragments "toc"
+    (the table of contents) and "sections" (one <section id="..."> per topic, same ids in every language).
+*/-->
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(#{help.title}, ~{::main}, ~{::script})}">
+<body>
+<main class="page" th:with="content=${'help/content/' + (#locale.language == 'en' or #locale.language == 'ar' ? #locale.language : 'fr')}">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow" th:text="#{help.eyebrow}">Aide</p>
+            <h1 class="page-title" th:text="#{help.title}">Guide d'utilisation</h1>
+            <p class="page-subtitle" th:text="#{help.subtitle}">Tout ce qu'il faut savoir pour facturer avec Swift Invoicing.</p>
+        </div>
+        <input type="search" class="input max-w-xs" th:placeholder="#{help.search}" th:aria-label="#{help.search}" data-help-search/>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-[15rem_1fr]">
+        <nav class="hidden lg:block" th:aria-label="#{help.toc}">
+            <div class="sticky top-24 flex flex-col gap-0.5 text-body-sm" data-help-toc>
+                <p class="mb-2 text-label-sm uppercase tracking-wider text-on-surface-variant" th:text="#{help.toc}">Sommaire</p>
+                <th:block th:replace="~{${content} :: toc}"></th:block>
+                <a href="#about" class="nav-link" th:text="#{help.about.title}">À propos</a>
+            </div>
+        </nav>
+
+        <div class="flex min-w-0 flex-col gap-6">
+            <th:block th:replace="~{${content} :: sections}"></th:block>
+            <p class="hidden card card-body text-on-surface-variant" data-help-empty th:text="#{help.noResult}">Aucune rubrique ne correspond.</p>
+
+            <section id="about" class="card scroll-mt-24">
+                <div class="card-header"><h2 class="card-title"><span class="icon">info</span><th:block th:text="#{help.about.title}">À propos</th:block></h2></div>
+                <dl class="card-body divide-y divide-surface-container text-body-md">
+                    <div class="flex flex-wrap justify-between gap-3 py-2"><dt class="text-on-surface-variant" th:text="#{help.about.version}">Version</dt>
+                        <dd class="font-mono" th:text="${version}">1.0.0</dd></div>
+                    <div class="flex flex-wrap justify-between gap-3 py-2" th:if="${licence != null and licence.state.name() != 'NOT_REQUIRED'}">
+                        <dt class="text-on-surface-variant" th:text="#{help.about.licence}">Licence</dt>
+                        <dd class="text-end">
+                            <th:block th:if="${licence.licence != null}"><span class="font-mono" th:text="${licence.licence.id}">LIC-2026-0001</span> ·
+                                <span th:text="${licence.licence.company}">Entreprise</span> ·
+                                <span th:text="#{help.about.licenceUntil(${#temporals.format(licence.licence.expires, 'dd/MM/yyyy')})}">jusqu'au 31/12/2027</span></th:block>
+                            <th:block th:if="${licence.licence == null}" th:text="#{help.about.trial}">Version d'essai</th:block>
+                        </dd></div>
+                    <div class="flex flex-wrap justify-between gap-3 py-2" th:if="${!networkAddresses.isEmpty()}">
+                        <dt class="text-on-surface-variant" th:text="#{help.about.addresses}">Adresse depuis les autres PC</dt>
+                        <dd class="flex flex-col items-end font-mono" dir="ltr"><span th:each="url : ${networkAddresses}" th:text="${url}">http://BUREAU-PC:7070</span></dd></div>
+                    <div class="flex flex-wrap justify-between gap-3 py-2" th:if="${backupDirectory != null and currentUser != null and currentUser.can('MANAGE_BACKUPS')}">
+                        <dt class="text-on-surface-variant" th:text="#{help.about.backups}">Dossier des sauvegardes</dt>
+                        <dd class="font-mono text-body-sm" dir="ltr" th:text="${backupDirectory}">C:\ProgramData\Swift Invoicing\backups</dd></div>
+                    <div class="flex flex-wrap justify-between gap-3 py-2" th:if="${supportContact}">
+                        <dt class="text-on-surface-variant" th:text="#{help.about.support}">Assistance</dt>
+                        <dd th:text="${supportContact}">support@example.dz</dd></div>
+                </dl>
+            </section>
+        </div>
+    </div>
+</main>
+<script th:src="@{/js/help.js}" defer></script>
+</body>
+</html>

@@ -355,6 +355,31 @@
     @apply text-amber-600;
   }
 
+  /* Aide: the text of a guide section */
+  .help-text {
+    @apply flex flex-col gap-3 text-body-md leading-relaxed text-on-surface;
+  }
+
+  .help-text ol {
+    @apply list-decimal space-y-1.5 ps-5;
+  }
+
+  .help-text ul {
+    @apply list-disc space-y-1.5 ps-5;
+  }
+
+  .help-text a {
+    @apply font-medium text-primary underline-offset-2 hover:underline;
+  }
+
+  .help-title {
+    @apply font-semibold text-on-surface;
+  }
+
+  .help-tip {
+    @apply rounded-lg bg-surface-container-low px-3 py-2 text-body-sm text-on-surface-variant;
+  }
+
   /* Navigation */
   .nav-link {
     @apply whitespace-nowrap rounded-lg px-3 py-1.5 text-label-md text-on-surface-variant transition-colors

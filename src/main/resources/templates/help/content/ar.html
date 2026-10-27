@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<!--/*
+    User guide (Arabic). Same section ids, in the same order, in fr.html and en.html
+    (checked by HelpTest). Each section: <section id="..." data-help-section>, listed in the "toc" fragment.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="toc">
+    <a href="#start" class="nav-link">الخطوات الأولى</a>
+    <a href="#company" class="nav-link">ملف المؤسسة</a>
+    <a href="#clients" class="nav-link">الزبائن</a>
+    <a href="#catalog" class="nav-link">الكتالوج</a>
+    <a href="#invoices" class="nav-link">إنشاء فاتورة وإصدارها</a>
+    <a href="#pdf-email" class="nav-link">PDF والإرسال بالبريد الإلكتروني</a>
+    <a href="#payments" class="nav-link">المدفوعات والتذكيرات</a>
+    <a href="#credit-notes" class="nav-link">فواتير التخفيض والإلغاء</a>
+    <a href="#quotes" class="nav-link">عروض الأسعار والفواتير الشكلية</a>
+    <a href="#dashboard" class="nav-link">لوحة القيادة والتصدير</a>
+    <a href="#users" class="nav-link">المستخدمون والصلاحيات</a>
+    <a href="#security" class="nav-link">تسجيل الدخول والأمان</a>
+    <a href="#language" class="nav-link">اللغة</a>
+    <a href="#backups" class="nav-link">النسخ الاحتياطية</a>
+    <a href="#licence" class="nav-link">الترخيص</a>
+    <a href="#network" class="nav-link">الشبكة والبريد الإلكتروني</a>
+    <a href="#faq" class="nav-link">أسئلة شائعة</a>
+</th:block>
+
+<th:block th:fragment="sections">
+
+<section id="start" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">rocket_launch</span>الخطوات الأولى</h2></div>
+    <div class="card-body help-text">
+        <p>يُسيّر Swift Invoicing الفواتير وفواتير التخفيض وعروض الأسعار والفواتير الشكلية لمؤسسة جزائرية، سواء كانت مقاولًا ذاتيًا
+            أو شركة. يُستعمل من المتصفح، على الحاسوب المثبَّت عليه وعلى حواسيب المكتب الأخرى.</p>
+        <p class="help-title">للبدء بشكل صحيح، اتبع هذا الترتيب:</p>
+        <ol>
+            <li>أكمل <a th:href="@{/settings/issuer}">ملف المؤسسة</a>: الصفة، رقم التعريف الجبائي (NIF)، العنوان، الشعار. تُطبع هذه
+                المعلومات على كل فاتورة.</li>
+            <li>اضبط <a th:href="@{/settings/mail}">إرسال البريد الإلكتروني</a> إذا أردت إرسال الفواتير بالبريد الإلكتروني.</li>
+            <li>أضف <a th:href="@{/clients}">زبائنك</a>، وإن شئت، منتجاتك وخدماتك في
+                <a th:href="@{/catalog}">الكتالوج</a>.</li>
+            <li>أنشئ حسابات زملائك في <a th:href="@{/users}">المستخدمون</a>.</li>
+            <li>أنشئ فاتورتك الأولى: <a th:href="@{/invoices/new}">فاتورة جديدة</a>.</li>
+        </ol>
+        <p class="help-tip">لا تظهر كل صفحة إلا للمستخدمين الذين يملكون الصلاحية المناسبة: إذا كانت قائمة ما غير ظاهرة، اطلبها من
+            المسؤول.</p>
+    </div>
+</section>
+
+<section id="company" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">storefront</span>ملف المؤسسة</h2></div>
+    <div class="card-body help-text">
+        <p>في <a th:href="@{/settings/issuer}">الإعدادات &gt; المؤسسة</a>، اختر أولًا صفتك:</p>
+        <ul>
+            <li><strong>مقاول ذاتي</strong>: لا يوجد رسم على القيمة المضافة. تحمل الفاتورة رقم بطاقة المقاول الذاتي، ورقم التعريف الجبائي (NIF)
+                ورقم التعريف الإحصائي (NIS)، وعبارة «غير خاضع للرسم على القيمة المضافة». تتابع لوحة القيادة رقم أعمالك مقارنةً بالسقف
+                السنوي الذي تحدده.</li>
+            <li><strong>شركة</strong> (SARL، EURL، SPA…): الرسم على القيمة المضافة لكل سطر (19 %، 9 % أو معفى). تحمل الفاتورة الشكل
+                القانوني، ورأس المال، والسجل التجاري (RC)، ورقم التعريف الجبائي (NIF)، ورقم التعريف الإحصائي (NIS)، ورقم المادة الجبائية (AI).</li>
+        </ul>
+        <p>أضف شعارك (PNG أو JPEG، 500 كيلوبايت كحد أقصى): يحل محل الأحرف الأولى من اسمك في أعلى الفواتير.</p>
+        <p class="help-tip">تحتفظ الفاتورة الصادرة بمعلومات المؤسسة كما كانت يوم إصدارها: تعديل الملف بعد ذلك لا يغيّر إلا الفواتير
+            الجديدة والمسودات.</p>
+    </div>
+</section>
+
+<section id="clients" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">groups</span>الزبائن</h2></div>
+    <div class="card-body help-text">
+        <p>الزبون إما <strong>شخص طبيعي</strong> وإما <strong>مهني</strong>. بالنسبة للمهني، رقم التعريف الجبائي (NIF) إجباري قبل
+            إصدار فاتورة؛ وإذا كانت المؤسسة المُصدِرة شركة، فالسجل التجاري (RC) ورقم المادة الجبائية (AI) للزبون إجباريان أيضًا.</p>
+        <p>تُظهر قائمة <a th:href="@{/clients}">الزبائن</a> ما بقي على كل زبون. أيقونة المحفظة تفتح
+            <strong>كشف الحساب</strong> الخاص به: الفواتير وفواتير التخفيض والمدفوعات، مع الرصيد، جاهزًا للطباعة.</p>
+        <p class="help-tip">لا يمكن حذف زبون لديه فواتير: يجب أن تبقى وثائقه قابلة للاطلاع.</p>
+    </div>
+</section>
+
+<section id="catalog" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">inventory_2</span>الكتالوج</h2></div>
+    <div class="card-body help-text">
+        <p>يحفظ <a th:href="@{/catalog}">الكتالوج</a> منتجاتك وخدماتك: التسمية، الوحدة، السعر ونسبة الرسم على القيمة المضافة.</p>
+        <p>في الفاتورة، اكتب بداية تسمية السطر: تُقترح عليك عناصر الكتالوج. اختيار أحدها يملأ الوحدة والسعر والرسم على القيمة المضافة
+            وكمية 1. يمكنك بعد ذلك تعديل هذه القيم لهذه الفاتورة فقط.</p>
+        <p class="help-tip">تعديل عنصر أو حذفه لا يغيّر أبدًا فاتورة سبق إعدادها: يحتفظ السطر بقيمه.</p>
+    </div>
+</section>
+
+<section id="invoices" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">receipt_long</span>إنشاء فاتورة وإصدارها</h2></div>
+    <div class="card-body help-text">
+        <ol>
+            <li><a th:href="@{/invoices/new}">فاتورة جديدة</a>: اختر الزبون، والتاريخ، وتاريخ الاستحقاق إن وُجد، وطريقة الدفع،
+                ثم أضف الأسطر. تُحسب المجاميع أثناء الإدخال.</li>
+            <li>احفظ: تكون الفاتورة <strong>مسودة</strong>، يمكن تعديلها وحذفها، وليس لها رقم.</li>
+            <li>راجعها، ثم انقر على <strong>إصدار</strong>. تحصل عندئذ على رقمها (<span dir="ltr">FA-2026-0001</span>، ثم
+                <span dir="ltr">FA-2026-0002</span>…) ولا يمكن تعديلها بعد ذلك.</li>
+        </ol>
+        <p>تتتابع الأرقام دون انقطاع، وتبدأ من جديد من 0001 كل سنة. تُرقَّم فواتير التخفيض <span dir="ltr">AV-…</span>، وعروض
+            الأسعار <span dir="ltr">DV-…</span> والفواتير الشكلية <span dir="ltr">PF-…</span>.</p>
+        <p class="help-title">حقوق الطابع</p>
+        <p>عندما تكون طريقة الدفع <strong>نقدًا</strong>، تُضاف حقوق الطابع إلى المجموع: 1 % حتى 30 000 دج، و1,5 % حتى 100 000 دج،
+            و2 % فيما زاد عن ذلك، بحد أدنى 5 دج، مع التقريب إلى الدينار الأعلى. تعرض الفاتورة حينئذ «الصافي للدفع». تُضبط هذه
+            النسب في الإعدادات؛ تحقق منها مع محاسبك.</p>
+        <p class="help-tip">يُصحَّح الخطأ في فاتورة صادرة بفاتورة تخفيض (انظر <a href="#credit-notes">فواتير التخفيض</a>)، وليس أبدًا
+            بتعديلها.</p>
+    </div>
+</section>
+
+<section id="pdf-email" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">picture_as_pdf</span>PDF والإرسال بالبريد الإلكتروني</h2></div>
+    <div class="card-body help-text">
+        <p>في صفحة الفاتورة، يُنزّل زر <strong>PDF</strong> الوثيقة بمقاس A4، جاهزة للطباعة أو الإرسال.
+            تحمل المسودة عبارة «BROUILLON»، والفاتورة الملغاة عبارة «ANNULÉ».</p>
+        <p>يُحضّر زر <strong>إرسال بالبريد الإلكتروني</strong> رسالة إلى الزبون مع ملف PDF مرفقًا: تحقق من العنوان والموضوع
+            والرسالة، ثم أرسل. يُسجَّل الإرسال في سجل الفاتورة.</p>
+        <p class="help-tip">الوثائق الموجهة إلى الزبائن (ملفات PDF والرسائل الإلكترونية) تكون دائمًا باللغة الفرنسية، مهما كانت لغة
+            المستخدم.</p>
+    </div>
+</section>
+
+<section id="payments" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">payments</span>المدفوعات والتذكيرات</h2></div>
+    <div class="card-body help-text">
+        <p>في الفاتورة الصادرة، سجّل كل دفعة تستلمها: المبلغ، التاريخ، الطريقة والمرجع (رقم الصك، رقم التحويل…).
+            الدفعات الجزئية ممكنة؛ وتصبح الفاتورة <strong>مدفوعة</strong> عندما يصبح الرصيد المتبقي صفرًا.
+            يسجّل زر <strong>دفع الرصيد المتبقي</strong> بنقرة واحدة دفعة بالمبلغ المتبقي.</p>
+        <p>الفاتورة الصادرة التي تجاوزت تاريخ استحقاقها ولم تُسدَّد بالكامل تكون <strong>متأخرة</strong>: تنبّه إليها لوحة القيادة.
+            من الفاتورة، يُحضّر زر <strong>تذكير</strong> رسالة تذكير بالمبلغ المتبقي.</p>
+        <p class="help-tip">تُحذف الدفعة المسجلة عن طريق الخطأ من الفاتورة.</p>
+    </div>
+</section>
+
+<section id="credit-notes" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">undo</span>فواتير التخفيض والإلغاء</h2></div>
+    <div class="card-body help-text">
+        <p><strong>فاتورة التخفيض</strong> (Avoir) تلغي فاتورة صادرة أو مدفوعة كليًا أو جزئيًا: خطأ في السعر، تخفيض، إرجاع. من
+            الفاتورة، يُنشئ زر <strong>إنشاء فاتورة تخفيض</strong> مسودة فاتورة تخفيض بأسطر الفاتورة: عدّلها، ثم
+            أصدرها. لا يمكن أن يتجاوز مبلغها ما بقي قابلًا للإلغاء في الفاتورة.</p>
+        <p>زر <strong>إلغاء</strong> يجعل الفاتورة الصادرة ملغاة بالكامل، دون فاتورة تخفيض؛ ولا يعود ذلك ممكنًا إذا كانت لها
+            فاتورة تخفيض. أما المسودة فتُحذف ببساطة.</p>
+        <p class="help-tip">من أجل محاسبة واضحة، فضّل فاتورة التخفيض على الإلغاء: اسأل محاسبك عن القاعدة التي
+            تنطبق على مؤسستك.</p>
+    </div>
+</section>
+
+<section id="quotes" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">request_quote</span>عروض الأسعار والفواتير الشكلية</h2></div>
+    <div class="card-body help-text">
+        <p>تجمع صفحة <a th:href="@{/quotes}">عروض الأسعار</a> عروض الأسعار والفواتير الشكلية. تُنشأ وتُصدر مثل
+            الفاتورة؛ ويحدد تاريخ «صالح إلى غاية» مدة صلاحيتها.</p>
+        <ul>
+            <li>يُعلَّم عرض السعر الصادر <strong>مقبول</strong> أو <strong>مرفوض</strong> حسب رد الزبون.</li>
+            <li>يحوّل زر <strong>فوترة</strong> عرض سعر صادرًا أو مقبولًا، أو فاتورة شكلية صادرة، إلى مسودة فاتورة تتضمن
+                الأسطر نفسها ومرجع عرض السعر.</li>
+        </ul>
+        <p class="help-tip">عرض السعر والفاتورة الشكلية ليسا فاتورة: لا يُحتسبان في رقم الأعمال ولا يُعلَّمان
+            كمدفوعين.</p>
+    </div>
+</section>
+
+<section id="dashboard" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">monitoring</span>لوحة القيادة والتصدير</h2></div>
+    <div class="card-body help-text">
+        <p>تعرض <a th:href="@{/dashboard}">لوحة القيادة</a> رقم أعمال السنة (الفواتير الصادرة والمدفوعة)، وما بقي
+            للتحصيل، والمسودات، والفواتير المتأخرة، وبالنسبة للمقاول الذاتي، السقف السنوي: يظهر تنبيه
+            عند بلوغ 80 %.</p>
+        <p>تفصّل صفحة <a th:href="@{/turnover}">رقم الأعمال</a> كل شهر من السنة، مع الرسم على القيمة المضافة المحصَّل بالنسبة
+            للشركة.</p>
+        <p>من قائمة <a th:href="@{/invoices}">الفواتير</a>، يُصدّر زرّا Excel وCSV الفواتير المعروضة حسب
+            التصفية، مثلًا لمحاسبك.</p>
+    </div>
+</section>
+
+<section id="users" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">manage_accounts</span>المستخدمون والصلاحيات</h2></div>
+    <div class="card-body help-text">
+        <p>لكل شخص حسابه الخاص. في <a th:href="@{/users}">المستخدمون</a>، يُنشئ المسؤول حسابًا مع
+            <strong>ملف</strong>؛ وتظهر كلمة مرور مؤقتة مرة واحدة فقط، تُسلَّم إلى الشخص المعني، الذي سيغيّرها عند
+            أول تسجيل دخول.</p>
+        <p>يجمع الملف عددًا من <strong>الصلاحيات</strong>: الاطلاع على الفواتير، إصدارها، تسيير الزبائن، الكتالوج، النسخ
+            الاحتياطية… أنشئ مثلًا ملفًا باسم «المحاسبة» يطّلع دون أن يُصدر. تتغيّر صلاحيات المستخدم
+            عند تسجيل دخوله التالي.</p>
+        <p class="help-tip">عطّل حساب الشخص الذي يغادر المؤسسة بدلًا من حذفه: يبقى اسمه في
+            سجل الفواتير.</p>
+    </div>
+</section>
+
+<section id="security" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">shield_lock</span>تسجيل الدخول والأمان</h2></div>
+    <div class="card-body help-text">
+        <ul>
+            <li>بعد 5 محاولات بكلمة مرور خاطئة، يُقفل الحساب لمدة 15 دقيقة. وتُغلق الجلسة غير النشطة بعد 20 دقيقة.</li>
+            <li>يُرسل رابط <strong>نسيت كلمة المرور؟</strong> (في صفحة تسجيل الدخول) رابطًا صالحًا لمدة 60 دقيقة إلى البريد الإلكتروني
+                للحساب: يجب أن يكون إرسال البريد الإلكتروني مضبوطًا. وإلا، يمكن للمسؤول إعادة تعيين كلمة المرور من المستخدمون.</li>
+            <li>تضيف <strong>المصادقة الثنائية</strong> رمزًا من 6 أرقام يولّده تطبيق على هاتفك (Google
+                Authenticator، Microsoft Authenticator…). فعّلها في <a th:href="@{/account}">حسابي</a> واحفظ رموز
+                الاسترداد في مكان آمن.</li>
+        </ul>
+    </div>
+</section>
+
+<section id="language" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">translate</span>اللغة</h2></div>
+    <div class="card-body help-text">
+        <p>التطبيق متوفر بالفرنسية والإنجليزية والعربية. يختار كل مستخدم لغته في
+            <a th:href="@{/account}">حسابي</a>؛ ولا تتغيّر إلا بالنسبة له. قبل تسجيل الدخول، تقترح صفحة تسجيل الدخول
+            اللغات الثلاث.</p>
+        <p class="help-tip">تبقى الفواتير والرسائل الإلكترونية المرسلة إلى الزبائن باللغة الفرنسية.</p>
+    </div>
+</section>
+
+<section id="backups" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">backup</span>النسخ الاحتياطية</h2></div>
+    <div class="card-body help-text">
+        <p>عند تثبيته على حاسوبك، ينشئ التطبيق نسخة احتياطية لكل بياناتك مرة واحدة في اليوم ويحتفظ بآخر 30 نسخة احتياطية
+            تلقائية. في <a th:href="@{/settings/backups}">الإعدادات &gt; النسخ الاحتياطية</a>:</p>
+        <ul>
+            <li><strong>إنشاء نسخة احتياطية الآن</strong> قبل أي عملية مهمة؛</li>
+            <li>نزّل بانتظام نسخة احتياطية على مفتاح USB أو قرص خارجي، أو اختر مجلدًا على قرص
+                خارجي: يجب ألا يؤدي عطل في الحاسوب إلى ضياع فواتيرك؛</li>
+            <li>تستبدل <strong>استعادة</strong> كل البيانات ببيانات النسخة الاحتياطية (اكتب استعادة للتأكيد). تُنشأ نسخة
+                احتياطية للبيانات الحالية قبل ذلك مباشرة، ويُسجَّل خروج الجميع؛</li>
+            <li>على حاسوب جديد، استعمل <strong>استيراد</strong> لملف نسخة احتياطية، ثم استعِده.</li>
+        </ul>
+        <p class="help-tip">يُنبّه شريط أحمر المسؤول إذا فشلت نسخة احتياطية أو لم تُنشأ أي نسخة منذ 3 أيام.</p>
+    </div>
+</section>
+
+<section id="licence" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">workspace_premium</span>الترخيص</h2></div>
+    <div class="card-body help-text">
+        <p>يعمل التثبيت الجديد 30 يومًا كنسخة تجريبية، لـ 3 مستخدمين. الصق بعد ذلك مفتاح الترخيص الذي تستلمه
+            من الناشر في <a th:href="@{/settings/licence}">الإعدادات &gt; الترخيص</a>: يحدد عدد المستخدمين النشطين
+            وتاريخ الانتهاء، وهو مرتبط برقم التعريف الجبائي (NIF) للمؤسسة.</p>
+        <p>يُنبّه شريط قبل 30 يومًا من الانتهاء. بعد هذا التاريخ، يبقى كل شيء يعمل لمدة 15 يومًا؛ ثم ينتقل التطبيق إلى وضع
+            <strong>القراءة فقط</strong>: تبقى فواتيرك قابلة للاطلاع والتنزيل والنسخ الاحتياطي إلى غاية تفعيل
+            مفتاح جديد.</p>
+    </div>
+</section>
+
+<section id="network" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">lan</span>الشبكة والبريد الإلكتروني</h2></div>
+    <div class="card-body help-text">
+        <p>تفتح حواسيب المكتب الأخرى التطبيق في متصفحها على العنوان المبيّن في <a href="#about">حول التطبيق</a>
+            (مثلًا <span dir="ltr">http://BUREAU-PC:7070</span>). يجب أن يكون الحاسوب المثبَّت عليه التطبيق مشغّلًا، وأن يسمح له جدار
+            الحماية بذلك (خيار أثناء التثبيت).</p>
+        <p>لإرسال الفواتير والتذكيرات وروابط نسيان كلمة المرور، اضبط خادم الإرسال في
+            <a th:href="@{/settings/mail}">الإعدادات &gt; البريد الإلكتروني</a> (Gmail: <span dir="ltr">smtp.gmail.com</span>، المنفذ 587، مع كلمة
+            مرور تطبيق)، ثم أرسل لنفسك رسالة تجريبية.</p>
+    </div>
+</section>
+
+<section id="faq" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">quiz</span>أسئلة شائعة</h2></div>
+    <div class="card-body help-text">
+        <p class="help-title">أصدرت فاتورة فيها خطأ.</p>
+        <p>أنشئ فاتورة تخفيض على هذه الفاتورة، ثم فاتورة جديدة صحيحة. الفاتورة الصادرة لا تُعدَّل: هذا ما
+            يضمن تسلسل الأرقام.</p>
+        <p class="help-title">انتقلت من مقاول ذاتي إلى شركة.</p>
+        <p>غيّر الصفة في ملف المؤسسة. تحتفظ الفواتير الصادرة سابقًا بصفتها القديمة؛ أما الفواتير الجديدة
+            فتطبّق الرسم على القيمة المضافة.</p>
+        <p class="help-title">الزر الذي أحتاجه لا يظهر.</p>
+        <p>ملفك لا يتضمن الصلاحية المناسبة: اطلبها من المسؤول.</p>
+        <p class="help-title">نسي المسؤول كلمة مروره والبريد الإلكتروني غير مضبوط.</p>
+        <p>يمكن لمسؤول آخر إعادة تعيينها من المستخدمون. إذا لم يوجد مسؤول آخر، اتصل بالدعم.</p>
+        <p class="help-title">زبون يشكك في صحة فاتورة.</p>
+        <p>تؤكد الصفحة العامة «التحقق من فاتورة» (أسفل كل صفحة) وجود رقم ما، مع تاريخه وحالته، دون
+            الكشف عن الزبون ولا عن المبلغ.</p>
+    </div>
+</section>
+
+</th:block>
+</body>
+</html>

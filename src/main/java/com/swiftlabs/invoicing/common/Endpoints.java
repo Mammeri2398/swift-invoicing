@@ -131,6 +131,9 @@ public final class Endpoints {
 
     public static final String QUOTES = "/quotes";
 
+    // ---- Help -------------------------------------------------------------------------------------------------------
+    public static final String HELP = "/help";
+
     // ---- Settings ---------------------------------------------------------------------------------------------------
     public static final String SETTINGS = "/settings";
 

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<!--/*
+    Guide d'utilisation (français). Same section ids, in the same order, in en.html and ar.html
+    (checked by HelpTest). Each section: <section id="..." data-help-section>, listed in the "toc" fragment.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="toc">
+    <a href="#start" class="nav-link">Premiers pas</a>
+    <a href="#company" class="nav-link">Profil de l'entreprise</a>
+    <a href="#clients" class="nav-link">Clients</a>
+    <a href="#catalog" class="nav-link">Catalogue</a>
+    <a href="#invoices" class="nav-link">Créer et émettre une facture</a>
+    <a href="#pdf-email" class="nav-link">PDF et envoi par email</a>
+    <a href="#payments" class="nav-link">Paiements et relances</a>
+    <a href="#credit-notes" class="nav-link">Avoirs et annulation</a>
+    <a href="#quotes" class="nav-link">Devis et pro forma</a>
+    <a href="#dashboard" class="nav-link">Tableau de bord et exports</a>
+    <a href="#users" class="nav-link">Utilisateurs et droits</a>
+    <a href="#security" class="nav-link">Connexion et sécurité</a>
+    <a href="#language" class="nav-link">Langue</a>
+    <a href="#backups" class="nav-link">Sauvegardes</a>
+    <a href="#licence" class="nav-link">Licence</a>
+    <a href="#network" class="nav-link">Réseau et email</a>
+    <a href="#faq" class="nav-link">Questions fréquentes</a>
+</th:block>
+
+<th:block th:fragment="sections">
+
+<section id="start" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">rocket_launch</span>Premiers pas</h2></div>
+    <div class="card-body help-text">
+        <p>Swift Invoicing gère les factures, avoirs, devis et factures pro forma d'une entreprise algérienne, auto-entrepreneur
+            ou société. Il s'utilise dans le navigateur, depuis le PC où il est installé et depuis les autres PC du bureau.</p>
+        <p class="help-title">Dans l'ordre, pour bien démarrer :</p>
+        <ol>
+            <li>Complétez le <a th:href="@{/settings/issuer}">profil de l'entreprise</a> : statut, NIF, adresse, logo. Ces informations
+                sont imprimées sur chaque facture.</li>
+            <li>Réglez l'<a th:href="@{/settings/mail}">envoi des emails</a> si vous voulez envoyer les factures par email.</li>
+            <li>Ajoutez vos <a th:href="@{/clients}">clients</a> et, si vous le souhaitez, vos produits et services dans le
+                <a th:href="@{/catalog}">catalogue</a>.</li>
+            <li>Créez les comptes de vos collègues dans <a th:href="@{/users}">Utilisateurs</a>.</li>
+            <li>Créez votre première facture : <a th:href="@{/invoices/new}">Nouvelle facture</a>.</li>
+        </ol>
+        <p class="help-tip">Chaque page n'apparaît qu'aux utilisateurs qui ont le droit correspondant : si un menu manque, demandez-le à
+            votre administrateur.</p>
+    </div>
+</section>
+
+<section id="company" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">storefront</span>Profil de l'entreprise</h2></div>
+    <div class="card-body help-text">
+        <p>Dans <a th:href="@{/settings/issuer}">Réglages &gt; Paramètres</a>, choisissez d'abord votre statut :</p>
+        <ul>
+            <li><strong>Auto-entrepreneur</strong> : pas de TVA. La facture porte votre numéro de carte d'auto-entrepreneur, votre NIF
+                et votre NIS, et la mention « TVA non applicable ». Le tableau de bord suit votre chiffre d'affaires face au plafond
+                annuel que vous indiquez.</li>
+            <li><strong>Société</strong> (SARL, EURL, SPA…) : TVA par ligne (19 %, 9 % ou exonéré). La facture porte la forme
+                juridique, le capital, le RC, le NIF, le NIS et l'article d'imposition.</li>
+        </ul>
+        <p>Ajoutez votre logo (PNG ou JPEG, 500 Ko au plus) : il remplace vos initiales en haut des factures.</p>
+        <p class="help-tip">Une facture émise garde les informations de l'entreprise du jour de son émission : modifier le profil ensuite
+            ne change que les nouvelles factures et les brouillons.</p>
+    </div>
+</section>
+
+<section id="clients" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">groups</span>Clients</h2></div>
+    <div class="card-body help-text">
+        <p>Un client est soit un <strong>particulier</strong>, soit un <strong>professionnel</strong>. Pour un professionnel, le NIF est
+            obligatoire avant d'émettre une facture ; pour une société émettrice, le RC et l'article d'imposition du client aussi.</p>
+        <p>La liste des <a th:href="@{/clients}">clients</a> montre ce que chacun doit encore. L'icône portefeuille ouvre son
+            <strong>relevé de compte</strong> : factures, avoirs et paiements, avec le solde, prêt à imprimer.</p>
+        <p class="help-tip">Un client qui a des factures ne peut pas être supprimé : ses documents doivent rester consultables.</p>
+    </div>
+</section>
+
+<section id="catalog" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">inventory_2</span>Catalogue</h2></div>
+    <div class="card-body help-text">
+        <p>Le <a th:href="@{/catalog}">catalogue</a> garde vos produits et services : désignation, unité, prix et taux de TVA.</p>
+        <p>Sur une facture, tapez le début de la désignation d'une ligne : les articles du catalogue sont proposés. En choisir un remplit
+            l'unité, le prix, la TVA et une quantité de 1. Vous pouvez ensuite modifier ces valeurs pour cette facture seulement.</p>
+        <p class="help-tip">Modifier ou supprimer un article ne change jamais une facture déjà établie : la ligne garde ses valeurs.</p>
+    </div>
+</section>
+
+<section id="invoices" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">receipt_long</span>Créer et émettre une facture</h2></div>
+    <div class="card-body help-text">
+        <ol>
+            <li><a th:href="@{/invoices/new}">Nouvelle facture</a> : choisissez le client, la date, l'échéance éventuelle et le mode
+                de paiement, puis ajoutez les lignes. Les totaux se calculent pendant la saisie.</li>
+            <li>Enregistrez : la facture est un <strong>brouillon</strong>, modifiable et supprimable, sans numéro.</li>
+            <li>Vérifiez-la, puis cliquez sur <strong>Émettre</strong>. Elle reçoit alors son numéro (FA-2026-0001, puis FA-2026-0002…)
+                et ne peut plus être modifiée.</li>
+        </ol>
+        <p>Les numéros se suivent sans trou, et reprennent à 0001 chaque année. Les avoirs sont numérotés AV-…, les devis DV-…
+            et les factures pro forma PF-….</p>
+        <p class="help-title">Droit de timbre</p>
+        <p>Quand le mode de paiement est <strong>Espèces</strong>, le droit de timbre s'ajoute au total : 1 % jusqu'à 30 000 DA,
+            1,5 % jusqu'à 100 000 DA, 2 % au-delà, 5 DA au minimum, arrondi au dinar supérieur. La facture affiche alors le
+            « Net à payer ». Ces taux se règlent dans la configuration ; vérifiez-les avec votre comptable.</p>
+        <p class="help-tip">Une erreur sur une facture émise se corrige par un avoir (voir <a href="#credit-notes">Avoirs</a>), jamais
+            en la modifiant.</p>
+    </div>
+</section>
+
+<section id="pdf-email" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">picture_as_pdf</span>PDF et envoi par email</h2></div>
+    <div class="card-body help-text">
+        <p>Sur la page d'une facture, le bouton <strong>PDF</strong> télécharge le document au format A4, prêt à imprimer ou à envoyer.
+            Un brouillon porte la mention « BROUILLON », une facture annulée la mention « ANNULÉ ».</p>
+        <p>Le bouton <strong>Envoyer par email</strong> prépare un email au client avec le PDF en pièce jointe : vérifiez l'adresse, l'objet et le
+            message, puis envoyez. L'envoi est noté dans l'historique de la facture.</p>
+        <p class="help-tip">Les documents destinés aux clients (PDF et emails) sont toujours en français, quelle que soit la langue de
+            l'utilisateur.</p>
+    </div>
+</section>
+
+<section id="payments" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">payments</span>Paiements et relances</h2></div>
+    <div class="card-body help-text">
+        <p>Sur une facture émise, enregistrez chaque paiement reçu : montant, date, mode et référence (n° de chèque, de virement…).
+            Les paiements partiels sont possibles ; la facture passe à <strong>Payée</strong> quand le solde est à zéro.
+            <strong>Payer le solde</strong> enregistre en un clic un paiement du reste dû.</p>
+        <p>Une facture émise dont l'échéance est passée et qui n'est pas soldée est <strong>en retard</strong> : le tableau de bord la
+            signale. Depuis la facture, <strong>Relancer</strong> prépare un email de rappel avec le montant restant.</p>
+        <p class="help-tip">Un paiement saisi par erreur se supprime depuis la facture.</p>
+    </div>
+</section>
+
+<section id="credit-notes" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">undo</span>Avoirs et annulation</h2></div>
+    <div class="card-body help-text">
+        <p>Un <strong>avoir</strong> annule tout ou partie d'une facture émise ou payée : erreur de prix, remise, retour. Depuis la
+            facture, <strong>Créer un avoir</strong> crée un brouillon d'avoir avec les lignes de la facture : ajustez-les, puis
+            émettez-le. Son montant ne peut pas dépasser ce qui reste à annuler sur la facture.</p>
+        <p><strong>Annuler</strong> une facture émise la marque annulée en entier, sans avoir ; ce n'est plus possible quand elle a déjà
+            un avoir. Un brouillon, lui, se supprime simplement.</p>
+        <p class="help-tip">Pour une comptabilité claire, préférez l'avoir à l'annulation : demandez à votre comptable la règle qui
+            s'applique à votre entreprise.</p>
+    </div>
+</section>
+
+<section id="quotes" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">request_quote</span>Devis et pro forma</h2></div>
+    <div class="card-body help-text">
+        <p>La page <a th:href="@{/quotes}">Devis</a> regroupe les devis et les factures pro forma. Ils se créent et s'émettent comme une
+            facture ; la date « Valable jusqu'au » indique leur durée de validité.</p>
+        <ul>
+            <li>Un devis émis se marque <strong>Accepté</strong> ou <strong>Refusé</strong> selon la réponse du client.</li>
+            <li><strong>Facturer</strong> transforme un devis émis ou accepté, ou une pro forma émise, en facture brouillon reprenant les
+                mêmes lignes et la référence du devis.</li>
+        </ul>
+        <p class="help-tip">Un devis ou une pro forma n'est pas une facture : ils ne comptent pas dans le chiffre d'affaires et ne se
+            marquent pas payés.</p>
+    </div>
+</section>
+
+<section id="dashboard" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">monitoring</span>Tableau de bord et exports</h2></div>
+    <div class="card-body help-text">
+        <p>Le <a th:href="@{/dashboard}">tableau de bord</a> montre le chiffre d'affaires de l'année (factures émises et payées), ce qui
+            reste à encaisser, les brouillons, les factures en retard et, pour un auto-entrepreneur, le plafond annuel : une alerte
+            apparaît à 80 %.</p>
+        <p>La page <a th:href="@{/turnover}">Chiffre d'affaires</a> détaille chaque mois de l'année, avec la TVA collectée pour une
+            société.</p>
+        <p>Depuis la liste des <a th:href="@{/invoices}">factures</a>, les boutons Excel et CSV exportent les factures affichées par le
+            filtre, par exemple pour votre comptable.</p>
+    </div>
+</section>
+
+<section id="users" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">manage_accounts</span>Utilisateurs et droits</h2></div>
+    <div class="card-body help-text">
+        <p>Chaque personne a son propre compte. Dans <a th:href="@{/users}">Utilisateurs</a>, l'administrateur crée un compte avec un
+            <strong>profil</strong> ; un mot de passe temporaire s'affiche une seule fois, à transmettre à la personne, qui le changera à
+            sa première connexion.</p>
+        <p>Un profil regroupe des <strong>privilèges</strong> : voir les factures, les émettre, gérer les clients, le catalogue, les
+            sauvegardes… Créez par exemple un profil « Comptabilité » qui consulte sans émettre. Les privilèges d'un utilisateur
+            changent à sa connexion suivante.</p>
+        <p class="help-tip">Désactivez le compte d'une personne qui quitte l'entreprise plutôt que de le supprimer : son nom reste dans
+            l'historique des factures.</p>
+    </div>
+</section>
+
+<section id="security" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">shield_lock</span>Connexion et sécurité</h2></div>
+    <div class="card-body help-text">
+        <ul>
+            <li>Après 5 mots de passe erronés, le compte est bloqué 15 minutes. Une session inactive se ferme après 20 minutes.</li>
+            <li><strong>Mot de passe oublié</strong> (page de connexion) envoie un lien valable 60 minutes à l'email du compte : l'envoi
+                d'emails doit être réglé. Sinon, un administrateur peut réinitialiser le mot de passe depuis Utilisateurs.</li>
+            <li>La <strong>double authentification</strong> ajoute un code de 6 chiffres d'une application de votre téléphone (Google
+                Authenticator, Microsoft Authenticator…). Activez-la dans <a th:href="@{/account}">Mon compte</a> et gardez les codes de
+                secours en lieu sûr.</li>
+        </ul>
+    </div>
+</section>
+
+<section id="language" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">translate</span>Langue</h2></div>
+    <div class="card-body help-text">
+        <p>L'application existe en français, en anglais et en arabe. Chaque utilisateur choisit la sienne dans
+            <a th:href="@{/account}">Mon compte</a> ; elle ne change que pour lui. Avant la connexion, la page de connexion propose les
+            trois langues.</p>
+        <p class="help-tip">Les factures et les emails envoyés aux clients restent en français.</p>
+    </div>
+</section>
+
+<section id="backups" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">backup</span>Sauvegardes</h2></div>
+    <div class="card-body help-text">
+        <p>Installée sur votre PC, l'application sauvegarde toutes vos données une fois par jour et garde les 30 dernières sauvegardes
+            automatiques. Dans <a th:href="@{/settings/backups}">Réglages &gt; Sauvegardes</a> :</p>
+        <ul>
+            <li><strong>Sauvegarder maintenant</strong> avant une opération importante ;</li>
+            <li>téléchargez régulièrement une sauvegarde sur une clé USB ou un disque externe, ou choisissez un dossier sur un disque
+                externe : une panne du PC ne doit pas emporter vos factures ;</li>
+            <li><strong>Restaurer</strong> remplace toutes les données par celles de la sauvegarde (tapez RESTAURER pour confirmer). Une
+                sauvegarde des données actuelles est faite juste avant, et tout le monde est déconnecté ;</li>
+            <li>sur un nouveau PC, <strong>Importer</strong> un fichier de sauvegarde, puis restaurez-le.</li>
+        </ul>
+        <p class="help-tip">Un bandeau rouge prévient l'administrateur si une sauvegarde échoue ou s'il n'y en a pas eu depuis 3 jours.</p>
+    </div>
+</section>
+
+<section id="licence" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">workspace_premium</span>Licence</h2></div>
+    <div class="card-body help-text">
+        <p>Une nouvelle installation fonctionne 30 jours en version d'essai, pour 3 utilisateurs. Collez ensuite la clé de licence reçue
+            de l'éditeur dans <a th:href="@{/settings/licence}">Réglages &gt; Licence</a> : elle fixe le nombre d'utilisateurs actifs et
+            la date de fin, et elle est liée au NIF de l'entreprise.</p>
+        <p>Un bandeau prévient 30 jours avant la fin. Après la date, tout fonctionne encore 15 jours ; ensuite l'application passe en
+            <strong>lecture seule</strong> : vos factures restent consultables, téléchargeables et sauvegardables jusqu'à l'activation
+            d'une nouvelle clé.</p>
+    </div>
+</section>
+
+<section id="network" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">lan</span>Réseau et email</h2></div>
+    <div class="card-body help-text">
+        <p>Les autres PC du bureau ouvrent l'application dans leur navigateur à l'adresse indiquée dans <a href="#about">À propos</a>
+            (par exemple http://BUREAU-PC:7070). Le PC où elle est installée doit être allumé, et le pare-feu doit l'autoriser (option de
+            l'installation).</p>
+        <p>Pour envoyer factures, relances et liens de mot de passe oublié, réglez le serveur d'envoi dans
+            <a th:href="@{/settings/mail}">Réglages &gt; Email</a> (Gmail : smtp.gmail.com, port 587, avec un mot de passe
+            d'application), puis envoyez-vous un email de test.</p>
+    </div>
+</section>
+
+<section id="faq" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">quiz</span>Questions fréquentes</h2></div>
+    <div class="card-body help-text">
+        <p class="help-title">J'ai émis une facture avec une erreur.</p>
+        <p>Créez un avoir sur cette facture, puis une nouvelle facture correcte. Une facture émise ne se modifie pas : c'est ce qui
+            garantit la suite des numéros.</p>
+        <p class="help-title">Je suis passé d'auto-entrepreneur à société.</p>
+        <p>Changez le statut dans le profil de l'entreprise. Les factures déjà émises gardent leur ancien statut ; les nouvelles
+            appliquent la TVA.</p>
+        <p class="help-title">Le bouton dont j'ai besoin n'apparaît pas.</p>
+        <p>Votre profil n'a pas le privilège correspondant : demandez-le à l'administrateur.</p>
+        <p class="help-title">L'administrateur a oublié son mot de passe et l'email n'est pas réglé.</p>
+        <p>Un autre administrateur peut le réinitialiser depuis Utilisateurs. S'il n'y en a pas d'autre, contactez l'assistance.</p>
+        <p class="help-title">Un client conteste l'authenticité d'une facture.</p>
+        <p>La page publique « Vérifier une facture » (en bas de chaque page) confirme qu'un numéro existe, avec sa date et son état, sans
+            révéler le client ni le montant.</p>
+    </div>
+</section>
+
+</th:block>
+</body>
+</html>

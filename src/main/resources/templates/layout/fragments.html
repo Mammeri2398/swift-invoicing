@@ -49,6 +49,8 @@
                th:title="#{nav.searchInvoice}" th:aria-label="#{nav.searchInvoice}"><span class="icon">search</span></a>
             <a th:if="${u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="btn btn-primary btn-sm hidden sm:inline-flex"
                th:title="#{nav.newInvoice}" th:aria-label="#{nav.newInvoice}"><span class="icon">add</span></a>
+            <a th:href="@{/help}" class="btn-icon hidden sm:inline-flex" th:classappend="${#strings.startsWith(currentPath, '/help')} ? 'bg-surface-container-high'"
+               th:title="#{help.open}" th:aria-label="#{help.open}"><span class="icon">help</span></a>
             <a th:href="@{/account}" class="hidden max-w-[9rem] flex-col whitespace-nowrap rounded-lg px-2 py-1 text-end leading-tight hover:bg-surface-container md:flex"
                th:classappend="${#strings.startsWith(currentPath, '/account')} ? 'bg-surface-container-high'"
                th:title="#{nav.accountTitle(${u.username}, ${u.profileName})}">
@@ -68,6 +70,7 @@
                     <th:block th:replace="~{layout/fragments :: adminLinks}"></th:block>
                     <a th:if="${u.can('CREATE_INVOICE')}" th:href="@{/invoices/new}" class="nav-link sm:hidden" th:text="#{nav.newInvoice}">Nouvelle facture</a>
                     <a th:href="@{/account}" class="nav-link" th:text="#{nav.account}">Mon compte</a>
+                    <a th:href="@{/help}" class="nav-link" th:text="#{help.open}">Aide</a>
                 </nav>
             </details>
         </div>
@@ -155,9 +158,14 @@
 <footer th:fragment="footer" class="mt-10 bg-surface-container-low print:hidden">
     <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-body-sm text-on-surface-variant sm:flex-row sm:px-6 lg:px-12">
         <span th:text="#{app.footer(${companyType?.company} ? #{app.tagline.company} : #{app.footer.autoEntrepreneur})}">Swift Invoicing — Auto-entrepreneur (ANAE) · Algérie · Montants en DZD</span>
+        <span class="flex items-center gap-4">
+        <a th:if="${currentUser != null}" th:href="@{/help}" class="inline-flex items-center gap-1 hover:text-primary">
+            <span class="icon icon-sm">help</span><th:block th:text="#{help.open}">Aide</th:block>
+        </a>
         <a th:href="@{/invoices/lookup}" class="inline-flex items-center gap-1 hover:text-primary">
             <span class="icon icon-sm">verified_user</span><th:block th:text="#{app.footer.verify}">Vérifier une facture</th:block>
         </a>
+        </span>
     </div>
 </footer>
 

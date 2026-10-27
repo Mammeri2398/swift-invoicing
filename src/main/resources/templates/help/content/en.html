@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<!--/*
+    User guide (English). Same section ids, in the same order, in fr.html and ar.html
+    (checked by HelpTest). Each section: <section id="..." data-help-section>, listed in the "toc" fragment.
+*/-->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<th:block th:fragment="toc">
+    <a href="#start" class="nav-link">Getting started</a>
+    <a href="#company" class="nav-link">Company profile</a>
+    <a href="#clients" class="nav-link">Clients</a>
+    <a href="#catalog" class="nav-link">Catalogue</a>
+    <a href="#invoices" class="nav-link">Creating and issuing an invoice</a>
+    <a href="#pdf-email" class="nav-link">PDF and sending by email</a>
+    <a href="#payments" class="nav-link">Payments and reminders</a>
+    <a href="#credit-notes" class="nav-link">Credit notes and cancelling</a>
+    <a href="#quotes" class="nav-link">Quotes and pro forma invoices</a>
+    <a href="#dashboard" class="nav-link">Dashboard and exports</a>
+    <a href="#users" class="nav-link">Users and rights</a>
+    <a href="#security" class="nav-link">Signing in and security</a>
+    <a href="#language" class="nav-link">Language</a>
+    <a href="#backups" class="nav-link">Backups</a>
+    <a href="#licence" class="nav-link">Licence</a>
+    <a href="#network" class="nav-link">Network and email</a>
+    <a href="#faq" class="nav-link">Frequently asked questions</a>
+</th:block>
+
+<th:block th:fragment="sections">
+
+<section id="start" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">rocket_launch</span>Getting started</h2></div>
+    <div class="card-body help-text">
+        <p>Swift Invoicing manages the invoices, credit notes, quotes and pro forma invoices of an Algerian business, whether
+            self-employed or a company. It runs in the browser, on the PC where it is installed and on the other PCs in the office.</p>
+        <p class="help-title">To get off to a good start, in this order:</p>
+        <ol>
+            <li>Fill in the <a th:href="@{/settings/issuer}">company profile</a>: status, NIF, address, logo. This information
+                is printed on every invoice.</li>
+            <li>Set up <a th:href="@{/settings/mail}">email sending</a> if you want to send invoices by email.</li>
+            <li>Add your <a th:href="@{/clients}">clients</a> and, if you wish, your products and services to the
+                <a th:href="@{/catalog}">catalogue</a>.</li>
+            <li>Create accounts for your colleagues in <a th:href="@{/users}">Users</a>.</li>
+            <li>Create your first invoice: <a th:href="@{/invoices/new}">New invoice</a>.</li>
+        </ol>
+        <p class="help-tip">Each page is only shown to users who have the matching right: if a menu is missing, ask your
+            administrator for it.</p>
+    </div>
+</section>
+
+<section id="company" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">storefront</span>Company profile</h2></div>
+    <div class="card-body help-text">
+        <p>In <a th:href="@{/settings/issuer}">Settings &gt; Company</a>, first choose your status:</p>
+        <ul>
+            <li><strong>Self-employed</strong>: no VAT. The invoice shows your self-employed (ANAE) card number, your NIF
+                and your NIS, and the statement “VAT not applicable”. The dashboard tracks your turnover against the annual
+                ceiling you enter.</li>
+            <li><strong>Company</strong> (SARL, EURL, SPA…): VAT per line (19%, 9% or exempt). The invoice shows the legal
+                form, the share capital, the RC, the NIF, the NIS and the tax article (AI).</li>
+        </ul>
+        <p>Add your logo (PNG or JPEG, 500 KB at most): it replaces your initials at the top of invoices.</p>
+        <p class="help-tip">An issued invoice keeps the company details as they were on the day it was issued: changing the profile
+            afterwards only affects new invoices and drafts.</p>
+    </div>
+</section>
+
+<section id="clients" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">groups</span>Clients</h2></div>
+    <div class="card-body help-text">
+        <p>A client is either an <strong>individual</strong> or a <strong>business</strong>. For a business, the NIF is
+            required before you can issue an invoice; if your own business is a company, the client's RC and tax article are required too.</p>
+        <p>The <a th:href="@{/clients}">clients</a> list shows what each client still owes. The wallet icon opens their
+            <strong>account statement</strong>: invoices, credit notes and payments, with the balance, ready to print.</p>
+        <p class="help-tip">A client who has invoices cannot be deleted: their documents must remain available.</p>
+    </div>
+</section>
+
+<section id="catalog" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">inventory_2</span>Catalogue</h2></div>
+    <div class="card-body help-text">
+        <p>The <a th:href="@{/catalog}">catalogue</a> stores your products and services: description, unit, price and VAT rate.</p>
+        <p>On an invoice, type the start of a line's description: matching catalogue items are suggested. Picking one fills in
+            the unit, the price, the VAT and a quantity of 1. You can then change these values for this invoice only.</p>
+        <p class="help-tip">Editing or deleting an item never changes an existing invoice: the line keeps its values.</p>
+    </div>
+</section>
+
+<section id="invoices" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">receipt_long</span>Creating and issuing an invoice</h2></div>
+    <div class="card-body help-text">
+        <ol>
+            <li><a th:href="@{/invoices/new}">New invoice</a>: choose the client, the date, the due date if any and the payment
+                method, then add the lines. Totals are calculated as you type.</li>
+            <li>Save: the invoice is a <strong>draft</strong>. It has no number and can still be edited or deleted.</li>
+            <li>Check it, then click <strong>Issue</strong>. It then receives its number (FA-2026-0001, then FA-2026-0002…)
+                and can no longer be edited.</li>
+        </ol>
+        <p>Numbers follow each other with no gaps, and start again at 0001 every year. Credit notes are numbered AV-…, quotes DV-…
+            and pro forma invoices PF-….</p>
+        <p class="help-title">Stamp duty</p>
+        <p>When the payment method is <strong>Cash</strong>, stamp duty is added to the total: 1% up to 30,000 DA,
+            1.5% up to 100,000 DA, 2% above that, with a minimum of 5 DA, rounded up to the next dinar. The invoice then shows the
+            “Net amount due”. These rates are set in the configuration; check them with your accountant.</p>
+        <p class="help-tip">A mistake on an issued invoice is corrected with a credit note (see <a href="#credit-notes">Credit notes</a>),
+            never by editing it.</p>
+    </div>
+</section>
+
+<section id="pdf-email" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">picture_as_pdf</span>PDF and sending by email</h2></div>
+    <div class="card-body help-text">
+        <p>On an invoice's page, the <strong>PDF</strong> button downloads the document in A4 format, ready to print or send.
+            A draft is marked “BROUILLON” (draft), and a cancelled invoice is marked “ANNULÉ” (cancelled).</p>
+        <p>The <strong>Send by email</strong> button prepares an email to the client with the PDF attached: check the address, the subject
+            and the message, then send it. The sending is recorded in the invoice's history.</p>
+        <p class="help-tip">Documents meant for clients (PDFs and emails) are always in French, whatever the user's
+            language.</p>
+    </div>
+</section>
+
+<section id="payments" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">payments</span>Payments and reminders</h2></div>
+    <div class="card-body help-text">
+        <p>On an issued invoice, record each payment you receive: amount, date, method and reference (cheque number, transfer
+            number…). Partial payments are allowed; the invoice becomes <strong>Paid</strong> when the balance reaches zero.
+            <strong>Pay balance</strong> records a payment of the amount still due in one click.</p>
+        <p>An issued invoice that is past its due date and not fully paid is <strong>overdue</strong>: the dashboard flags
+            it. From the invoice, <strong>Send reminder</strong> prepares a reminder email with the amount still due.</p>
+        <p class="help-tip">A payment entered by mistake can be deleted from the invoice.</p>
+    </div>
+</section>
+
+<section id="credit-notes" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">undo</span>Credit notes and cancelling</h2></div>
+    <div class="card-body help-text">
+        <p>A <strong>credit note</strong> cancels all or part of an issued or paid invoice: a price error, a discount, a return. From
+            the invoice, <strong>Create credit note</strong> creates a draft credit note with the invoice's lines: adjust them, then
+            issue it. Its amount cannot exceed what is left to cancel on the invoice.</p>
+        <p><strong>Cancel</strong> marks an issued invoice as entirely cancelled, without a credit note; this is no longer possible once it
+            has a credit note. A draft, on the other hand, is simply deleted.</p>
+        <p class="help-tip">For clear accounts, prefer a credit note to cancelling: ask your accountant which rule
+            applies to your business.</p>
+    </div>
+</section>
+
+<section id="quotes" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">request_quote</span>Quotes and pro forma invoices</h2></div>
+    <div class="card-body help-text">
+        <p>The <a th:href="@{/quotes}">Quotes</a> page groups quotes and pro forma invoices. They are created and issued like an
+            invoice; the “Valid until” date shows how long they remain valid.</p>
+        <ul>
+            <li>An issued quote is marked <strong>Accepted</strong> or <strong>Declined</strong> depending on the client's answer.</li>
+            <li><strong>Invoice it</strong> turns an issued or accepted quote, or an issued pro forma invoice, into a draft invoice with
+                the same lines and the quote's reference.</li>
+        </ul>
+        <p class="help-tip">A quote or a pro forma invoice is not an invoice: it does not count towards turnover and cannot be
+            marked as paid.</p>
+    </div>
+</section>
+
+<section id="dashboard" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">monitoring</span>Dashboard and exports</h2></div>
+    <div class="card-body help-text">
+        <p>The <a th:href="@{/dashboard}">dashboard</a> shows the year's turnover (issued and paid invoices), the amount
+            still to be collected, drafts, overdue invoices and, for the self-employed, the annual ceiling: an alert
+            appears at 80%.</p>
+        <p>The <a th:href="@{/turnover}">Turnover</a> page breaks down each month of the year, with the VAT collected for a
+            company.</p>
+        <p>From the <a th:href="@{/invoices}">invoices</a> list, the Excel and CSV buttons export the invoices shown by the
+            filter, for example for your accountant.</p>
+    </div>
+</section>
+
+<section id="users" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">manage_accounts</span>Users and rights</h2></div>
+    <div class="card-body help-text">
+        <p>Each person has their own account. In <a th:href="@{/users}">Users</a>, the administrator creates an account with a
+            <strong>profile</strong>; a temporary password is shown only once. Pass it on to the person, who will change it
+            the first time they sign in.</p>
+        <p>A profile groups <strong>privileges</strong>: view invoices, issue them, manage clients, the catalogue,
+            backups… For example, create an “Accounting” profile that can view but not issue. A user's privileges
+            change the next time they sign in.</p>
+        <p class="help-tip">When someone leaves the business, disable their account rather than deleting it: their name stays in
+            the invoice history.</p>
+    </div>
+</section>
+
+<section id="security" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">shield_lock</span>Signing in and security</h2></div>
+    <div class="card-body help-text">
+        <ul>
+            <li>After 5 wrong passwords, the account is locked for 15 minutes. An inactive session is closed after 20 minutes.</li>
+            <li><strong>Forgot your password?</strong> (on the sign-in page) sends a link, valid for 60 minutes, to the account's email:
+                email sending must be set up. Otherwise, an administrator can reset the password from Users.</li>
+            <li><strong>Two-factor authentication</strong> adds a 6-digit code from an app on your phone (Google
+                Authenticator, Microsoft Authenticator…). Turn it on in <a th:href="@{/account}">My account</a> and keep the
+                recovery codes in a safe place.</li>
+        </ul>
+    </div>
+</section>
+
+<section id="language" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">translate</span>Language</h2></div>
+    <div class="card-body help-text">
+        <p>The application is available in French, English and Arabic. Each user chooses their own in
+            <a th:href="@{/account}">My account</a>; it only changes for them. Before signing in, the sign-in page offers all
+            three languages.</p>
+        <p class="help-tip">Invoices and emails sent to clients stay in French.</p>
+    </div>
+</section>
+
+<section id="backups" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">backup</span>Backups</h2></div>
+    <div class="card-body help-text">
+        <p>Installed on your PC, the application backs up all your data once a day and keeps the last 30 automatic
+            backups. In <a th:href="@{/settings/backups}">Settings &gt; Backups</a>:</p>
+        <ul>
+            <li>use <strong>Back up now</strong> before an important operation;</li>
+            <li>regularly download a backup to a USB stick or an external drive, or choose a folder on an external
+                drive: a PC failure must not take your invoices with it;</li>
+            <li><strong>Restore</strong> replaces all the data with the data from the backup (type RESTORE to confirm). A
+                backup of the current data is made just before, and everyone is signed out;</li>
+            <li>on a new PC, <strong>Import</strong> a backup file, then restore it.</li>
+        </ul>
+        <p class="help-tip">A red banner warns the administrator if a backup fails or if there has been none for 3 days.</p>
+    </div>
+</section>
+
+<section id="licence" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">workspace_premium</span>Licence</h2></div>
+    <div class="card-body help-text">
+        <p>A new installation runs for 30 days as a trial version, for 3 users. After that, paste the licence key you received
+            from the publisher into <a th:href="@{/settings/licence}">Settings &gt; Licence</a>: it sets the number of active users and
+            the end date, and it is tied to the company's NIF.</p>
+        <p>A banner warns you 30 days before the end. After that date, everything keeps working for 15 days; then the application
+            becomes <strong>read-only</strong>: your invoices can still be viewed, downloaded and backed up until a new key
+            is activated.</p>
+    </div>
+</section>
+
+<section id="network" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">lan</span>Network and email</h2></div>
+    <div class="card-body help-text">
+        <p>The other PCs in the office open the application in their browser at the address shown in <a href="#about">About</a>
+            (for example http://OFFICE-PC:7070). The PC where it is installed must be switched on, and the firewall must allow it
+            (an option during installation).</p>
+        <p>To send invoices, reminders and forgotten-password links, set up the outgoing mail server in
+            <a th:href="@{/settings/mail}">Settings &gt; Email</a> (Gmail: smtp.gmail.com, port 587, with an app
+            password), then send yourself a test email.</p>
+    </div>
+</section>
+
+<section id="faq" class="card scroll-mt-24" data-help-section>
+    <div class="card-header"><h2 class="card-title"><span class="icon">quiz</span>Frequently asked questions</h2></div>
+    <div class="card-body help-text">
+        <p class="help-title">I issued an invoice with a mistake.</p>
+        <p>Create a credit note for that invoice, then a new, correct invoice. An issued invoice cannot be edited: this is what
+            guarantees an unbroken sequence of numbers.</p>
+        <p class="help-title">I have moved from self-employed to company.</p>
+        <p>Change the status in the company profile. Invoices already issued keep their old status; new ones
+            apply VAT.</p>
+        <p class="help-title">The button I need does not appear.</p>
+        <p>Your profile does not have the matching privilege: ask the administrator for it.</p>
+        <p class="help-title">The administrator has forgotten their password and email is not set up.</p>
+        <p>Another administrator can reset it from Users. If there is no other administrator, contact support.</p>
+        <p class="help-title">A client disputes that an invoice is genuine.</p>
+        <p>The public “Verify an invoice” page (at the bottom of every page) confirms that a number exists, with its date and status,
+            without revealing the client or the amount.</p>
+    </div>
+</section>
+
+</th:block>
+</body>
+</html>

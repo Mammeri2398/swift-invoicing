@@ -156,6 +156,14 @@ public final class Endpoints {
     public static final String COMPANY_SELECT = "/select";
     public static final String COMPANY_SWITCH = "/switch";
 
+    /** Full path: Réglages > Sociétés, the companies of the installation. */
+    public static final String COMPANY_SETTINGS = "/settings/companies";
+    public static final String COMPANY_SETTINGS_NEW = "/new";
+    public static final String COMPANY_SETTINGS_CREATE = "/create";
+    public static final String COMPANY_SETTINGS_RENAME = "/{id}/rename";
+    public static final String COMPANY_SETTINGS_ACTIVATE = "/{id}/activate";
+    public static final String COMPANY_SETTINGS_DEACTIVATE = "/{id}/deactivate";
+
     // ---- Help -------------------------------------------------------------------------------------------------------
     public static final String HELP = "/help";
 

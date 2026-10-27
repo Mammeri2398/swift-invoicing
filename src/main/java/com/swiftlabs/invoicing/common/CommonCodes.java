@@ -34,6 +34,8 @@ public final class CommonCodes {
         public static final String CLIENTS = "clients";
         public static final String COMPANIES = "companies";
         public static final String COMPANY = "company";
+        public static final String COMPANY_LIST = "companyList";
+        public static final String COMPANY_NAMES = "companyNames";
         public static final String COMPANY_TYPE = "companyType";
         public static final String CONFIRMATION = "confirmation";
         public static final String CREDIT_NOTES = "creditNotes";
@@ -70,15 +72,18 @@ public final class CommonCodes {
         public static final String LOGO_DATA_URI = "logoDataUri";
         public static final String MAIL = "mail";
         public static final String MAIL_ENABLED = "mailEnabled";
+        public static final String MAX_COMPANIES = "maxCompanies";
         public static final String MAX_USERS = "maxUsers";
         public static final String MESSAGE = "message";
         public static final String MONTHS = "months";
         public static final String MONTH_NAMES = "monthNames";
         public static final String NAV_SECTION = "navSection";
         public static final String NETWORK_ADDRESSES = "networkAddresses";
+        public static final String NEW_COMPANY = "newCompany";
         public static final String NOW = "now";
         public static final String NUMBER = "number";
         public static final String OPEN_PASSWORD = "openPassword";
+        public static final String OTHER_ACCESSES = "otherAccesses";
         public static final String OVERDUE = "overdue";
         public static final String OVERDUE_TOTAL = "overdueTotal";
         public static final String PAGE = "page";
@@ -121,6 +126,7 @@ public final class CommonCodes {
         public static final String TYPES = "types";
         public static final String USER = "user";
         public static final String USERS = "users";
+        public static final String USER_COUNTS = "userCounts";
         public static final String VAT_MENTION = "vatMention";
         public static final String VAT_RATES = "vatRates";
         public static final String VERIFICATION = "verification";
@@ -165,6 +171,8 @@ public final class CommonCodes {
         public static final String CLIENT_LIST = "client/list";
 
         // company
+        public static final String COMPANY_FORM = "company/form";
+        public static final String COMPANY_LIST = "company/list";
         public static final String COMPANY_SELECT = "company/select";
 
         // dashboard

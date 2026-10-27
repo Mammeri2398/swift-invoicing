@@ -196,6 +196,11 @@
         <p>A profile groups <strong>privileges</strong>: view invoices, issue them, manage clients, the catalogue,
             backups… For example, create an “Accounting” profile that can view but not issue. A user's privileges
             change the next time they sign in.</p>
+        <p>One installation can hold <strong>several companies</strong>, for example an SARL and an auto-entrepreneur activity. Each
+            has its own clients, catalogue, invoices, numbering and settings, with nothing shared with the others. In
+            <a th:href="@{/settings/companies}">Companies</a>, the administrator creates one with its legal identifiers, renames it or
+            deactivates it. On a user's page, they choose the user's profile in each company they work in. People switch company from
+            the header; their rights are those of their profile in the company shown.</p>
         <p class="help-tip">When someone leaves the business, disable their account rather than deleting it: their name stays in
             the invoice history.</p>
     </div>

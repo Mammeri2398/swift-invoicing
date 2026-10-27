@@ -196,6 +196,11 @@
         <p>Un profil regroupe des <strong>privilèges</strong> : voir les factures, les émettre, gérer les clients, le catalogue, les
             sauvegardes… Créez par exemple un profil « Comptabilité » qui consulte sans émettre. Les privilèges d'un utilisateur
             changent à sa connexion suivante.</p>
+        <p>Une installation peut tenir <strong>plusieurs sociétés</strong>, par exemple une SARL et une activité d'auto-entrepreneur.
+            Chacune a ses propres clients, catalogue, factures, numérotation et réglages, sans rien de commun avec les autres. Dans
+            <a th:href="@{/settings/companies}">Sociétés</a>, l'administrateur en crée une avec ses identifiants légaux, la renomme
+            ou la désactive. Dans la fiche d'un utilisateur, il choisit son profil dans chaque société où il travaille. La personne
+            passe d'une société à l'autre depuis l'en-tête ; ses droits sont ceux de son profil dans la société affichée.</p>
         <p class="help-tip">Désactivez le compte d'une personne qui quitte l'entreprise plutôt que de le supprimer : son nom reste dans
             l'historique des factures.</p>
     </div>

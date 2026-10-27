@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(#{nav.companies}, ~{::main}, ~{})}">
+<body>
+<main class="page">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow" th:text="#{company.list.eyebrow}">Installation</p>
+            <h1 class="page-title" th:text="#{nav.companies}">Sociétés</h1>
+            <p class="page-subtitle" th:text="#{company.list.subtitle}">Chaque société est séparée des autres.</p>
+        </div>
+        <a th:href="@{/settings/companies/new}" class="btn btn-primary"><span class="icon">add_business</span><th:block th:text="#{company.form.title}">Nouvelle société</th:block></a>
+    </div>
+
+    <div th:if="${maxCompanies > 0}" class="alert alert-info mb-6">
+        <span class="icon">workspace_premium</span><span th:text="#{company.list.licence(${maxCompanies})}">Votre licence permet 2 sociétés actives.</span>
+    </div>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{company.col.name}">Nom</th>
+                    <th scope="col" class="num" th:text="#{company.col.users}">Utilisateurs</th>
+                    <th scope="col" th:text="#{company.col.created}">Créée le</th>
+                    <th scope="col" th:text="#{company.col.status}">Statut</th>
+                    <th scope="col"><span class="sr-only" th:text="#{catalog.col.actions}">Actions</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${companyList}" th:classappend="${c.active ? '' : 'text-on-surface-variant'}">
+                    <td>
+                        <!--/* Renaming: the name in the company switcher */-->
+                        <form th:action="@{/settings/companies/{id}/rename(id=${c.id})}" method="post" class="flex items-center gap-2">
+                            <input class="input input-sm max-w-xs" type="text" name="name" th:value="${c.name}" required maxlength="255"
+                                   th:aria-label="#{company.col.name}"/>
+                            <button type="submit" class="btn-icon" th:title="#{company.action.rename}" th:aria-label="#{company.action.rename}">
+                                <span class="icon">save</span></button>
+                            <span th:if="${c.id == currentUser.companyId}" class="badge badge-info" th:text="#{company.current}">Actuelle</span>
+                        </form>
+                    </td>
+                    <td class="num tabular-nums" th:text="${userCounts[c.id] ?: 0}">1</td>
+                    <td class="tabular-nums" th:text="${#temporals.format(c.createdAt, 'dd/MM/yyyy')}">27/10/2026</td>
+                    <td>
+                        <span th:if="${c.active}" class="badge badge-success" th:text="#{company.status.active}">Active</span>
+                        <span th:unless="${c.active}" class="badge badge-neutral" th:text="#{company.status.inactive}">Désactivée</span>
+                    </td>
+                    <td>
+                        <div class="flex justify-end">
+                            <form th:if="${c.active and c.id != currentUser.companyId}" th:action="@{/settings/companies/{id}/deactivate(id=${c.id})}" method="post"
+                                  th:data-confirm="#{company.confirmDeactivate(${c.name})}">
+                                <button type="submit" class="btn btn-secondary btn-sm"><span class="icon">block</span><th:block th:text="#{company.action.deactivate}">Désactiver</th:block></button>
+                            </form>
+                            <form th:unless="${c.active}" th:action="@{/settings/companies/{id}/activate(id=${c.id})}" method="post">
+                                <button type="submit" class="btn btn-secondary btn-sm"><span class="icon">check_circle</span><th:block th:text="#{company.action.activate}">Activer</th:block></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="card-footer hint" th:text="#{company.list.hint}">Une société désactivée garde toutes ses données.</p>
+    </section>
+</main>
+</body>
+</html>

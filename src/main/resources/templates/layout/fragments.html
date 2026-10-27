@@ -29,7 +29,7 @@
             <nav class="hidden items-center gap-1 xl:flex" th:if="${u != null}">
                 <th:block th:replace="~{layout/fragments :: navLinks}"></th:block>
                 <!--/* Settings and administration grouped: the bar has no room for each link on its own */-->
-                <details th:if="${u.can('VIEW_ISSUER') or u.can('MANAGE_USERS') or u.can('MANAGE_PROFILES') or u.can('MANAGE_PRIVILEGES')}"
+                <details th:if="${u.can('VIEW_ISSUER') or u.can('MANAGE_USERS') or u.can('MANAGE_PROFILES') or u.can('MANAGE_PRIVILEGES') or u.can('MANAGE_COMPANIES')}"
                          class="relative" data-dropdown>
                     <summary class="nav-link inline-flex cursor-pointer list-none items-center gap-0.5"
                              th:classappend="${#strings.startsWith(currentPath, '/settings') or #strings.startsWith(currentPath, '/users')
@@ -139,6 +139,8 @@
        th:classappend="${#strings.startsWith(p, '/settings/licence')} ? 'active'" th:text="#{nav.licence}">Licence</a>
     <a th:if="${u.can('MANAGE_BACKUPS')}" th:href="@{/settings/backups}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/settings/backups')} ? 'active'" th:text="#{nav.backups}">Sauvegardes</a>
+    <a th:if="${u.can('MANAGE_COMPANIES')}" th:href="@{/settings/companies}" class="nav-link"
+       th:classappend="${#strings.startsWith(p, '/settings/companies')} ? 'active'" th:text="#{nav.companies}">Sociétés</a>
     <a th:if="${u.can('MANAGE_USERS')}" th:href="@{/users}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/users')} ? 'active'" th:text="#{nav.users}">Utilisateurs</a>
     <a th:if="${u.can('MANAGE_PROFILES')}" th:href="@{/profiles}" class="nav-link"

@@ -21,6 +21,10 @@ public interface CompanyAccessRepository extends JpaRepository<CompanyAccess, Co
     @Query("SELECT a FROM CompanyAccess a JOIN FETCH a.user JOIN FETCH a.profile WHERE a.company.id = ?1")
     List<CompanyAccess> findByCompanyId(Long companyId);
 
+    /** {company id, number of users} for every company with at least one user. */
+    @Query("SELECT a.company.id, COUNT(a) FROM CompanyAccess a GROUP BY a.company.id")
+    List<Object[]> countByCompany();
+
     /** Another enabled user still holds this privilege somewhere, through a profile other than this one. */
     @Query("SELECT COUNT(a) > 0 FROM CompanyAccess a JOIN a.user u JOIN a.profile p JOIN p.privileges pr"
         + " WHERE u.enabled = true AND pr.code = ?1 AND p.id <> ?2")

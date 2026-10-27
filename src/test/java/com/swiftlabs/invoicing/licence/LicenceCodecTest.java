@@ -45,4 +45,13 @@ class LicenceCodecTest {
         assertThat(LicenceCodec.publicKey(LicenceCodec.encodeKey(publisher.getPublic()))).isEqualTo(publisher.getPublic());
         assertThat(LicenceCodec.privateKey(LicenceCodec.encodeKey(publisher.getPrivate()))).isEqualTo(publisher.getPrivate());
     }
+
+    @Test
+    void aKeyFromBeforeSeveralCompaniesAllowsOneAndANewKeyCarriesItsNumber() {
+        String before = "id=LIC-2025-0001\ncompany=Atlas\nnif=000016001234567\nusers=3\nissued=2025-01-01\nexpires=2026-12-31\n";
+        assertThat(Licence.parse(before).companies()).isEqualTo(1);
+
+        Licence two = new Licence("LIC-2026-0002", "Atlas", "000016001234567", 3, 2, LocalDate.of(2026, 1, 1), LocalDate.of(2027, 1, 1));
+        assertThat(Licence.parse(two.payload()).companies()).isEqualTo(2);
+    }
 }

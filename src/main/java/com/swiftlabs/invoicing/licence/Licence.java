@@ -12,19 +12,25 @@ import java.util.Properties;
  * What a licence grants: one company (identified by its NIF), a number of user accounts, until a
  * date. Written as simple "key=value" lines, then signed (see LicenceCodec).
  */
-public record Licence(String id, String company, String nif, int users, LocalDate issued, LocalDate expires) {
+public record Licence(String id, String company, String nif, int users, int companies, LocalDate issued, LocalDate expires) {
 
     public Licence {
         if (id == null || id.isBlank() || company == null || company.isBlank() || nif == null || nif.isBlank()
-                || users < 1 || issued == null || expires == null || expires.isBefore(issued)) {
-            throw new IllegalArgumentException("Incomplete licence: id, company, nif, users >= 1, issued and expires are required");
+                || users < 1 || companies < 1 || issued == null || expires == null || expires.isBefore(issued)) {
+            throw new IllegalArgumentException(
+                "Incomplete licence: id, company, nif, users >= 1, companies >= 1, issued and expires are required");
         }
+    }
+
+    /** A licence for one company (the companies an installation may hold: see {@link #companies}). */
+    public Licence(String id, String company, String nif, int users, LocalDate issued, LocalDate expires) {
+        this(id, company, nif, users, 1, issued, expires);
     }
 
     /** The signed text: one "key=value" line per field, in a fixed order. */
     String payload() {
         return "id=" + id + "\n" + "company=" + escape(company) + "\n" + "nif=" + nif + "\n" + "users=" + users + "\n"
-            + "issued=" + issued + "\n" + "expires=" + expires + "\n";
+            + "companies=" + companies + "\n" + "issued=" + issued + "\n" + "expires=" + expires + "\n";
     }
 
     static Licence parse(String payload) {
@@ -32,7 +38,9 @@ public record Licence(String id, String company, String nif, int users, LocalDat
         try {
             fields.load(new StringReader(payload));
             return new Licence(fields.getProperty("id"), fields.getProperty("company"), fields.getProperty("nif"),
-                Integer.parseInt(fields.getProperty("users", "0")), LocalDate.parse(fields.getProperty("issued", "")),
+                Integer.parseInt(fields.getProperty("users", "0")),
+                // Keys signed before several companies existed hold none: one company
+                Integer.parseInt(fields.getProperty("companies", "1")), LocalDate.parse(fields.getProperty("issued", "")),
                 LocalDate.parse(fields.getProperty("expires", "")));
         } catch (IOException | NumberFormatException | DateTimeParseException ex) {
             throw new IllegalArgumentException("Unreadable licence content", ex);

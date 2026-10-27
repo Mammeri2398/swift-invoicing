@@ -56,30 +56,31 @@ class UserControllerTest {
     }
 
     @Test
-    void createWithoutProfileShowsErrorAndKeepsInput() throws Exception {
+    void createWithoutAnyCompanyShowsErrorAndKeepsInput() throws Exception {
         mockMvc.perform(post("/users/save").with(csrf())
-                .param("username", "noprof").param("email", "noprof@example.test").param("profileId", ""))
+                .param("username", "noprof").param("email", "noprof@example.test")
+                .param("accesses[0].companyId", "1").param("accesses[0].profileId", ""))
             .andExpect(status().isOk())
             .andExpect(view().name("access/user/form"))
-            .andExpect(model().attributeHasFieldErrorCode("user", "profileId", "NotNull"))
-            .andExpect(content().string(containsString("Choisissez un profil.")))
+            .andExpect(model().attributeHasFieldErrorCode("user", "accesses", "user.error.noCompany"))
+            .andExpect(content().string(containsString("Choisissez un profil dans au moins une société")))
             .andExpect(content().string(containsString("value=\"noprof\"")));
     }
 
     @Test
     void failedUpdateReturnsToEditForm() throws Exception {
         mockMvc.perform(post("/users/save").with(csrf())
-                .param("id", "1").param("username", "admin").param("email", "admin@swiftinvoicing.local")
-                .param("enabled", "true").param("profileId", ""))
+                .param("id", "1").param("username", "admin").param("email", "not-an-email")
+                .param("enabled", "true"))
             .andExpect(status().isOk())
-            .andExpect(model().attributeHasFieldErrors("user", "profileId"))
+            .andExpect(model().attributeHasFieldErrors("user", "email"))
             .andExpect(content().string(containsString("Modifier l&#39;utilisateur")));
     }
 
     @Test
     void createdUserTemporaryPasswordIsShownOnce() throws Exception {
         MvcResult result = mockMvc.perform(post("/users/save").with(csrf())
-                .param("username", "fresh").param("email", "fresh@example.test").param("profileId", "1"))
+                .param("username", "fresh").param("email", "fresh@example.test").param("accesses[0].companyId", "1").param("accesses[0].profileId", "1"))
             .andExpect(redirectedUrl("/users"))
             .andExpect(flash().attributeExists("temporaryPassword"))
             .andReturn();
@@ -98,7 +99,7 @@ class UserControllerTest {
         mockMvc.perform(get("/users/new"))
             .andExpect(content().string(containsString("<option value=\"FR\" lang=\"fr\" selected=\"selected\">Français</option>")));
         mockMvc.perform(post("/users/save").with(csrf())
-                .param("username", "amina").param("email", "amina@example.test").param("profileId", "1").param("language", "AR"))
+                .param("username", "amina").param("email", "amina@example.test").param("accesses[0].companyId", "1").param("accesses[0].profileId", "1").param("language", "AR"))
             .andExpect(redirectedUrl("/users"));
         User amina = userRepository.findByUsername("amina").orElseThrow();
         org.assertj.core.api.Assertions.assertThat(amina.getLanguage()).isEqualTo(Language.AR);
@@ -106,7 +107,7 @@ class UserControllerTest {
 
         mockMvc.perform(post("/users/save").with(csrf())
                 .param("id", amina.getId().toString()).param("username", "amina").param("email", "amina@example.test")
-                .param("enabled", "true").param("profileId", "1").param("language", "EN"))
+                .param("enabled", "true").param("accesses[0].companyId", "1").param("accesses[0].profileId", "1").param("language", "EN"))
             .andExpect(redirectedUrl("/users"));
         org.assertj.core.api.Assertions.assertThat(userRepository.findByUsername("amina").orElseThrow().getLanguage()).isEqualTo(Language.EN);
     }

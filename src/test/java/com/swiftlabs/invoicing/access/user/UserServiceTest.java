@@ -12,6 +12,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -41,41 +44,42 @@ class UserServiceTest {
         UserForm form = new UserForm();
         form.setUsername(username);
         form.setEmail(username + "@example.test");
-        form.setProfileId(profileId);
+        // A profile in the first company, or no company at all
+        form.setAccesses(new ArrayList<>(List.of(new UserForm.Access(CompanySchemas.FIRST_ID, profileId))));
         return form;
     }
 
     @Test
     void createGeneratesATemporaryPasswordToChangeAtFirstLogin() {
-        UserService.NewAccount account = userService.create(newUser("newbie", 1L));
+        UserService.NewAccount account = userService.create(newUser("newbie", 1L), null);
 
         User user = account.user();
         assertThat(user.isMustChangePassword()).isTrue();
         assertThat(user.getPassword()).startsWith("{argon2}");
         assertThat(passwordEncoder.matches(account.temporaryPassword(), user.getPassword())).isTrue();
         passwordPolicy.validate(account.temporaryPassword(), "newbie");
-        assertThat(userService.create(newUser("other", 1L)).temporaryPassword()).isNotEqualTo(account.temporaryPassword());
+        assertThat(userService.create(newUser("other", 1L), null).temporaryPassword()).isNotEqualTo(account.temporaryPassword());
     }
 
     @Test
     void createWithoutProfileIsRejected() {
-        assertThatThrownBy(() -> userService.create(newUser("noprofile", null)))
+        assertThatThrownBy(() -> userService.create(newUser("noprofile", null), null))
             .isInstanceOf(BusinessException.class)
-            .hasMessage("Un profil doit être attribué à l'utilisateur.");
+            .hasMessageStartingWith("Choisissez un profil dans au moins une société");
         assertThat(userRepository.existsByUsername("noprofile")).isFalse();
     }
 
     @Test
     void createWithUnknownProfileIsRejected() {
-        assertThatThrownBy(() -> userService.create(newUser("ghost", 9999L)))
+        assertThatThrownBy(() -> userService.create(newUser("ghost", 9999L), null))
             .isInstanceOf(BusinessException.class)
             .hasMessage("Profil introuvable.");
         assertThat(userRepository.existsByUsername("ghost")).isFalse();
     }
 
     @Test
-    void updateCannotRemoveProfile() {
-        User created = userService.create(newUser("keepprofile", 1L)).user();
+    void updateCannotLeaveTheUserWithoutAnyCompany() {
+        User created = userService.create(newUser("keepprofile", 1L), null).user();
 
         UserForm edit = newUser("keepprofile", null);
         edit.setId(created.getId());
@@ -86,9 +90,9 @@ class UserServiceTest {
 
     @Test
     void administratorCannotDisableOrDeleteTheirOwnAccount() {
-        User me = userService.create(newUser("selfadmin", 1L)).user();
+        User me = userService.create(newUser("selfadmin", 1L), null).user();
 
-        UserForm disableMe = UserForm.from(me, 1L);
+        UserForm disableMe = UserForm.from(me, List.of(new UserForm.Access(CompanySchemas.FIRST_ID, 1L)));
         disableMe.setEnabled(false);
         assertThatThrownBy(() -> userService.update(disableMe, me.getId()))
             .hasMessage("Vous ne pouvez pas désactiver votre propre compte.");
@@ -99,7 +103,7 @@ class UserServiceTest {
 
     @Test
     void changingOwnPasswordRequiresTheCurrentOne() {
-        UserService.NewAccount account = userService.create(newUser("changer", 1L));
+        UserService.NewAccount account = userService.create(newUser("changer", 1L), null);
         Long id = account.user().getId();
 
         assertThatThrownBy(() -> userService.changeOwnPassword(id, "wrong", "NewPass456"))
@@ -126,7 +130,7 @@ class UserServiceTest {
 
     @Test
     void adminResetGivesANewTemporaryPasswordAndUnlocks() {
-        User user = userService.create(newUser("locked", 1L)).user();
+        User user = userService.create(newUser("locked", 1L), null).user();
         user.recordFailedLogin(1, java.time.Duration.ofMinutes(15), java.time.LocalDateTime.now());
         assertThat(user.getLockedUntil()).isNotNull();
 
@@ -140,7 +144,7 @@ class UserServiceTest {
 
     @Test
     void databaseRejectsAnAccessWithoutProfile() {
-        User created = userService.create(newUser("noprofile", 1L)).user();
+        User created = userService.create(newUser("noprofile", 1L), null).user();
         userRepository.flush();
         // The profile is per company (user_company): an access always has one
         assertThatThrownBy(() -> jdbcTemplate.update("UPDATE public.user_company SET profile_id = NULL WHERE user_id = ?", created.getId()))

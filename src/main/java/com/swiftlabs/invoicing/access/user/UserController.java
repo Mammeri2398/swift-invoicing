@@ -14,8 +14,10 @@ import com.swiftlabs.invoicing.common.MessageProperties;
 import com.swiftlabs.invoicing.common.Messages;
 import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
+import com.swiftlabs.invoicing.company.Company;
 import com.swiftlabs.invoicing.company.CompanyAccessService;
 import com.swiftlabs.invoicing.company.CompanyContext;
+import com.swiftlabs.invoicing.company.CompanyService;
 
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,6 +34,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping(Endpoints.USERS)
@@ -43,12 +52,15 @@ public class UserController {
     private final SessionService sessionService;
     private final TwoFactorService twoFactorService;
     private final CompanyAccessService accessService;
+    private final CompanyService companyService;
     private final Messages messages;
     private final Clock clock;
 
     public UserController(UserService userService, ProfileService profileService, SessionService sessionService,
-                          TwoFactorService twoFactorService, CompanyAccessService accessService, Messages messages, Clock clock) {
+                          TwoFactorService twoFactorService, CompanyAccessService accessService, CompanyService companyService,
+                          Messages messages, Clock clock) {
         this.accessService = accessService;
+        this.companyService = companyService;
         this.messages = messages;
         this.userService = userService;
         this.profileService = profileService;
@@ -67,21 +79,22 @@ public class UserController {
     }
 
     @GetMapping(Endpoints.USER_NEW)
-    public String newForm(Model model) {
+    public String newForm(@AuthenticationPrincipal AppUserPrincipal me, Model model) {
         UserForm form = new UserForm();
         // By default the new colleague works in the administrator's language
         form.setLanguage(messages.current());
+        form.setAccesses(editableRows(null, me));
         model.addAttribute(CommonCodes.Attributes.USER, form);
-        return formView(model);
+        return formView(form, me, model);
     }
 
     @GetMapping(Endpoints.USER_EDIT)
-    public String editForm(@PathVariable Long id, Model model) {
+    public String editForm(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal me, Model model) {
         User user = userService.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.USER_ERROR_NOT_FOUND));
-        Long profileId = accessService.profileIn(user.getId(), CompanyContext.currentCompanyId()).map(Profile::getId).orElse(null);
-        model.addAttribute(CommonCodes.Attributes.USER, UserForm.from(user, profileId));
-        return formView(model);
+        UserForm form = UserForm.from(user, editableRows(user.getId(), me));
+        model.addAttribute(CommonCodes.Attributes.USER, form);
+        return formView(form, me, model);
     }
 
     /** Invalid input is shown again with the errors next to each field. */
@@ -91,7 +104,7 @@ public class UserController {
         if (!result.hasErrors()) {
             try {
                 if (form.getId() == null) {
-                    UserService.NewAccount account = userService.create(form);
+                    UserService.NewAccount account = userService.create(form, me.getId());
                     redirectAttributes.addFlashAttribute(CommonCodes.Attributes.TEMPORARY_PASSWORD, account.temporaryPassword());
                     redirectAttributes.addFlashAttribute(CommonCodes.Attributes.TEMPORARY_PASSWORD_USER, account.user().getUsername());
                     redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.USER_CREATED));
@@ -107,7 +120,7 @@ public class UserController {
                 FormErrors.reject(result, ex);
             }
         }
-        return formView(model);
+        return formView(form, me, model);
     }
 
     /** New temporary password (forgotten password without mail, locked account...). */
@@ -151,7 +164,35 @@ public class UserController {
         return Endpoints.REDIRECT + Endpoints.USERS;
     }
 
-    private String formView(Model model) {
+    /**
+     * One row per active company the administrator manages, with the user's profile there (none for a new user).
+     * The administrator's own access to the company they work in is not editable: they cannot lock themselves out.
+     */
+    private List<UserForm.Access> editableRows(Long userId, AppUserPrincipal me) {
+        Set<Long> managed = accessService.companiesManagedBy(me.getId());
+        List<UserForm.Access> rows = new ArrayList<>();
+        for (Company company : companyService.findActive()) {
+            if (managed.contains(company.getId()) && !isOwnCurrentAccess(userId, company.getId(), me)) {
+                Long profileId = userId == null ? null
+                    : accessService.profileIn(userId, company.getId()).map(Profile::getId).orElse(null);
+                rows.add(new UserForm.Access(company.getId(), profileId));
+            }
+        }
+        return rows;
+    }
+
+    private static boolean isOwnCurrentAccess(Long userId, Long companyId, AppUserPrincipal me) {
+        return Objects.equals(userId, me.getId()) && Objects.equals(companyId, me.getCompanyId());
+    }
+
+    /** The rows of the form (company names), and the user's other companies, shown but not editable here. */
+    private String formView(UserForm form, AppUserPrincipal me, Model model) {
+        Map<Long, String> names = new HashMap<>();
+        companyService.findActive().forEach(company -> names.put(company.getId(), company.getName()));
+        model.addAttribute(CommonCodes.Attributes.COMPANY_NAMES, names);
+        Set<Long> editable = form.getAccesses().stream().map(UserForm.Access::getCompanyId).collect(Collectors.toSet());
+        model.addAttribute(CommonCodes.Attributes.OTHER_ACCESSES, form.getId() == null ? List.of()
+            : accessService.accessesOf(form.getId()).stream().filter(access -> !editable.contains(access.getCompany().getId())).toList());
         model.addAttribute(CommonCodes.Attributes.PROFILES, profileService.findAll());
         model.addAttribute(CommonCodes.Attributes.LANGUAGES, Language.values());
         return CommonCodes.Views.ACCESS_USER_FORM;

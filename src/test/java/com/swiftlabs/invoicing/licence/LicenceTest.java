@@ -4,6 +4,7 @@ import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.access.user.UserForm;
 import com.swiftlabs.invoicing.access.user.UserService;
 import com.swiftlabs.invoicing.common.BusinessException;
+import com.swiftlabs.invoicing.company.CompanySchemas;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import jakarta.persistence.EntityManager;
@@ -19,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.security.PrivateKey;
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -195,8 +197,8 @@ class LicenceTest {
     void theNumberOfActiveUsersIsLimited() {
         long active = jdbc.queryForObject("SELECT COUNT(*) FROM app_user WHERE enabled = TRUE", Long.class);
         licenceService.activate(key(NIF, (int) active + 1, LocalDate.now().plusYears(1)));
-        userService.create(userForm("collegue1"));
-        assertThatThrownBy(() -> userService.create(userForm("collegue2")))
+        userService.create(userForm("collegue1"), null);
+        assertThatThrownBy(() -> userService.create(userForm("collegue2"), null))
             .isInstanceOf(BusinessException.class).hasMessageContaining("permet " + (active + 1) + " utilisateur(s) actif(s)");
     }
 
@@ -204,7 +206,7 @@ class LicenceTest {
         UserForm form = new UserForm();
         form.setUsername(username);
         form.setEmail(username + "@atlas.test");
-        form.setProfileId(profileRepository.findByName("Administrateur").getId());
+        form.setAccesses(List.of(new UserForm.Access(CompanySchemas.FIRST_ID, profileRepository.findByName("Administrateur").getId())));
         return form;
     }
 }

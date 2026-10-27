@@ -142,8 +142,16 @@ public final class MessageProperties {
     public static final String CLIENT_STATEMENT_ENTRY_WITH_REFERENCE = "clientStatement.entry.withReference";
 
     // ---- company ---------------------------------------------------------------------------------------------
+    public static final String COMPANY_ACTIVATED = "company.activated";
+    public static final String COMPANY_CREATED = "company.created";
+    public static final String COMPANY_DEACTIVATED = "company.deactivated";
+    public static final String COMPANY_ERROR_DEACTIVATE_CURRENT = "company.error.deactivateCurrent";
+    public static final String COMPANY_ERROR_LAST_ACTIVE = "company.error.lastActive";
+    public static final String COMPANY_ERROR_NOT_FOUND = "company.error.notFound";
+    public static final String COMPANY_ERROR_NAME = "company.error.name";
     public static final String COMPANY_ERROR_NO_ACCESS = "company.error.noAccess";
     public static final String COMPANY_ERROR_SWITCHED = "company.error.switched";
+    public static final String COMPANY_RENAMED = "company.renamed";
     public static final String COMPANY_SWITCHED = "company.switched";
 
     // ---- error -----------------------------------------------------------------------------------------------
@@ -252,6 +260,7 @@ public final class MessageProperties {
     public static final String LICENCE_ERROR_NIF_MISMATCH = "licence.error.nifMismatch";
     public static final String LICENCE_ERROR_NOT_AKEY = "licence.error.notAKey";
     public static final String LICENCE_ERROR_UNREADABLE = "licence.error.unreadable";
+    public static final String LICENCE_ERROR_COMPANY_LIMIT = "licence.error.companyLimit";
     public static final String LICENCE_ERROR_USER_LIMIT = "licence.error.userLimit";
     public static final String LICENCE_STATUS_EXPIRED = "licence.status.expired";
     public static final String LICENCE_STATUS_EXPIRING = "licence.status.expiring";
@@ -327,8 +336,8 @@ public final class MessageProperties {
     public static final String USER_ERROR_DISABLE_SELF = "user.error.disableSelf";
     public static final String USER_ERROR_EMAIL_USED = "user.error.emailUsed";
     public static final String USER_ERROR_NOT_FOUND = "user.error.notFound";
+    public static final String USER_ERROR_NO_COMPANY = "user.error.noCompany";
     public static final String USER_ERROR_PROFILE_NOT_FOUND = "user.error.profileNotFound";
-    public static final String USER_ERROR_PROFILE_REQUIRED = "user.error.profileRequired";
     public static final String USER_ERROR_SAME_PASSWORD = "user.error.samePassword";
     public static final String USER_ERROR_USERNAME_USED = "user.error.usernameUsed";
     public static final String USER_ERROR_WRONG_CURRENT_PASSWORD = "user.error.wrongCurrentPassword";

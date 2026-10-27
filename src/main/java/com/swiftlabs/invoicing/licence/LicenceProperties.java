@@ -14,6 +14,8 @@ public record LicenceProperties(
     String publicKey,
     @DefaultValue("30") int trialDays,
     @DefaultValue("3") int trialUsers,
+    /* Companies the installation may hold during the trial (so that several can be tried). */
+    @DefaultValue("2") int trialCompanies,
     /* Days before the expiry date when the warning starts. */
     @DefaultValue("30") int warningDays,
     /* Days after the expiry date with everything still working, before read-only mode. */

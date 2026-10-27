@@ -18,7 +18,7 @@ import java.util.Map;
  * <pre>
  *   java -cp target/classes com.swiftlabs.invoicing.licence.tool.LicenceTool keygen ~/.swift-invoicing/licence
  *   java -cp target/classes com.swiftlabs.invoicing.licence.tool.LicenceTool sign --key ~/.swift-invoicing/licence/licence-private.key \
- *        --id LIC-2026-0001 --company "Atlas Solutions" --nif 000016001234567 --users 3 --expires 2027-10-31
+ *        --id LIC-2026-0001 --company "Atlas Solutions" --nif 000016001234567 --users 3 [--companies 2] --expires 2027-10-31
  *   java -cp target/classes com.swiftlabs.invoicing.licence.tool.LicenceTool verify --public src/main/resources/licence/public-key.txt SWIFT-...
  * </pre>
  */
@@ -62,7 +62,7 @@ public final class LicenceTool {
 
     private static void sign(Map<String, String> options) throws IOException {
         Licence licence = new Licence(required(options, "id"), required(options, "company"), required(options, "nif"),
-            Integer.parseInt(required(options, "users")),
+            Integer.parseInt(required(options, "users")), Integer.parseInt(options.getOrDefault("companies", "1")),
             LocalDate.parse(options.getOrDefault("issued", LocalDate.now().toString())), LocalDate.parse(required(options, "expires")));
         String key = LicenceCodec.sign(licence, LicenceCodec.privateKey(Files.readString(Path.of(required(options, "key")))));
         System.out.println(key);
@@ -97,7 +97,7 @@ public final class LicenceTool {
         System.err.println("""
             Usage:
               keygen <directory>
-              sign --key <private key file> --id <LIC-2026-0001> --company <name> --nif <NIF> --users <n> --expires <yyyy-mm-dd> [--issued <yyyy-mm-dd>]
+              sign --key <private key file> --id <LIC-2026-0001> --company <name> --nif <NIF> --users <n> [--companies <n>] --expires <yyyy-mm-dd> [--issued <yyyy-mm-dd>]
               verify --public <public key file> <licence key>""");
     }
 }

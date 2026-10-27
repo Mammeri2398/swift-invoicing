@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(#{company.form.title}, ~{::main}, ~{::script})}">
+<body>
+<main class="page-narrow" th:with="isCompany=${newCompany.companyType != null and newCompany.companyType.name() == 'COMPANY'}">
+    <nav class="breadcrumb" th:aria-label="#{company.form.breadcrumb}">
+        <a th:href="@{/settings/companies}" th:text="#{nav.companies}">Sociétés</a><span class="icon icon-xs rtl-flip">chevron_right</span>
+        <span class="text-primary" th:text="#{invoice.form.breadcrumb.new}">Nouveau</span>
+    </nav>
+    <div class="page-header">
+        <div>
+            <h1 class="page-title" th:text="#{company.form.title}">Nouvelle société</h1>
+            <p class="page-subtitle" th:text="#{company.form.subtitle}">Ses propres clients, factures, numérotation et réglages.</p>
+        </div>
+    </div>
+
+    <!--/* id="issuer-form": issuer-form.js shows the fields of the chosen legal status */-->
+    <form th:action="@{/settings/companies/create}" method="post" th:object="${newCompany}" id="issuer-form" class="flex flex-col gap-6">
+        <div th:replace="~{layout/fragments :: formErrors}"></div>
+
+        <section class="card">
+            <div class="card-header"><h2 class="card-title"><span class="icon">domain</span><th:block th:text="#{issuer.type.title}">Type d'entreprise</th:block></h2></div>
+            <div class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg p-4 ring-1 ring-surface-variant has-[:checked]:bg-primary-fixed/30 has-[:checked]:ring-2 has-[:checked]:ring-primary">
+                    <input type="radio" th:field="*{companyType}" value="AUTO_ENTREPRENEUR" class="mt-1" data-company-type/>
+                    <span><span class="block font-semibold" th:text="#{issuer.type.autoEntrepreneur}">Auto-entrepreneur</span>
+                        <span class="hint" th:text="#{issuer.type.autoEntrepreneur.hint}">Carte ANAE, TVA non applicable.</span></span>
+                </label>
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg p-4 ring-1 ring-surface-variant has-[:checked]:bg-primary-fixed/30 has-[:checked]:ring-2 has-[:checked]:ring-primary">
+                    <input type="radio" th:field="*{companyType}" value="COMPANY" class="mt-1" data-company-type/>
+                    <span><span class="block font-semibold" th:text="#{issuer.type.company}">Société</span>
+                        <span class="hint" th:text="#{issuer.type.company.hint}">SARL, EURL, SPA…</span></span>
+                </label>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header"><h2 class="card-title"><span class="icon">account_balance</span><th:block th:text="#{issuer.ids.title}">Identifiants légaux et fiscaux</th:block></h2></div>
+            <div class="card-body form-grid">
+                <div class="field md:col-span-2">
+                    <label class="label" for="name">
+                        <span data-show="COMPANY" th:classappend="${isCompany ? '' : 'hidden'}" th:text="#{issuer.fullName.company}">Raison sociale</span>
+                        <span data-show="AUTO_ENTREPRENEUR" th:classappend="${isCompany} ? 'hidden'" th:text="#{issuer.fullName.autoEntrepreneur}">Nom complet du titulaire</span>
+                        <span class="required">*</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{name}" type="text" required maxlength="255" autofocus/>
+                    <p th:replace="~{layout/fragments :: fieldError('name')}"></p>
+                    <p class="hint" th:text="#{company.form.name.hint}">Imprimé sur ses factures et affiché dans le sélecteur de société.</p>
+                </div>
+                <div class="field" data-show="AUTO_ENTREPRENEUR" th:classappend="${isCompany} ? 'hidden'">
+                    <label class="label" for="aeCardNumber"><th:block th:text="#{issuer.aeCardNumber}">N° carte auto-entrepreneur</th:block> <span class="required">*</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{aeCardNumber}" type="text" maxlength="50"/>
+                    <p th:replace="~{layout/fragments :: fieldError('aeCardNumber')}"></p>
+                </div>
+                <div class="field" data-show="COMPANY" th:classappend="${isCompany ? '' : 'hidden'}">
+                    <label class="label" for="legalForm"><th:block th:text="#{issuer.legalForm}">Forme juridique</th:block> <span class="required">*</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{legalForm}" type="text" maxlength="50" list="legal-forms" placeholder="SARL"/>
+                    <datalist id="legal-forms">
+                        <option value="SARL"></option><option value="EURL"></option><option value="SPA"></option>
+                        <option value="SNC"></option><option value="SCS"></option>
+                    </datalist>
+                    <p th:replace="~{layout/fragments :: fieldError('legalForm')}"></p>
+                </div>
+                <div class="field" data-show="COMPANY" th:classappend="${isCompany ? '' : 'hidden'}">
+                    <label class="label" for="shareCapital"><th:block th:text="#{issuer.shareCapital}">Capital social (DA)</th:block> <span class="required">*</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{shareCapital}" type="number" min="0" step="0.01"/>
+                    <p th:replace="~{layout/fragments :: fieldError('shareCapital')}"></p>
+                </div>
+                <div class="field" data-show="COMPANY" th:classappend="${isCompany ? '' : 'hidden'}">
+                    <label class="label" for="rcNumber"><th:block th:text="#{issuer.rcNumber}">N° registre du commerce (RC)</th:block> <span class="required">*</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{rcNumber}" type="text" maxlength="50"/>
+                    <p th:replace="~{layout/fragments :: fieldError('rcNumber')}"></p>
+                </div>
+                <div class="field" data-show="COMPANY" th:classappend="${isCompany ? '' : 'hidden'}">
+                    <label class="label" for="taxArticle"><th:block th:text="#{issuer.taxArticle}">Article d'imposition (AI)</th:block> <span class="required">*</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{taxArticle}" type="text" maxlength="50"/>
+                    <p th:replace="~{layout/fragments :: fieldError('taxArticle')}"></p>
+                </div>
+                <div class="field">
+                    <label class="label" for="nif"><th:block th:text="#{issuer.nif}">NIF</th:block> <span class="required">*</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nif}" type="text" required maxlength="20" inputmode="numeric"/>
+                    <p th:replace="~{layout/fragments :: fieldError('nif')}"></p>
+                </div>
+                <div class="field">
+                    <label class="label" for="nis"><th:block th:text="#{issuer.nis}">NIS</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
+                    <input class="input input-mono" th:errorclass="input-invalid" th:field="*{nis}" type="text" maxlength="15" inputmode="numeric"/>
+                    <p th:replace="~{layout/fragments :: fieldError('nis')}"></p>
+                </div>
+                <div class="field md:col-span-2">
+                    <label class="label" for="address"><th:block th:text="#{issuer.address}">Adresse</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{address}" type="text" maxlength="255"/>
+                </div>
+                <div class="field">
+                    <label class="label" for="city"><th:block th:text="#{issuer.city}">Ville</th:block> <span class="optional" th:text="#{form.optional}">Optionnel</span></label>
+                    <input class="input" th:errorclass="input-invalid" th:field="*{city}" type="text" maxlength="255"/>
+                </div>
+            </div>
+            <p class="card-footer hint" th:text="#{company.form.next}">Ensuite : ses coordonnées, son logo et ses réglages, dans sa page Paramètres.</p>
+        </section>
+
+        <div class="form-actions">
+            <a th:href="@{/settings/companies}" class="btn btn-secondary" th:text="#{action.cancel}">Annuler</a>
+            <button type="submit" class="btn btn-primary"><span class="icon">add_business</span><th:block th:text="#{company.form.create}">Créer la société</th:block></button>
+        </div>
+    </form>
+</main>
+<script th:src="@{/js/issuer-form.js}" defer></script>
+</body>
+</html>

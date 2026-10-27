@@ -57,6 +57,15 @@ public class CompanyMigrations {
         return schema;
     }
 
+    /** Removes a company's schema and everything in it: only for a company whose creation failed. */
+    public void dropSchema(String schema) {
+        try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement()) {
+            statement.execute("DROP SCHEMA IF EXISTS " + companySchema(schema) + " CASCADE");
+        } catch (SQLException ex) {
+            throw new IllegalStateException("Cannot remove the schema " + schema, ex);
+        }
+    }
+
     /** The companies' schemas, read with JDBC: this runs before JPA starts. */
     private List<String> schemas() {
         List<String> schemas = new ArrayList<>();

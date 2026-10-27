@@ -16,9 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -56,10 +60,14 @@ public class UserService {
         return userRepository.findById(id);
     }
 
-    /** Creates an account with a random temporary password that must be changed at first login. */
+    /**
+     * Creates an account with a random temporary password that must be changed at first login, with the companies
+     * and profiles of the form. {@code actingUserId}: the administrator, who sets only the companies they manage;
+     * null for the application itself (every company).
+     */
     @Transactional
-    public NewAccount create(UserForm form) {
-        Profile profile = requireProfile(form.getProfileId());
+    public NewAccount create(UserForm form, Long actingUserId) {
+        Map<Long, Profile> accesses = plannedAccesses(null, form, actingUserId);
         if (userRepository.existsByUsername(form.getUsername())) {
             throw BusinessException.onField("username", MessageProperties.USER_ERROR_USERNAME_USED);
         }
@@ -78,8 +86,7 @@ public class UserService {
         user.setEnabled(true);
         user.assignTemporaryPassword(passwordEncoder.encode(temporaryPassword), now());
         User saved = userRepository.save(user);
-        // Works in the administrator's current company, with the profile chosen
-        accessService.grant(saved, currentCompany(), profile);
+        applyAccesses(saved, accesses);
         return new NewAccount(saved, temporaryPassword);
     }
 
@@ -87,7 +94,7 @@ public class UserService {
     @Transactional
     public User update(UserForm form, Long actingUserId) {
         User existing = require(form.getId());
-        Profile profile = requireProfile(form.getProfileId());
+        Map<Long, Profile> accesses = plannedAccesses(existing.getId(), form, actingUserId);
         if (!form.getEmail().equals(existing.getEmail()) && userRepository.existsByEmail(form.getEmail())) {
             throw BusinessException.onField("email", MessageProperties.USER_ERROR_EMAIL_USED);
         }
@@ -101,8 +108,7 @@ public class UserService {
         existing.setLastName(form.getLastName());
         existing.setEmail(form.getEmail());
         existing.setEnabled(form.isEnabled());
-        // The profile in the administrator's current company (access given if the user had none there)
-        accessService.grant(existing, currentCompany(), profile);
+        applyAccesses(existing, accesses);
         if (form.getLanguage() != null) {
             existing.setLanguage(form.getLanguage());
         }
@@ -171,12 +177,48 @@ public class UserService {
         user.changePassword(passwordEncoder.encode(newPassword), now());
     }
 
-    private static Long currentCompany() {
-        Long companyId = CompanyContext.currentCompanyId();
-        if (companyId == null) {
-            throw new BusinessException(MessageProperties.COMPANY_ERROR_NO_ACCESS);
+    /**
+     * The profile chosen in each company of the form, among those the administrator manages (rows of other
+     * companies are ignored: they cannot be changed from here). The administrator's own access to the company they
+     * work in stays as it is, so that they cannot lock themselves out. The user must keep at least one company.
+     */
+    private Map<Long, Profile> plannedAccesses(Long userId, UserForm form, Long actingUserId) {
+        Set<Long> managed = actingUserId != null ? accessService.companiesManagedBy(actingUserId) : null;
+        Long current = CompanyContext.currentCompanyId();
+        Map<Long, Profile> changes = new LinkedHashMap<>();
+        for (int i = 0; i < form.getAccesses().size(); i++) {
+            UserForm.Access row = form.getAccesses().get(i);
+            if (row.getCompanyId() == null || (managed != null && !managed.contains(row.getCompanyId()))
+                || (userId != null && Objects.equals(userId, actingUserId) && Objects.equals(row.getCompanyId(), current))) {
+                continue;
+            }
+            changes.put(row.getCompanyId(), row.getProfileId() == null ? null : requireProfile(row.getProfileId(), i));
         }
-        return companyId;
+        Set<Long> companies = new HashSet<>();
+        if (userId != null) {
+            accessService.accessesOf(userId).forEach(access -> companies.add(access.getCompany().getId()));
+        }
+        changes.forEach((companyId, profile) -> {
+            if (profile == null) {
+                companies.remove(companyId);
+            } else {
+                companies.add(companyId);
+            }
+        });
+        if (companies.isEmpty()) {
+            throw BusinessException.onField("accesses", MessageProperties.USER_ERROR_NO_COMPANY);
+        }
+        return changes;
+    }
+
+    private void applyAccesses(User user, Map<Long, Profile> changes) {
+        changes.forEach((companyId, profile) -> {
+            if (profile == null) {
+                accessService.revoke(user.getId(), companyId);
+            } else {
+                accessService.grant(user, companyId, profile);
+            }
+        });
     }
 
     private User require(Long id) {
@@ -184,12 +226,9 @@ public class UserService {
             .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.USER_ERROR_NOT_FOUND));
     }
 
-    private Profile requireProfile(Long profileId) {
-        if (profileId == null) {
-            throw BusinessException.onField("profileId", MessageProperties.USER_ERROR_PROFILE_REQUIRED);
-        }
+    private Profile requireProfile(Long profileId, int row) {
         return profileRepository.findById(profileId)
-            .orElseThrow(() -> BusinessException.onField("profileId", MessageProperties.USER_ERROR_PROFILE_NOT_FOUND));
+            .orElseThrow(() -> BusinessException.onField("accesses[" + row + "].profileId", MessageProperties.USER_ERROR_PROFILE_NOT_FOUND));
     }
 
     private LocalDateTime now() {

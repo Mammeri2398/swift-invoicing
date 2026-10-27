@@ -5,14 +5,17 @@ import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.MessageProperties;
+import com.swiftlabs.invoicing.common.Privileges;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /** Who may work in which company, and with which profile there. */
 @Service
@@ -61,6 +64,24 @@ public class CompanyAccessService {
     @Transactional
     public void rememberLast(Long userId, Long companyId) {
         userRepository.findById(userId).ifPresent(user -> user.setLastCompanyId(companyId));
+    }
+
+    /** The companies where the user manages users (MANAGE_USERS in their profile there). */
+    @Transactional(readOnly = true)
+    public Set<Long> companiesManagedBy(Long userId) {
+        Set<Long> companies = new HashSet<>();
+        for (CompanyAccess access : accessRepository.findActiveByUserId(userId)) {
+            if (access.getProfile().getPrivileges().stream().anyMatch(p -> Privileges.MANAGE_USERS.equals(p.getCode()))) {
+                companies.add(access.getCompany().getId());
+            }
+        }
+        return companies;
+    }
+
+    /** Takes away the user's access to the company (nothing when they had none). */
+    @Transactional
+    public void revoke(Long userId, Long companyId) {
+        accessRepository.findByUserIdAndCompanyId(userId, companyId).ifPresent(accessRepository::delete);
     }
 
     /** Gives the user access to the company with this profile, or changes their profile there. */

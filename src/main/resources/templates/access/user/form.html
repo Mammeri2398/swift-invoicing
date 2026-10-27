@@ -39,15 +39,30 @@
                 <input class="input" th:errorclass="input-invalid" th:field="*{email}" type="email" required maxlength="255"/>
                 <p th:replace="~{layout/fragments :: fieldError('email')}"></p>
             </div>
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div class="field">
-                    <label class="label" for="profileId"><span><th:block th:text="#{user.profile}">Profil</th:block> <span class="required">*</span></span></label>
-                    <select class="input" th:errorclass="input-invalid" th:field="*{profileId}" required>
-                        <option value="" th:text="#{user.profile.choose}">Sélectionner un profil…</option>
-                        <option th:each="p : ${profiles}" th:value="${p.id}" th:text="${p.name}">Administrateur</option>
-                    </select>
-                    <p th:replace="~{layout/fragments :: fieldError('profileId')}"></p>
+            <!--/* The profile in each company the administrator manages; the user's other companies are shown, not editable */-->
+            <fieldset class="field">
+                <legend class="label"><span><th:block th:text="#{user.companies}">Sociétés et profils</th:block> <span class="required">*</span></span></legend>
+                <div class="flex flex-col divide-y divide-surface-variant rounded-lg ring-1 ring-surface-variant"
+                     th:classappend="${#fields.hasErrors('accesses')} ? 'ring-error'">
+                    <div th:each="row, it : *{accesses}" class="flex flex-wrap items-center justify-between gap-3 p-3">
+                        <input type="hidden" th:field="*{accesses[__${it.index}__].companyId}"/>
+                        <span class="flex items-center gap-2"><span class="icon icon-sm text-primary">domain</span>
+                            <span class="font-medium" th:text="${companyNames[row.companyId]}">Société</span></span>
+                        <select class="input input-sm max-w-xs" th:field="*{accesses[__${it.index}__].profileId}"
+                                th:aria-label="#{user.profileIn(${companyNames[row.companyId]})}">
+                            <option value="" th:text="#{user.noAccess}">Pas d'accès</option>
+                            <option th:each="p : ${profiles}" th:value="${p.id}" th:text="${p.name}">Administrateur</option>
+                        </select>
+                    </div>
+                    <div th:each="a : ${otherAccesses}" class="flex flex-wrap items-center justify-between gap-3 p-3 text-on-surface-variant">
+                        <span class="flex items-center gap-2"><span class="icon icon-sm">lock</span><span th:text="${a.company.name}">Société</span></span>
+                        <span class="badge badge-neutral" th:text="${a.profile.name}">Administrateur</span>
+                    </div>
                 </div>
+                <p th:replace="~{layout/fragments :: fieldError('accesses')}"></p>
+                <p class="hint" th:text="#{user.companies.hint}">Vous ne changez ici que les sociétés où vous gérez les utilisateurs.</p>
+            </fieldset>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <!--/* The user's interface and their emails (password reset); they can change it in Mon compte */-->
                 <div class="field">
                     <label class="label" for="language" th:text="#{user.language}">Langue</label>

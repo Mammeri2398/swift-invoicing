@@ -102,7 +102,8 @@ public class LicenceService {
             throw new InvalidLicenceException(MessageProperties.LICENCE_ERROR_EXPIRED, licence.expires().format(DATE));
         }
         record.activate(key.replaceAll("\\s", ""), LocalDateTime.now(clock));
-        log.info("Licence {} activated for {} ({} users, until {})", licence.id(), licence.company(), licence.users(), licence.expires());
+        log.info("Licence {} activated for {} ({} users, {} companies, until {})", licence.id(), licence.company(), licence.users(),
+            licence.companies(), licence.expires());
         return licence;
     }
 
@@ -118,6 +119,21 @@ public class LicenceService {
     public void checkUserLimit(long activeUsersAfterChange) {
         if (properties.required() && activeUsersAfterChange > maxUsers()) {
             throw new BusinessException(MessageProperties.LICENCE_ERROR_USER_LIMIT, String.valueOf(maxUsers()));
+        }
+    }
+
+    /** Active companies allowed in the installation: the licence's, or the trial's. */
+    @Transactional
+    public int maxCompanies() {
+        LicenceStatus status = status();
+        return status.licence() != null ? status.licence().companies() : properties.trialCompanies();
+    }
+
+    /** Refuses one more active company beyond what the licence allows (no limit when licensing is off). */
+    @Transactional
+    public void checkCompanyLimit(long activeCompaniesAfterChange) {
+        if (properties.required() && activeCompaniesAfterChange > maxCompanies()) {
+            throw new BusinessException(MessageProperties.LICENCE_ERROR_COMPANY_LIMIT, String.valueOf(maxCompanies()));
         }
     }
 

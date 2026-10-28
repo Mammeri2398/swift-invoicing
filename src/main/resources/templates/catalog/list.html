@@ -33,7 +33,7 @@
                 <tr th:each="item : ${items}">
                     <td class="font-medium" th:text="${item.name}">Développement web</td>
                     <td th:text="${item.unit ?: '—'}">jour</td>
-                    <td class="num" th:text="${amountUtils.format(item.unitPrice)}">5 000,00 DA</td>
+                    <td class="num" th:text="${amountUtils.formatPrice(item.unitPrice)}">5 000,00 DA</td>
                     <td th:if="${company}" class="num"
                         th:text="${item.vatRate.signum() == 0} ? #{catalog.vatExempt} : ${amountUtils.formatRate(item.vatRate) + ' %'}">19 %</td>
                     <td th:if="${canManage}">

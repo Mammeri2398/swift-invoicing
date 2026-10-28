@@ -30,7 +30,7 @@
                 </div>
                 <div class="field">
                     <label class="label" for="unitPrice"><span><th:block th:text="#{catalog.form.unitPrice}">Prix unitaire (DA)</th:block> <span class="required">*</span></span></label>
-                    <input class="input text-end" th:errorclass="input-invalid" th:field="*{unitPrice}" type="number" required min="0" step="0.01"/>
+                    <input class="input text-end" th:errorclass="input-invalid" th:field="*{unitPrice}" type="number" required min="0" step="any"/>
                     <p th:replace="~{layout/fragments :: fieldError('unitPrice')}"></p>
                     <p class="hint" th:text="${company} ? #{catalog.form.unitPrice.hintCompany} : #{catalog.form.unitPrice.hint}">Hors taxes.</p>
                 </div>

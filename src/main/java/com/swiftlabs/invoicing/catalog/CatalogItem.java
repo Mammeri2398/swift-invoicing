@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.catalog;
 
+import com.swiftlabs.invoicing.common.AmountUtils;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -27,7 +28,7 @@ public class CatalogItem {
     @Column(name = "unit", length = 50)
     private String unit;
 
-    @Column(name = "unit_price", nullable = false, precision = 14, scale = 2)
+    @Column(name = "unit_price", nullable = false, precision = 18, scale = 6)
     private BigDecimal unitPrice;
 
     /** Used by a company only (an auto-entrepreneur does not charge TVA). */
@@ -47,7 +48,8 @@ public class CatalogItem {
     public void setName(String name) { this.name = name; }
     public String getUnit() { return unit; }
     public void setUnit(String unit) { this.unit = unit; }
-    public BigDecimal getUnitPrice() { return unitPrice; }
+    /** Up to 6 decimals, at least 2 (the column's trailing zeros removed). */
+    public BigDecimal getUnitPrice() { return AmountUtils.price(unitPrice); }
     public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
     public BigDecimal getVatRate() { return vatRate; }
     public void setVatRate(BigDecimal vatRate) { this.vatRate = vatRate; }

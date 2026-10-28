@@ -21,6 +21,17 @@ public final class AmountUtils {
         return value.setScale(2, RoundingMode.HALF_UP);
     }
 
+    /**
+     * A unit price as kept: up to 6 decimals (a monthly fee divided by days, 130 000 / 22 = 5 909,090909), at least
+     * 2, without the trailing zeros of its column (5 000.000000 is 5 000.00).
+     */
+    public static BigDecimal price(BigDecimal value) {
+        if (value == null) {
+            return null;
+        }
+        return value.setScale(Math.max(2, Math.min(6, value.stripTrailingZeros().scale())), RoundingMode.HALF_UP);
+    }
+
     public static BigDecimal lineTotal(BigDecimal quantity, BigDecimal unitPrice) {
         if (quantity == null) {
             quantity = BigDecimal.ZERO;
@@ -63,6 +74,19 @@ public final class AmountUtils {
      */
     private static char groupingSeparator() {
         return Language.of(LocaleContextHolder.getLocale()).isRightToLeft() ? '\u00A0' : ' ';
+    }
+
+    /** A unit price: as many decimals as it has, from 2 to 6 ("5 909,090909 DA", "5 000,00 DA"). */
+    public static String formatPrice(BigDecimal price) {
+        return formatPriceNumber(price) + " DA";
+    }
+
+    /** The same without the currency, for a column whose heading says "(DA)". */
+    public static String formatPriceNumber(BigDecimal price) {
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.FRANCE);
+        symbols.setGroupingSeparator(groupingSeparator());
+        symbols.setDecimalSeparator(',');
+        return new DecimalFormat("#,##0.00####", symbols).format(price == null ? BigDecimal.ZERO : price);
     }
 
     public static String format(BigDecimal amount) {

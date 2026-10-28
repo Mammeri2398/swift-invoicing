@@ -170,7 +170,7 @@
                     <td th:text="${line.description}">Prestation</td>
                     <td class="text-on-surface-variant" th:text="${line.unit ?: '—'}">jour</td>
                     <td class="num" th:text="${amountUtils.formatQuantity(line.quantity)}">1</td>
-                    <td class="num" th:text="${amountUtils.format(line.unitPrice)}">0,00 DA</td>
+                    <td class="num" th:text="${amountUtils.formatPrice(line.unitPrice)}">0,00 DA</td>
                     <td th:if="${issuer.company}" class="num"
                         th:text="${line.vatRate.signum() == 0} ? #{invoice.line.vatExempt} : ${amountUtils.formatRate(line.vatRate) + ' %'}">19 %</td>
                     <td class="num font-semibold" th:text="${amountUtils.format(line.lineTotal)}">0,00 DA</td>

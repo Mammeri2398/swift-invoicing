@@ -21,7 +21,8 @@ public class CatalogItemForm {
 
     @NotNull
     @DecimalMin("0")
-    @Digits(integer = 12, fraction = 2)
+    /** Up to 6 decimals: a monthly fee divided by days (130 000 / 22); line totals are rounded to the centime. */
+    @Digits(integer = 12, fraction = 6)
     private BigDecimal unitPrice;
 
     @NotNull

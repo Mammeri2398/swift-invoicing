@@ -38,7 +38,7 @@ public class RecurringInvoiceLine {
     @Column(name = "quantity", nullable = false, precision = 12, scale = 3)
     private BigDecimal quantity;
 
-    @Column(name = "unit_price", nullable = false, precision = 14, scale = 2)
+    @Column(name = "unit_price", nullable = false, precision = 18, scale = 6)
     private BigDecimal unitPrice;
 
     @Column(name = "vat_rate", nullable = false, precision = 5, scale = 2)
@@ -63,7 +63,8 @@ public class RecurringInvoiceLine {
     public String getDescription() { return description; }
     public String getUnit() { return unit; }
     public BigDecimal getQuantity() { return quantity; }
-    public BigDecimal getUnitPrice() { return unitPrice; }
+    /** Up to 6 decimals, at least 2 (the column's trailing zeros removed). */
+    public BigDecimal getUnitPrice() { return AmountUtils.price(unitPrice); }
     public BigDecimal getVatRate() { return vatRate; }
 
     /** Quantity × unit price, before TVA. */

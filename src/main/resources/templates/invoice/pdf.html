@@ -205,7 +205,7 @@
         <td th:text="${line.description}">Prestation</td>
         <td class="num"><span th:text="${amountUtils.formatQuantity(line.quantity)}">1</span>
             <span class="unit" th:if="${line.unit}" th:text="${line.unit}">jour</span></td>
-        <td class="num" th:text="${amountUtils.formatNumber(line.unitPrice)}">45 000,00</td>
+        <td class="num" th:text="${amountUtils.formatPriceNumber(line.unitPrice)}">45 000,00</td>
         <td th:if="${issuer.company}" class="tax"
             th:text="${line.vatRate.signum() == 0 ? 'Exonéré' : amountUtils.formatRate(line.vatRate) + ' %'}">19 %</td>
         <td class="num amount" th:text="${amountUtils.formatNumber(line.lineTotal)}">180 000,00</td>

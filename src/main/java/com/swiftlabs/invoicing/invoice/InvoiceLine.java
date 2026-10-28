@@ -37,7 +37,7 @@ public class InvoiceLine {
     @Column(name = "quantity", nullable = false, precision = 12, scale = 3)
     private BigDecimal quantity;
 
-    @Column(name = "unit_price", nullable = false, precision = 14, scale = 2)
+    @Column(name = "unit_price", nullable = false, precision = 18, scale = 6)
     private BigDecimal unitPrice;
 
     /** Total before TVA (HT). */
@@ -119,8 +119,9 @@ public class InvoiceLine {
         this.quantity = quantity;
     }
 
+    /** Up to 6 decimals, at least 2 (the column's trailing zeros removed). */
     public BigDecimal getUnitPrice() {
-        return unitPrice;
+        return AmountUtils.price(unitPrice);
     }
 
     public void setUnitPrice(BigDecimal unitPrice) {

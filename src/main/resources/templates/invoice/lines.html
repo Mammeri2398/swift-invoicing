@@ -40,7 +40,7 @@
                             <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].quantity'})}"></p>
                         </td>
                         <td>
-                            <input class="input input-sm text-end" type="number" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].unitPrice}" required min="0" step="0.01" data-unit-price/>
+                            <input class="input input-sm text-end" type="number" th:errorclass="input-invalid" th:field="*{lines[__${stat.index}__].unitPrice}" required min="0" step="any" data-unit-price/>
                             <p th:replace="~{layout/fragments :: fieldError(${'lines[' + stat.index + '].unitPrice'})}"></p>
                         </td>
                         <td th:if="${company}">
@@ -72,7 +72,7 @@
 <th:block th:fragment="lineLists">
         <!--/* Catalogue: picking an article fills the line's unit, price and TVA (invoice-form.js) */-->
         <datalist id="catalog">
-            <option th:each="c : ${catalogItems}" th:value="${c.name}" th:label="${amountUtils.format(c.unitPrice) + (c.unit != null ? ' / ' + c.unit : '')}"
+            <option th:each="c : ${catalogItems}" th:value="${c.name}" th:label="${amountUtils.formatPrice(c.unitPrice) + (c.unit != null ? ' / ' + c.unit : '')}"
                     th:data-unit="${c.unit}" th:data-price="${c.unitPrice}" th:data-vat="${c.vatRate}"></option>
         </datalist>
 
@@ -93,7 +93,7 @@
                            list="catalog" autocomplete="off" data-description/></td>
                 <td><input class="input input-sm" type="text" name="lines[INDEX].unit" maxlength="50" list="units" placeholder="jour"/></td>
                 <td><input class="input input-sm text-end" type="number" name="lines[INDEX].quantity" value="1" required min="0" step="0.001" data-quantity/></td>
-                <td><input class="input input-sm text-end" type="number" name="lines[INDEX].unitPrice" required min="0" step="0.01" data-unit-price/></td>
+                <td><input class="input input-sm text-end" type="number" name="lines[INDEX].unitPrice" required min="0" step="any" data-unit-price/></td>
                 <td th:if="${company}">
                     <select class="input input-sm" name="lines[INDEX].vatRate" data-vat-rate th:aria-label="#{invoice.form.vatRate}">
                         <option th:each="rate, rateStat : ${vatRates}" th:value="${rate}" th:selected="${rateStat.first}"

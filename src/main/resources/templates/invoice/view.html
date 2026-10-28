@@ -313,12 +313,17 @@
                     <span th:case="'ACCEPTED'" class="icon icon-sm">thumb_up</span>
                     <span th:case="'REFUSED'" class="icon icon-sm">thumb_down</span>
                     <span th:case="'CONVERTED'" class="icon icon-sm">receipt_long</span>
+                    <span th:case="'EDITED'" class="icon icon-sm">edit</span>
                 </span>
                 <div>
                     <!--/* Issued: the label depends on the kind of document (invoice, credit note, quote, pro forma) */-->
                     <p class="font-medium" th:text="${event.action.name() == 'ISSUED'} ? #{${'invoice.history.ISSUED.' + invoice.kind.name()}}
                                                      : #{${'invoice.history.' + event.action.name()}}">Facture émise</p>
                     <p th:if="${event.detail}" class="break-all text-body-sm" th:text="${@invoiceAudit.detail(event)}">à client@example.dz</p>
+                    <!--/* An edit: each value changed, old → new */-->
+                    <ul th:if="${event.action.name() == 'EDITED'}" class="mt-1 flex list-disc flex-col gap-0.5 ps-5 text-body-sm">
+                        <li th:each="change : ${@invoiceAudit.changes(event)}" class="break-words" th:text="${change}">Ligne 1 · Prix unitaire : 5 000,00 DA → 6 000,00 DA</li>
+                    </ul>
                     <p class="text-body-sm text-on-surface-variant">
                         <span th:text="${#temporals.format(event.occurredAt, dateTime)}">01/01/2026 à 10:00</span>
                         · <span th:if="${event.username}" th:text="${event.username == 'système'} ? #{invoice.history.system} : ${event.username}">admin</span>

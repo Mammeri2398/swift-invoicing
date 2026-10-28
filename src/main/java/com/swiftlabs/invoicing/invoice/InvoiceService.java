@@ -106,6 +106,8 @@ public class InvoiceService {
     public Invoice saveDraft(InvoiceForm form) {
         // Existing invoice: check the stored status, never the submitted one
         Invoice invoice = form.getId() != null ? findById(form.getId()) : newDraft();
+        // What the draft held before this save, to list in its history what the edit changes
+        InvoiceSnapshot before = invoice.getId() != null && invoice.isDraft() ? InvoiceSnapshot.of(invoice) : null;
         // A new document is an invoice, a quote or a pro forma; credit notes come from createCreditNote
         if (form.getId() == null && form.getKind() != null && !form.getKind().isAccounting()) {
             invoice.setKind(form.getKind());
@@ -141,6 +143,8 @@ public class InvoiceService {
         Invoice saved = invoiceRepository.save(invoice);
         if (created) {
             audit.record(saved, InvoiceEvent.Action.CREATED);
+        } else if (before != null) {
+            audit.recordChanges(saved, before.changesTo(InvoiceSnapshot.of(saved)));
         }
         return saved;
     }

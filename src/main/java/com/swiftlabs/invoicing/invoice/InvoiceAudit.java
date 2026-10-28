@@ -13,9 +13,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,6 +65,19 @@ public class InvoiceAudit {
         eventRepository.save(new InvoiceEvent(invoice, action, username, LocalDateTime.now(clock), detail));
         log.info("Invoice {} ({}): {} by {}{}", invoice.getId(), invoice.getInvoiceNumber(), action, username,
             detail != null ? " (" + detail + ")" : "");
+    }
+
+    /** Records what an edit of a draft changed, field by field; nothing when the save changed nothing. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordChanges(Invoice invoice, List<InvoiceSnapshot.Change> changes) {
+        if (changes.isEmpty()) {
+            return;
+        }
+        String username = currentUsername();
+        InvoiceEvent event = new InvoiceEvent(invoice, InvoiceEvent.Action.EDITED, username, LocalDateTime.now(clock), null);
+        changes.forEach(change -> event.addChange(change.field(), change.line(), change.oldValue(), change.newValue()));
+        eventRepository.save(event);
+        log.info("Invoice {} ({}): EDITED by {} ({} change(s))", invoice.getId(), invoice.getInvoiceNumber(), username, changes.size());
     }
 
     /** Forgets the history of a draft that is being deleted (a draft has no legal existence). */
@@ -140,6 +156,46 @@ public class InvoiceAudit {
                     paymentPrecision(matcher.group(3)));
         }
         return detail;
+    }
+
+    /**
+     * The changes of an edit, one sentence each in the reader's language: "Ligne 1 · Prix unitaire : 5 000,00 DA →
+     * 6 000,00 DA", "Ligne 3 ajoutée : Hébergement", "Échéance : — → 30/11/2026".
+     */
+    public List<String> changes(InvoiceEvent event) {
+        List<String> sentences = new ArrayList<>();
+        for (InvoiceChange change : event.getChanges()) {
+            InvoiceChange.Field field = change.getField();
+            String label = messages.get(MessageProperties.INVOICE_CHANGE_PREFIX + field.name());
+            if (field == InvoiceChange.Field.LINE_ADDED || field == InvoiceChange.Field.LINE_REMOVED) {
+                String description = field == InvoiceChange.Field.LINE_ADDED ? change.getNewValue() : change.getOldValue();
+                sentences.add(messages.get(MessageProperties.INVOICE_CHANGE_LINE_EVENT, change.getLineNumber(), label, description));
+            } else if (field.isLine()) {
+                sentences.add(messages.get(MessageProperties.INVOICE_CHANGE_LINE_VALUE, change.getLineNumber(), label,
+                    value(field, change.getOldValue()), value(field, change.getNewValue())));
+            } else {
+                sentences.add(messages.get(MessageProperties.INVOICE_CHANGE_VALUE, label,
+                    value(field, change.getOldValue()), value(field, change.getNewValue())));
+            }
+        }
+        return sentences;
+    }
+
+    /** A stored value as the reader reads it; "—" when there was none. */
+    private String value(InvoiceChange.Field field, String stored) {
+        if (stored == null) {
+            return "—";
+        }
+        return switch (field.kind()) {
+            case TEXT -> stored;
+            case DATE -> LocalDate.parse(stored).format(DATE);
+            case PAYMENT_METHOD -> messages.label(PaymentMethod.valueOf(stored));
+            case QUANTITY -> AmountUtils.formatQuantity(new BigDecimal(stored));
+            case PRICE -> AmountUtils.formatPrice(new BigDecimal(stored));
+            case AMOUNT -> AmountUtils.format(new BigDecimal(stored));
+            case RATE -> new BigDecimal(stored).signum() == 0 ? messages.get(MessageProperties.INVOICE_CHANGE_VAT_EXEMPT)
+                : AmountUtils.formatRate(new BigDecimal(stored)) + " %";
+        };
     }
 
     /** "chèque, CHQ 0042" in the reader's language: the payment method translated, the reference as typed. */

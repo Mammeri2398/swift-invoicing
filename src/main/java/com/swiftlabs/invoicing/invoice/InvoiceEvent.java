@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.invoice;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,9 +11,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /** One entry of an invoice's audit trail: who did what, and when. Never modified once written. */
 @Entity
@@ -31,7 +37,9 @@ public class InvoiceEvent {
         /** A payment received, or removed after a typing mistake. */
         PAYMENT, PAYMENT_DELETED,
         /** A payment reminder sent by email. */
-        REMINDED
+        REMINDED,
+        /** A draft saved again: its changes are listed (getChanges). */
+        EDITED
     }
 
     @Id
@@ -56,6 +64,11 @@ public class InvoiceEvent {
     /** Optional precision, e.g. the recipients of an email. */
     @Column(name = "detail", length = 500)
     private String detail;
+
+    /** What an edit changed, field by field (EDITED events). */
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position ASC")
+    private List<InvoiceChange> changes = new ArrayList<>();
 
     protected InvoiceEvent() {
     }
@@ -86,5 +99,13 @@ public class InvoiceEvent {
 
     public String getDetail() {
         return detail;
+    }
+
+    public List<InvoiceChange> getChanges() {
+        return Collections.unmodifiableList(changes);
+    }
+
+    void addChange(InvoiceChange.Field field, Integer lineNumber, String oldValue, String newValue) {
+        changes.add(new InvoiceChange(this, changes.size() + 1, field, lineNumber, oldValue, newValue));
     }
 }

@@ -92,8 +92,12 @@ class InvoiceAuditTest {
         form.setNotes("Modifié");
         invoiceService.saveDraft(form);
 
-        assertThat(audit.history(invoice.getId())).extracting(InvoiceEvent::getAction)
-            .containsExactly(InvoiceEvent.Action.CREATED);
+        // Created once, then edited (with what changed), by the same user
+        List<InvoiceEvent> history = audit.history(invoice.getId());
+        assertThat(history).extracting(InvoiceEvent::getAction)
+            .containsExactly(InvoiceEvent.Action.CREATED, InvoiceEvent.Action.EDITED);
+        assertThat(history.get(1).getUsername()).isEqualTo("karim");
+        assertThat(audit.changes(history.get(1))).containsExactly("Notes : — → Modifié");
     }
 
     @Test

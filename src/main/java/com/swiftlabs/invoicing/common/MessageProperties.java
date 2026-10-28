@@ -162,6 +162,10 @@ public final class MessageProperties {
     public static final String ERROR_UPLOAD_TOO_LARGE = "error.uploadTooLarge";
 
     // ---- invoice ---------------------------------------------------------------------------------------------
+    public static final String INVOICE_CHANGE_LINE_EVENT = "invoice.change.lineEvent";
+    public static final String INVOICE_CHANGE_LINE_VALUE = "invoice.change.lineValue";
+    public static final String INVOICE_CHANGE_VALUE = "invoice.change.value";
+    public static final String INVOICE_CHANGE_VAT_EXEMPT = "invoice.change.vatExempt";
     public static final String INVOICE_ERROR_ALREADY_CANCELLED = "invoice.error.alreadyCancelled";
     public static final String INVOICE_ERROR_ALREADY_ISSUED = "invoice.error.alreadyIssued";
     public static final String INVOICE_ERROR_CLIENT_MISSING_AI = "invoice.error.clientMissing.ai";
@@ -370,6 +374,8 @@ public final class MessageProperties {
     public static final String VAT_SUMMARY_TITLE = "vat.summary.title";
     public static final String VAT_TOTAL = "vat.total";
     public static final String VAT_TOTAL_INCL_VAT = "vat.totalInclVat";
+    /** Completed with the field: INVOICE_CHANGE_PREFIX + InvoiceChange.Field.LINE_UNIT_PRICE.name(). */
+    public static final String INVOICE_CHANGE_PREFIX = "invoice.change.";
     /** Completed with the basis: VAT_BASIS_PREFIX + VatBasis.INVOICED.name(). */
     public static final String VAT_BASIS_PREFIX = "vat.basis.";
 

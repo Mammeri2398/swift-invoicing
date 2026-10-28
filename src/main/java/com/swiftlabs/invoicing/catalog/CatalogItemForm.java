@@ -1,5 +1,7 @@
 package com.swiftlabs.invoicing.catalog;
 
+import com.swiftlabs.invoicing.common.AmountUtils;
+
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -21,7 +23,7 @@ public class CatalogItemForm {
 
     @NotNull
     @DecimalMin("0")
-    /** Up to 6 decimals: a monthly fee divided by days (130 000 / 22); line totals are rounded to the centime. */
+    /** Up to 6 decimals (more are rounded): a monthly fee divided by days, 130 000 / 22; line totals are rounded to the centime. */
     @Digits(integer = 12, fraction = 6)
     private BigDecimal unitPrice;
 
@@ -45,7 +47,8 @@ public class CatalogItemForm {
     public String getUnit() { return unit; }
     public void setUnit(String unit) { this.unit = unit; }
     public BigDecimal getUnitPrice() { return unitPrice; }
-    public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+    /** Rounded to 6 decimals as typed (a calculator's 5909.090909091 is 5909.090909), never refused for them. */
+    public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = AmountUtils.price(unitPrice); }
     public BigDecimal getVatRate() { return vatRate; }
     public void setVatRate(BigDecimal vatRate) { this.vatRate = vatRate; }
 }

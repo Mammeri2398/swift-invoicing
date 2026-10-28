@@ -104,9 +104,10 @@ class UnitPriceDecimalsTest {
 
     @Test
     @WithMockUser(authorities = {"MANAGE_CATALOG", "CREATE_INVOICE", "VIEW_INVOICES"})
-    void theCatalogueTakesAPriceWithSixDecimalsButNotSeven() throws Exception {
+    void theCatalogueRoundsACalculatorResultToSixDecimals() throws Exception {
+        // As copied from a calculator: 130000 / 22
         mockMvc.perform(post("/catalog/save").with(csrf())
-                .param("name", "Jour de mission").param("unit", "jour").param("unitPrice", "5909.090909").param("vatRate", "0"))
+                .param("name", "Jour de mission").param("unit", "jour").param("unitPrice", "5909.090909091").param("vatRate", "0"))
             .andExpect(redirectedUrl("/catalog"));
         CatalogItem item = catalogService.findAll().stream().filter(i -> i.getName().equals("Jour de mission")).findFirst().orElseThrow();
         assertThat(item.getUnitPrice()).isEqualByComparingTo(DAILY_RATE);
@@ -114,9 +115,19 @@ class UnitPriceDecimalsTest {
         // Picked when typing an invoice line: the form receives the full price
         mockMvc.perform(get("/invoices/new")).andExpect(content().string(containsString("data-price=\"5909.090909\"")));
 
+        // Only a price that does not fit is refused
         mockMvc.perform(post("/catalog/save").with(csrf())
-                .param("name", "Trop précis").param("unitPrice", "1.1234567").param("vatRate", "0"))
+                .param("name", "Trop grand").param("unitPrice", "1234567890123.5").param("vatRate", "0"))
             .andExpect(model().attributeHasFieldErrorCode("item", "unitPrice", "Digits"));
+    }
+
+    @Test
+    void anInvoiceLineRoundsItsPriceToSixDecimalsToo() {
+        InvoiceLineForm line = new InvoiceLineForm();
+        line.setUnitPrice(new BigDecimal("5909.090909091"));
+        assertThat(line.getUnitPrice()).isEqualByComparingTo(DAILY_RATE);
+        line.setUnitPrice(new BigDecimal("0.0000005"));
+        assertThat(line.getUnitPrice()).isEqualByComparingTo("0.000001");
     }
 
     @Test

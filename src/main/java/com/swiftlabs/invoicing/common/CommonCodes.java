@@ -27,6 +27,9 @@ public final class CommonCodes {
         public static final String BACKUP_DIRECTORY = "backupDirectory";
         public static final String BACKUP_WARNING = "backupWarning";
         public static final String BALANCES = "balances";
+        public static final String AUDIT_ALL_ALLOWED = "auditAllAllowed";
+        public static final String AUDIT_KEEP_DAYS = "auditKeepDays";
+        public static final String AUDIT_KINDS = "auditKinds";
         public static final String BASES = "bases";
         public static final String CAN_EDIT = "canEdit";
         public static final String CATALOG_ITEMS = "catalogItems";
@@ -166,6 +169,9 @@ public final class CommonCodes {
         // catalog
         public static final String CATALOG_FORM = "catalog/form";
         public static final String CATALOG_LIST = "catalog/list";
+
+        // audit
+        public static final String AUDIT_LIST = "audit/list";
 
         // client
         public static final String CLIENT_FORM = "client/form";

@@ -38,6 +38,7 @@ public final class Privileges {
     public static final String MANAGE_PRIVILEGES = "MANAGE_PRIVILEGES";
     public static final String MANAGE_BACKUPS = "MANAGE_BACKUPS";
     public static final String MANAGE_COMPANIES = "MANAGE_COMPANIES";
+    public static final String VIEW_AUDIT = "VIEW_AUDIT";
 
     /** The same privileges as Spring Security expressions, for @PreAuthorize. */
     public static final class Has {
@@ -64,5 +65,6 @@ public final class Privileges {
         public static final String MANAGE_PRIVILEGES = PREFIX + Privileges.MANAGE_PRIVILEGES + SUFFIX;
         public static final String MANAGE_BACKUPS = PREFIX + Privileges.MANAGE_BACKUPS + SUFFIX;
         public static final String MANAGE_COMPANIES = PREFIX + Privileges.MANAGE_COMPANIES + SUFFIX;
+        public static final String VIEW_AUDIT = PREFIX + Privileges.VIEW_AUDIT + SUFFIX;
     }
 }

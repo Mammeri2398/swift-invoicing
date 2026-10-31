@@ -180,6 +180,9 @@ public final class Endpoints {
 
     public static final String LICENCE = "/settings/licence";
 
+    /** Réglages > Journal d'activité. */
+    public static final String AUDIT = "/settings/audit";
+
     public static final String BACKUPS = "/settings/backups";
     public static final String BACKUP_NOW = "/now";
     public static final String BACKUP_SETTINGS = "/settings";

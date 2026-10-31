@@ -216,6 +216,9 @@
             <li>La <strong>double authentification</strong> ajoute un code de 6 chiffres d'une application de votre téléphone (Google
                 Authenticator, Microsoft Authenticator…). Activez-la dans <a th:href="@{/account}">Mon compte</a> et gardez les codes de
                 secours en lieu sûr.</li>
+            <li>Le <a th:href="@{/settings/audit}">Journal d'activité</a> (Réglages) note chaque connexion, connexion refusée,
+                déconnexion et fin de session, chaque page consultée et chaque action, avec l'utilisateur, l'heure et l'adresse IP.
+                Seuls les profils qui ont le privilège « Consulter le journal d'activité » le voient ; il est conservé un an.</li>
         </ul>
     </div>
 </section>

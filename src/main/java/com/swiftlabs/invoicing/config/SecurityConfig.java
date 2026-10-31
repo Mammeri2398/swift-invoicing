@@ -4,6 +4,7 @@ import com.swiftlabs.invoicing.access.auth.ForcePasswordChangeFilter;
 import com.swiftlabs.invoicing.access.auth.RateLimitFilter;
 import com.swiftlabs.invoicing.access.auth.RateLimiter;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorFilter;
+import com.swiftlabs.invoicing.audit.AuditSessionEvents;
 import com.swiftlabs.invoicing.company.CompanyAccessService;
 import com.swiftlabs.invoicing.company.CompanyFilter;
 import com.swiftlabs.invoicing.access.twofactor.TwoFactorLoginSuccessHandler;
@@ -77,7 +78,7 @@ public class SecurityConfig {
                                            SecurityProperties properties,
                                            TwoFactorLoginSuccessHandler loginSuccessHandler,
                                            SetupService setupService, LicenceService licenceService,
-                                           CompanyAccessService accessService) throws Exception {
+                                           CompanyAccessService accessService, AuditSessionEvents auditSessionEvents) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(PUBLIC_URLS).permitAll()
@@ -91,6 +92,8 @@ public class SecurityConfig {
                 .permitAll())
             .logout(logout -> logout
                 .logoutUrl(Endpoints.PERFORM_LOGOUT)
+                // Activity journal, before the session is closed
+                .addLogoutHandler(auditSessionEvents)
                 .logoutSuccessUrl(Endpoints.LOGIN + "?logout")
                 .invalidateHttpSession(true)
                 .clearAuthentication(true)

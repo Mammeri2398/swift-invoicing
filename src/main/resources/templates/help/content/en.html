@@ -216,6 +216,9 @@
             <li><strong>Two-factor authentication</strong> adds a 6-digit code from an app on your phone (Google
                 Authenticator, Microsoft Authenticator…). Turn it on in <a th:href="@{/account}">My account</a> and keep the
                 recovery codes in a safe place.</li>
+            <li>The <a th:href="@{/settings/audit}">Activity log</a> (Settings) records every sign-in, refused sign-in, sign-out and
+                end of session, every page viewed and every action, with the user, the time and the IP address. Only profiles with
+                the "view the activity log" privilege see it; it is kept for one year.</li>
         </ul>
     </div>
 </section>

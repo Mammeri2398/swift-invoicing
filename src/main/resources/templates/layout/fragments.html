@@ -41,7 +41,7 @@
                         <th:block th:replace="~{layout/fragments :: reportLinks}"></th:block>
                     </div>
                 </details>
-                <details th:if="${u.can('VIEW_ISSUER') or u.can('MANAGE_USERS') or u.can('MANAGE_PROFILES') or u.can('MANAGE_PRIVILEGES') or u.can('MANAGE_COMPANIES')}"
+                <details th:if="${u.can('VIEW_ISSUER') or u.can('MANAGE_USERS') or u.can('MANAGE_PROFILES') or u.can('MANAGE_PRIVILEGES') or u.can('MANAGE_COMPANIES') or u.can('VIEW_AUDIT')}"
                          class="relative" data-dropdown>
                     <summary class="nav-link inline-flex cursor-pointer list-none items-center gap-0.5"
                              th:classappend="${#strings.startsWith(currentPath, '/settings') or #strings.startsWith(currentPath, '/users')
@@ -164,6 +164,8 @@
        th:classappend="${#strings.startsWith(p, '/profiles')} ? 'active'" th:text="#{nav.profiles}">Profils</a>
     <a th:if="${u.can('MANAGE_PRIVILEGES')}" th:href="@{/privileges}" class="nav-link"
        th:classappend="${#strings.startsWith(p, '/privileges')} ? 'active'" th:text="#{nav.privileges}">Privilèges</a>
+    <a th:if="${u.can('VIEW_AUDIT')}" th:href="@{/settings/audit}" class="nav-link"
+       th:classappend="${#strings.startsWith(p, '/settings/audit')} ? 'active'" th:text="#{nav.audit}">Journal d'activité</a>
 </th:block>
 
 <!--/* On-premise licence: trial, renewal soon, grace period, read-only (see LicenceStatus) */-->

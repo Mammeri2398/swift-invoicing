@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: page(#{audit.title}, ~{::main}, ~{})}">
+<body>
+<main class="page" th:with="dateTime=${#messages.msg('audit.dateTimePattern')}">
+    <div class="page-header">
+        <div>
+            <p class="page-eyebrow" th:text="#{audit.eyebrow}">Sécurité</p>
+            <h1 class="page-title" th:text="#{audit.title}">Journal d'activité</h1>
+            <p class="page-subtitle" th:text="${auditKeepDays > 0} ? #{audit.subtitle(${auditKeepDays})} : #{audit.subtitle.forever}">Qui s'est connecté…</p>
+        </div>
+    </div>
+
+    <form th:action="@{/settings/audit}" method="get" class="card mb-6">
+        <div class="card-body grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[10rem_11rem_9.5rem_9.5rem_1fr_auto] lg:items-end">
+            <div class="field">
+                <label class="label" for="user" th:text="#{audit.filter.user}">Utilisateur</label>
+                <input class="input" id="user" name="user" type="search" th:value="${filter.user}"/>
+            </div>
+            <div class="field">
+                <label class="label" for="kind" th:text="#{audit.filter.kind}">Type</label>
+                <select class="input" id="kind" name="kind">
+                    <option value="" th:text="#{listFilter.all}">Tous</option>
+                    <option th:each="k : ${auditKinds}" th:value="${k.name()}" th:selected="${filter.kind == k}"
+                            th:text="${@messages.label(k)}">Connexion</option>
+                </select>
+            </div>
+            <div class="field">
+                <label class="label" for="from" th:text="#{audit.filter.from}">Du</label>
+                <input class="input" id="from" name="from" type="date" th:value="${filter.from}"/>
+            </div>
+            <div class="field">
+                <label class="label" for="to" th:text="#{audit.filter.to}">Au</label>
+                <input class="input" id="to" name="to" type="date" th:value="${filter.to}"/>
+            </div>
+            <div class="field">
+                <label class="label" for="search" th:text="#{audit.filter.search}">Adresse, action ou IP</label>
+                <input class="input" id="search" name="search" type="search" th:value="${filter.search}"/>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-primary"><span class="icon">filter_alt</span><th:block th:text="#{listFilter.filter}">Filtrer</th:block></button>
+                <a th:href="@{/settings/audit}" class="btn btn-secondary" th:title="#{action.reset}" th:aria-label="#{action.reset}"><span class="icon">restart_alt</span></a>
+            </div>
+            <label th:if="${auditAllAllowed}" class="flex items-center gap-2 text-body-md sm:col-span-2 lg:col-span-6">
+                <input type="checkbox" name="all" value="true" th:checked="${filter.all}"/>
+                <span th:text="#{audit.filter.all}">Toutes les sociétés</span>
+            </label>
+        </div>
+    </form>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table class="table" id="audit-table">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{audit.col.date}">Date et heure</th>
+                    <th scope="col" th:text="#{audit.col.user}">Utilisateur</th>
+                    <th scope="col" th:text="#{audit.col.kind}">Type</th>
+                    <th scope="col" th:text="#{audit.col.detail}">Détail</th>
+                    <th scope="col" th:text="#{audit.col.result}">Résultat</th>
+                    <th scope="col" th:text="#{audit.col.ip}">Adresse IP</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="e : ${page.content}">
+                    <td class="whitespace-nowrap tabular-nums text-body-sm" th:text="${#temporals.format(e.occurredAt, dateTime)}">01/01/2026 10:00:00</td>
+                    <td class="text-body-sm">
+                        <div class="font-medium" th:text="${e.username ?: #messages.msg('audit.anonymous')}">admin</div>
+                        <div th:if="${filter.all}" class="text-on-surface-variant" th:text="${e.companyName ?: #messages.msg('audit.noCompany')}">Société</div>
+                    </td>
+                    <td>
+                        <span class="badge whitespace-nowrap"
+                              th:classappend="${e.failure and e.path == null} ? 'badge-danger' : (${e.kind.name() == 'ACTION'} ? 'badge-info' : (${e.kind.name() == 'SIGN_IN' or e.kind.name() == 'SIGN_OUT'} ? 'badge-success' : 'badge-neutral'))"
+                              th:text="${@messages.label(e.kind)}">Connexion</span>
+                    </td>
+                    <td class="max-w-md text-body-sm" th:with="sentence=${@auditDescriptions.of(e)}">
+                        <!--/* The address and the code that answered stay at hand, for whoever needs them */-->
+                        <span th:if="${sentence != null}" th:text="${sentence}" th:title="${e.method + ' ' + e.path + ' · ' + e.handler}">Impression de la facture FA-2026-0001</span>
+                        <span th:if="${sentence == null}" class="text-on-surface-variant">—</span>
+                    </td>
+                    <td class="whitespace-nowrap text-body-sm">
+                        <th:block th:if="${e.status != null}">
+                            <span class="badge" th:classappend="${e.status >= 400} ? 'badge-danger' : 'badge-success'"
+                                  th:text="${e.status >= 500} ? #{audit.status.error} : (${e.status >= 400} ? #{audit.status.refused} : #{audit.status.ok})">Réussi</span>
+                            <span class="text-on-surface-variant tabular-nums" th:text="${e.status}">200</span>
+                            <div th:if="${e.durationMs != null}" class="text-on-surface-variant tabular-nums" th:text="#{audit.duration(${e.durationMs})}">12 ms</div>
+                        </th:block>
+                        <span th:if="${e.status == null}" class="text-on-surface-variant">—</span>
+                    </td>
+                    <td class="whitespace-nowrap font-mono text-body-sm" th:text="${e.ip ?: '—'}">127.0.0.1</td>
+                </tr>
+                <tr th:if="${page.isEmpty()}">
+                    <td colspan="6" class="table-empty" th:text="#{audit.empty}">Aucune activité ne correspond à ces critères.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer">
+            <span th:text="#{audit.count(${'' + page.totalElements})}">0 entrée</span>
+            <nav th:replace="~{layout/fragments :: pagination(${page}, ${pageLinks})}"></nav>
+        </div>
+    </section>
+    <p class="hint mt-4" th:text="#{audit.hint}">Les pages consultées par un visiteur non connecté ne sont pas notées.</p>
+</main>
+</body>
+</html>

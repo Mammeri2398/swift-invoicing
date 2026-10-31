@@ -1,6 +1,8 @@
 package com.swiftlabs.invoicing.access.twofactor;
 
 import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
+import com.swiftlabs.invoicing.audit.AuditKind;
+import com.swiftlabs.invoicing.audit.AuditRecorder;
 import com.swiftlabs.invoicing.common.CommonCodes;
 import com.swiftlabs.invoicing.common.Endpoints;
 import com.swiftlabs.invoicing.common.MessageProperties;
@@ -33,12 +35,14 @@ public class TwoFactorLoginController {
     private final TwoFactorService twoFactorService;
     private final TwoFactorLoginSuccessHandler successHandler;
     private final Messages messages;
+    private final AuditRecorder auditRecorder;
 
     public TwoFactorLoginController(TwoFactorService twoFactorService, TwoFactorLoginSuccessHandler successHandler,
-                                    Messages messages) {
+                                    Messages messages, AuditRecorder auditRecorder) {
         this.twoFactorService = twoFactorService;
         this.messages = messages;
         this.successHandler = successHandler;
+        this.auditRecorder = auditRecorder;
     }
 
     @GetMapping
@@ -54,6 +58,7 @@ public class TwoFactorLoginController {
         switch (check) {
             case ACCEPTED, RECOVERY_CODE_USED -> {
                 Authentication full = TwoFactorLogin.complete(request, response);
+                auditRecorder.record(AuditKind.SIGN_IN, AuditRecorder.Actor.of(full), request.getRemoteAddr());
                 if (check == TwoFactorService.Check.RECOVERY_CODE_USED) {
                     warnAboutRecoveryCodes(principal, request, response);
                 }
@@ -61,12 +66,14 @@ public class TwoFactorLoginController {
                 return null;
             }
             case LOCKED -> {
+                auditRecorder.record(AuditKind.SIGN_IN_LOCKED, AuditRecorder.Actor.of(principal), request.getRemoteAddr());
                 // Same answer as for a wrong password: the login page explains the lockout
                 SecurityContextHolder.clearContext();
                 request.getSession().invalidate();
                 return Endpoints.REDIRECT + Endpoints.LOGIN + "?error";
             }
             default -> {
+                auditRecorder.record(AuditKind.SIGN_IN_FAILED, AuditRecorder.Actor.of(principal), request.getRemoteAddr());
                 redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.get(MessageProperties.TWO_FACTOR_ERROR_WRONG_CODE));
                 return Endpoints.REDIRECT + Endpoints.LOGIN_VERIFY;
             }

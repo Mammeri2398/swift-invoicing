@@ -211,20 +211,9 @@
     </div>
 </div>
 
+<!--/* On every page, login and errors included; the version is app.version */-->
 <footer th:fragment="footer" class="mt-10 bg-surface-container-low print:hidden">
-    <div class="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-body-sm text-on-surface-variant sm:flex-row sm:px-6 lg:px-12">
-        <span th:text="#{app.footer(${companyType?.company} ? #{app.tagline.company} : #{app.footer.autoEntrepreneur})}">Swift Invoicing — Auto-entrepreneur (ANAE) · Algérie · Montants en DZD</span>
-        <span class="flex items-center gap-4">
-        <a th:if="${currentUser != null}" th:href="@{/help}" class="inline-flex items-center gap-1 hover:text-primary">
-            <span class="icon icon-sm">help</span><th:block th:text="#{help.open}">Aide</th:block>
-        </a>
-        <a th:href="@{/invoices/lookup}" class="inline-flex items-center gap-1 hover:text-primary">
-            <span class="icon icon-sm">verified_user</span><th:block th:text="#{app.footer.verify}">Vérifier une facture</th:block>
-        </a>
-        </span>
-    </div>
-    <!--/* On every page, login and errors included; the version is app.version */-->
-    <p class="border-t border-surface-variant px-4 py-2 text-center text-label-sm text-on-surface-variant"
+    <p class="px-4 py-3 text-center text-label-sm text-on-surface-variant"
        th:text="#{app.footer.signature(${@environment.getProperty('app.version')})}">Swift Invoicing par Swift Labs · v2.0</p>
 </footer>
 

@@ -18,8 +18,11 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Locale;
@@ -35,6 +38,9 @@ public class InvoicePdfService {
     static final String FONT_FAMILY = "DejaVu Sans";
     private static final String FONT_REGULAR = "/pdf/fonts/DejaVuSans.ttf";
     private static final String FONT_BOLD = "/pdf/fonts/DejaVuSans-Bold.ttf";
+    /** The two fonts (1.5 MB), read from the jar once instead of at every PDF. */
+    private static final byte[] REGULAR = fontBytes(FONT_REGULAR);
+    private static final byte[] BOLD = fontBytes(FONT_BOLD);
 
     static {
         // Through SLF4J, so logging.level.com.openhtmltopdf applies (the library otherwise prints to the console)
@@ -73,9 +79,9 @@ public class InvoicePdfService {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PdfRendererBuilder builder = new PdfRendererBuilder();
         builder.useFastMode();
-        builder.useFont(() -> InvoicePdfService.class.getResourceAsStream(FONT_REGULAR), FONT_FAMILY, 400, FontStyle.NORMAL, true);
+        builder.useFont(() -> new ByteArrayInputStream(REGULAR), FONT_FAMILY, 400, FontStyle.NORMAL, true);
         // The template only uses normal and bold: a weight without its own face would be faked
-        builder.useFont(() -> InvoicePdfService.class.getResourceAsStream(FONT_BOLD), FONT_FAMILY, 700, FontStyle.NORMAL, true);
+        builder.useFont(() -> new ByteArrayInputStream(BOLD), FONT_FAMILY, 700, FontStyle.NORMAL, true);
         // Arabic: split the text into left-to-right and right-to-left runs, reorder and join the letters
         builder.useUnicodeBidiSplitter(new ICUBidiSplitter.ICUBidiSplitterFactory());
         builder.useUnicodeBidiReorderer(new ICUBidiReorderer());
@@ -84,6 +90,17 @@ public class InvoicePdfService {
         builder.toStream(out);
         builder.run();
         return out.toByteArray();
+    }
+
+    private static byte[] fontBytes(String resource) {
+        try (InputStream font = InvoicePdfService.class.getResourceAsStream(resource)) {
+            if (font == null) {
+                throw new IllegalStateException("Missing PDF font " + resource);
+            }
+            return font.readAllBytes();
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     /** Shown in place of a logo: "Amine Mansouri" -> "AM", "Numidia" -> "N". */

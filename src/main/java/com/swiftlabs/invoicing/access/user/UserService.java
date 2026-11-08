@@ -325,7 +325,21 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<User> findVisibleTo(Long actingUserId) {
         Set<Long> managed = accessService.companiesManagedBy(actingUserId);
-        return userRepository.findAll().stream().filter(user -> isVisible(managed, user.getId())).toList();
+        Map<Long, Set<Long>> companies = accessService.companyIdsByUser();
+        return userRepository.findAll().stream().filter(user -> {
+            Set<Long> own = companies.getOrDefault(user.getId(), Set.of());
+            return own.isEmpty() || own.stream().anyMatch(managed::contains);
+        }).toList();
+    }
+
+    /** Among these users, the ones whose account the administrator may change (see fullyManages), in two queries. */
+    @Transactional(readOnly = true)
+    public Set<Long> fullyManagedAmong(Long actingUserId, List<User> users) {
+        Set<Long> managed = accessService.companiesManagedBy(actingUserId);
+        Map<Long, Set<Long>> companies = accessService.companyIdsByUser();
+        return users.stream().map(User::getId)
+            .filter(id -> managed.containsAll(companies.getOrDefault(id, Set.of())))
+            .collect(Collectors.toSet());
     }
 
     /**

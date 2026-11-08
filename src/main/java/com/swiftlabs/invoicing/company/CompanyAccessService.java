@@ -91,6 +91,16 @@ public class CompanyAccessService {
         return companies;
     }
 
+    /** The companies of every user (user id to company ids), in one query. */
+    @Transactional(readOnly = true)
+    public Map<Long, Set<Long>> companyIdsByUser() {
+        Map<Long, Set<Long>> companies = new HashMap<>();
+        for (Object[] row : accessRepository.findAllUserCompanyIds()) {
+            companies.computeIfAbsent((Long) row[0], id -> new HashSet<>()).add((Long) row[1]);
+        }
+        return companies;
+    }
+
     /** Every company the user may work in, active or not. */
     @Transactional(readOnly = true)
     public Set<Long> companyIdsOf(Long userId) {

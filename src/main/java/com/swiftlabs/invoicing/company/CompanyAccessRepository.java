@@ -24,6 +24,10 @@ public interface CompanyAccessRepository extends JpaRepository<CompanyAccess, Co
     @Query("SELECT a.company.id FROM CompanyAccess a WHERE a.user.id = ?1")
     List<Long> findCompanyIdsByUserId(Long userId);
 
+    /** {user id, company id} for every access: the companies of all users in one query (the user list). */
+    @Query("SELECT a.user.id, a.company.id FROM CompanyAccess a")
+    List<Object[]> findAllUserCompanyIds();
+
     /** {company id, number of users} for every company with at least one user. */
     @Query("SELECT a.company.id, COUNT(a) FROM CompanyAccess a GROUP BY a.company.id")
     List<Object[]> countByCompany();

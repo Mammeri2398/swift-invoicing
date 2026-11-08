@@ -74,8 +74,7 @@ public class UserController {
         List<User> users = userService.findVisibleTo(me.getId());
         model.addAttribute(CommonCodes.Attributes.USERS, users);
         // Password reset, two-factor reset and delete: only for the accounts of companies all managed here
-        model.addAttribute(CommonCodes.Attributes.MANAGED_USERS, users.stream()
-            .filter(user -> userService.fullyManages(me.getId(), user.getId())).map(User::getId).collect(Collectors.toSet()));
+        model.addAttribute(CommonCodes.Attributes.MANAGED_USERS, userService.fullyManagedAmong(me.getId(), users));
         // The profile of each user in the current company (none: no access to it)
         model.addAttribute(CommonCodes.Attributes.PROFILE_NAMES, accessService.profileNamesIn(CompanyContext.currentCompanyId()));
         model.addAttribute(CommonCodes.Attributes.NOW, LocalDateTime.now(clock));

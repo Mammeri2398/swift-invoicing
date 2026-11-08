@@ -2,12 +2,14 @@ package com.swiftlabs.invoicing.licence;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.MessageProperties;
+import com.swiftlabs.invoicing.common.TimedCache;
 import com.swiftlabs.invoicing.company.CompanySchemas;
 import com.swiftlabs.invoicing.company.CompanyWork;
 import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,9 +43,12 @@ public class LicenceService {
     private final LicenceProperties properties;
     private final Clock clock;
     private final PublicKey publicKey;
+    /** The status shown on every page (banner, menu): kept a short while, forgotten when a key is activated. */
+    private final TimedCache<Boolean, LicenceStatus> shownStatus;
 
     public LicenceService(LicenceRecordRepository repository, IssuerService issuerService, CompanyWork companyWork,
-                          LicenceProperties properties, Clock clock) {
+                          LicenceProperties properties, Clock clock, @Value("${app.page-cache.ttl:60s}") Duration cacheTtl) {
+        this.shownStatus = new TimedCache<>(cacheTtl);
         this.repository = repository;
         this.issuerService = issuerService;
         this.companyWork = companyWork;
@@ -54,6 +59,14 @@ public class LicenceService {
 
     public boolean isRequired() {
         return properties.required();
+    }
+
+    /**
+     * The status for the pages' banner and menu: the same as {@link #status()}, read again at most once a minute
+     * (it checks a signature and reads the first company's identifiers). Read-only mode is decided by status().
+     */
+    public LicenceStatus shownStatus() {
+        return shownStatus.get(Boolean.TRUE, this::status);
     }
 
     @Transactional
@@ -107,6 +120,7 @@ public class LicenceService {
             throw new InvalidLicenceException(MessageProperties.LICENCE_ERROR_EXPIRED, licence.expires().format(DATE));
         }
         record.activate(key.replaceAll("\\s", ""), LocalDateTime.now(clock));
+        shownStatus.clear();
         log.info("Licence {} activated for {} ({} users, {} companies, until {})", licence.id(), licence.company(), licence.users(),
             licence.companies(), licence.expires());
         return licence;

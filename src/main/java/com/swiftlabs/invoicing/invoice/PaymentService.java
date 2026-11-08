@@ -19,6 +19,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Payments received on invoices. The balance of an invoice is its net to pay (TTC plus droit de
@@ -58,16 +60,16 @@ public class PaymentService {
 
     /** Summaries of many invoices with two queries (exports); credit notes, quotes and drafts are left out. */
     public Map<Long, Summary> summaries(List<Invoice> documents) {
-        List<Long> ids = documents.stream()
+        Set<Long> ids = documents.stream()
             .filter(document -> document.getKind() == DocumentKind.INVOICE && document.isIssuedOrPaid())
-            .map(Invoice::getId).toList();
+            .map(Invoice::getId).collect(Collectors.toSet());
         if (ids.isEmpty()) {
             return Map.of();
         }
         Map<Long, BigDecimal> paid = new HashMap<>();
-        paymentRepository.sumByInvoices(ids).forEach(row -> paid.put((Long) row[0], (BigDecimal) row[1]));
+        paymentRepository.sumByInvoices(List.copyOf(ids)).forEach(row -> paid.put((Long) row[0], (BigDecimal) row[1]));
         Map<Long, BigDecimal> credited = new HashMap<>();
-        invoiceRepository.sumIssuedCreditNotesByInvoices(ids).forEach(row -> credited.put((Long) row[0], (BigDecimal) row[1]));
+        invoiceRepository.sumIssuedCreditNotesByInvoices(List.copyOf(ids)).forEach(row -> credited.put((Long) row[0], (BigDecimal) row[1]));
         Map<Long, Summary> summaries = new HashMap<>();
         for (Invoice invoice : documents) {
             if (ids.contains(invoice.getId())) {
@@ -169,9 +171,13 @@ public class PaymentService {
     /** Issued invoices past their due date with something left to pay, the oldest due first. */
     public List<Overdue> overdue() {
         LocalDate today = LocalDate.now(clock);
-        return invoiceRepository.findAll((root, query, cb) -> InvoiceSpecifications.overdue(root, query, cb), Sort.by("dueDate", "id"))
-            .stream()
-            .map(invoice -> new Overdue(invoice, balance(invoice), ChronoUnit.DAYS.between(invoice.getDueDate(), today)))
+        List<Invoice> invoices = invoiceRepository.findAll((root, query, cb) -> InvoiceSpecifications.overdue(root, query, cb),
+            Sort.by("dueDate", "id"));
+        // Two queries for all of them, not two per invoice
+        Map<Long, Summary> summaries = summaries(invoices);
+        return invoices.stream()
+            .map(invoice -> new Overdue(invoice, summaries.get(invoice.getId()).balance(),
+                ChronoUnit.DAYS.between(invoice.getDueDate(), today)))
             .toList();
     }
 

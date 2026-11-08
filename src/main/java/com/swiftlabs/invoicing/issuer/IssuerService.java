@@ -2,13 +2,17 @@ package com.swiftlabs.invoicing.issuer;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.MessageProperties;
+import com.swiftlabs.invoicing.common.TimedCache;
+import com.swiftlabs.invoicing.company.CompanyContext;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Iterator;
 import javax.imageio.ImageIO;
@@ -28,9 +32,23 @@ public class IssuerService {
     private static final byte[] JPEG_SIGNATURE = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
 
     private final IssuerRepository issuerRepository;
+    /** Per company schema: read on every page, changed only by save (which evicts it). */
+    private final TimedCache<String, IssuerProfile> profiles;
 
-    public IssuerService(IssuerRepository issuerRepository) {
+    public IssuerService(IssuerRepository issuerRepository, @Value("${app.page-cache.ttl:60s}") Duration cacheTtl) {
         this.issuerRepository = issuerRepository;
+        this.profiles = new TimedCache<>(cacheTtl);
+    }
+
+    /** The legal status and TVA mention of the current company, kept a short while (every page shows them). */
+    public IssuerProfile profile() {
+        return profiles.get(CompanyContext.currentSchema(), () -> issuerRepository.findProfileById(ISSUER_ID)
+            .orElseThrow(() -> new BusinessException(MessageProperties.ISSUER_ERROR_NOT_FOUND)));
+    }
+
+    /** Forgets what was kept of every company (a backup restored, for instance). */
+    public void forgetCachedProfiles() {
+        profiles.clear();
     }
 
     public Issuer getIssuer() {
@@ -82,6 +100,7 @@ public class IssuerService {
         issuer.setActivityDescription(form.getActivityDescription());
         issuer.setBankOrCcpAccount(form.getBankOrCcpAccount());
         issuer.setAnnualCeiling(form.getAnnualCeiling());
+        profiles.evict(CompanyContext.currentSchema());
         return issuerRepository.save(issuer);
     }
 

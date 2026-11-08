@@ -32,4 +32,14 @@ public interface CompanyAccessRepository extends JpaRepository<CompanyAccess, Co
     @Query("SELECT COUNT(a) > 0 FROM CompanyAccess a JOIN a.user u JOIN a.profile p JOIN p.privileges pr"
         + " WHERE u.enabled = true AND pr.code = ?1 AND p.id <> ?2")
     boolean existsEnabledUserWithPrivilegeOutsideProfile(String privilegeCode, Long profileId);
+
+    /** Another enabled user than this one holds the privilege in this company. */
+    @Query("SELECT COUNT(a) > 0 FROM CompanyAccess a JOIN a.user u JOIN a.profile p JOIN p.privileges pr"
+        + " WHERE u.enabled = true AND pr.code = ?1 AND a.company.id = ?2 AND u.id <> ?3")
+    boolean existsOtherEnabledHolderIn(String privilegeCode, Long companyId, Long userId);
+
+    /** Another enabled user than this one holds the privilege, in any company. */
+    @Query("SELECT COUNT(a) > 0 FROM CompanyAccess a JOIN a.user u JOIN a.profile p JOIN p.privileges pr"
+        + " WHERE u.enabled = true AND pr.code = ?1 AND u.id <> ?2")
+    boolean existsOtherEnabledHolder(String privilegeCode, Long userId);
 }

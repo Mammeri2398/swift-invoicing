@@ -17,11 +17,15 @@ import com.swiftlabs.invoicing.setup.NetworkAddresses;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
@@ -35,6 +39,7 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 
 @Service
 @Transactional
@@ -54,6 +59,8 @@ public class PasswordResetService {
     private final String baseUrl;
     private final NetworkAddresses networkAddresses;
     private final boolean logResetLinks;
+    private final Executor mailExecutor;
+    private final boolean sendInBackground;
     private final Duration validity;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
@@ -70,7 +77,11 @@ public class PasswordResetService {
                                 Messages messages,
                                 NetworkAddresses networkAddresses,
                                 @Value("${app.base-url:}") String baseUrl,
-                                @Value("${app.security.log-reset-links:false}") boolean logResetLinks) {
+                                @Value("${app.security.log-reset-links:false}") boolean logResetLinks,
+                                @Qualifier("applicationTaskExecutor") TaskExecutor mailExecutor,
+                                @Value("${app.security.reset-mail-in-background:true}") boolean sendInBackground) {
+        this.mailExecutor = mailExecutor;
+        this.sendInBackground = sendInBackground;
         this.logResetLinks = logResetLinks;
         this.networkAddresses = networkAddresses;
         this.messages = messages;
@@ -203,10 +214,28 @@ public class PasswordResetService {
         // In the user's own language, whatever the language of the page that asked for it
         message.setSubject(messages.get(user.getLanguage(), MessageProperties.AUTH_RESET_MAIL_SUBJECT));
         message.setText(messages.get(user.getLanguage(), MessageProperties.AUTH_RESET_MAIL_BODY, user.getUsername(), resetUrl, validity.toMinutes()));
-        try {
-            transport.sender().send(message);
-        } catch (Exception ex) {
-            log.error("Could not send the password reset email to user '{}'", user.getUsername(), ex);
+        Runnable send = () -> {
+            try {
+                transport.sender().send(message);
+            } catch (Exception ex) {
+                log.error("Could not send the password reset email to user '{}'", user.getUsername(), ex);
+            }
+        };
+        if (!sendInBackground) {
+            send.run();
+            return;
+        }
+        // In the background, once the link is saved: the answer to the request takes the same time whether the
+        // email belongs to an account or not (a slow mail server would otherwise tell which emails exist)
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    mailExecutor.execute(send);
+                }
+            });
+        } else {
+            mailExecutor.execute(send);
         }
     }
 }

@@ -1,5 +1,10 @@
 package com.swiftlabs.invoicing.common;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * The privilege codes (table privilege, seeded by the migrations). A profile holds privileges; a user
  * has the privileges of their profile, as Spring Security authorities.
@@ -9,6 +14,21 @@ package com.swiftlabs.invoicing.common;
 public final class Privileges {
 
     private Privileges() {
+    }
+
+    /** Every code above: the application checks them, so they cannot be deleted (see PrivilegeService). */
+    public static Set<String> builtIn() {
+        Set<String> codes = new HashSet<>();
+        for (Field field : Privileges.class.getFields()) {
+            if (Modifier.isStatic(field.getModifiers()) && field.getType() == String.class) {
+                try {
+                    codes.add((String) field.get(null));
+                } catch (IllegalAccessException ex) {
+                    throw new IllegalStateException(ex);
+                }
+            }
+        }
+        return codes;
     }
 
     // ---- Dashboard ---------------------------------------------------------------------------------------------

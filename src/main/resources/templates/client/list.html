@@ -3,7 +3,8 @@
       th:replace="~{layout/base :: page(#{client.list.title}, ~{::main}, ~{})}">
 <body>
 <main class="page" th:with="canEdit=${currentUser != null and currentUser.can('CREATE_CLIENT')},
-                            canDelete=${currentUser != null and currentUser.can('DELETE_CLIENT')}">
+                            canDelete=${currentUser != null and currentUser.can('DELETE_CLIENT')},
+                            seesInvoices=${showBalances}">
     <div class="page-header">
         <div>
             <p class="page-eyebrow" th:text="#{client.list.eyebrow}">Registre</p>
@@ -29,7 +30,7 @@
                     <th scope="col" th:text="#{client.list.col.nif}">NIF</th>
                     <th scope="col" th:text="#{client.list.col.city}">Ville</th>
                     <th scope="col" th:text="#{client.list.col.contact}">Contact</th>
-                    <th scope="col" class="num" th:text="#{client.list.col.balance}">Solde dû</th>
+                    <th th:if="${seesInvoices}" scope="col" class="num" th:text="#{client.list.col.balance}">Solde dû</th>
                     <th scope="col"><span class="sr-only" th:text="#{client.list.col.actions}">Actions</span></th>
                 </tr>
                 </thead>
@@ -50,7 +51,7 @@
                         <div th:if="${c.email}" th:text="${c.email}">contact@exemple.dz</div>
                         <div th:if="${c.phone}" class="text-on-surface-variant" th:text="${c.phone}">0555 00 00 00</div>
                     </td>
-                    <td class="num font-semibold" th:with="balance=${balances[c.id]}"
+                    <td th:if="${seesInvoices}" class="num font-semibold" th:with="balance=${balances[c.id]}"
                         th:classappend="${balance != null and balance.signum() > 0} ? 'text-on-surface' : 'text-on-surface-variant'"
                         th:text="${balance != null and balance.signum() != 0 ? amountUtils.format(balance) : '—'}">—</td>
                     <td>
@@ -71,7 +72,7 @@
                     </td>
                 </tr>
                 <tr th:if="${clients.isEmpty()}">
-                    <td colspan="7" class="table-empty" th:text="#{client.list.empty}">Aucun client. Commencez par en créer un.</td>
+                    <td th:colspan="${seesInvoices} ? 7 : 6" class="table-empty" th:text="#{client.list.empty}">Aucun client. Commencez par en créer un.</td>
                 </tr>
                 </tbody>
             </table>

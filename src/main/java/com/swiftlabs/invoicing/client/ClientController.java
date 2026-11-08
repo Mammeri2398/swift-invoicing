@@ -11,6 +11,7 @@ import com.swiftlabs.invoicing.invoice.PaymentService;
 
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -20,6 +21,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Map;
 
 @Controller
 @RequestMapping(Endpoints.CLIENTS)
@@ -37,10 +40,13 @@ public class ClientController {
 
     @GetMapping
     @PreAuthorize(Privileges.Has.VIEW_CLIENTS)
-    public String list(Model model) {
+    public String list(Authentication authentication, Model model) {
         model.addAttribute(CommonCodes.Attributes.CLIENTS, clientService.findAll());
-        // What each client still owes on issued invoices
-        model.addAttribute(CommonCodes.Attributes.BALANCES, paymentService.balancesByClient());
+        // What each client still owes on issued invoices: invoice data, for who may see the invoices only
+        boolean seesInvoices = authentication.getAuthorities().stream()
+            .anyMatch(authority -> Privileges.VIEW_INVOICES.equals(authority.getAuthority()));
+        model.addAttribute(CommonCodes.Attributes.SHOW_BALANCES, seesInvoices);
+        model.addAttribute(CommonCodes.Attributes.BALANCES, seesInvoices ? paymentService.balancesByClient() : Map.of());
         return CommonCodes.Views.CLIENT_LIST;
     }
 

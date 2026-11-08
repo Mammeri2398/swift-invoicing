@@ -1,11 +1,14 @@
 package com.swiftlabs.invoicing.access.user;
 
+import com.swiftlabs.invoicing.access.privilege.Privilege;
 import com.swiftlabs.invoicing.access.profile.Profile;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.Language;
 import com.swiftlabs.invoicing.common.MessageProperties;
+import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
+import com.swiftlabs.invoicing.company.CompanyAccess;
 import com.swiftlabs.invoicing.company.CompanyAccessService;
 import com.swiftlabs.invoicing.company.CompanyContext;
 import com.swiftlabs.invoicing.licence.LicenceService;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -97,9 +102,10 @@ public class UserService {
      */
     @Transactional
     public User update(UserForm form, Long actingUserId) {
-        User existing = require(form.getId());
+        User existing = requireVisible(form.getId(), actingUserId);
         Map<Long, Profile> accesses = plannedAccesses(existing.getId(), form, actingUserId);
         if (!fullyManages(actingUserId, existing.getId())) {
+            keepAdministrators(existing, accesses, existing.isEnabled());
             applyAccesses(existing, accesses);
             return existing;
         }
@@ -112,6 +118,7 @@ public class UserService {
         if (form.isEnabled() && !existing.isEnabled()) {
             licenceService.checkUserLimit(userRepository.countByEnabledTrue() + 1);
         }
+        keepAdministrators(existing, accesses, form.isEnabled());
         existing.setFirstName(form.getFirstName());
         existing.setLastName(form.getLastName());
         existing.setEmail(form.getEmail());
@@ -123,10 +130,18 @@ public class UserService {
         return userRepository.save(existing);
     }
 
-    /** The user's own personal information (Mon compte). The username and the profile are not editable here. */
+    /**
+     * The user's own personal information (Mon compte). The username and the profile are not editable here. A new
+     * email needs the current password: reset links go there, so a session left open would be enough to take the
+     * account over.
+     */
     @Transactional
-    public User updateOwnDetails(Long userId, String firstName, String lastName, String email) {
+    public User updateOwnDetails(Long userId, String firstName, String lastName, String email, String currentPassword) {
         User user = require(userId);
+        if (!email.equalsIgnoreCase(user.getEmail())
+            && (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
+            throw BusinessException.onField("currentPassword", MessageProperties.USER_ERROR_WRONG_CURRENT_PASSWORD);
+        }
         if (!email.equalsIgnoreCase(user.getEmail()) && userRepository.existsByEmail(email)) {
             throw BusinessException.onField("email", MessageProperties.USER_ERROR_EMAIL_USED);
         }
@@ -179,7 +194,49 @@ public class UserService {
             throw new BusinessException(MessageProperties.USER_ERROR_DELETE_SELF);
         }
         requireFullyManaged(actingUserId, id);
-        userRepository.delete(require(id));
+        User user = require(id);
+        keepAdministrators(user, Map.of(), false);
+        userRepository.delete(user);
+    }
+
+    /**
+     * Refuses a change that would leave nobody to manage the users of a company (MANAGE_USERS) or the profiles
+     * (MANAGE_PROFILES, shared by all companies): disabling or deleting the last one who can, or taking the right
+     * away from them. Only a database fix could give it back. {@code changes}: the profile per company after the
+     * change (null: access removed); {@code staysEnabled}: whether the account is still active afterwards.
+     */
+    private void keepAdministrators(User user, Map<Long, Profile> changes, boolean staysEnabled) {
+        if (!user.isEnabled()) {
+            return;
+        }
+        List<CompanyAccess> current = accessService.accessesOf(user.getId());
+        Map<Long, Profile> after = new HashMap<>();
+        current.forEach(access -> after.put(access.getCompany().getId(), access.getProfile()));
+        after.putAll(changes);
+        for (CompanyAccess access : current) {
+            Long companyId = access.getCompany().getId();
+            if (holds(access.getProfile(), Privileges.MANAGE_USERS)
+                && !(staysEnabled && holds(after.get(companyId), Privileges.MANAGE_USERS))
+                && !accessService.hasOtherHolder(Privileges.MANAGE_USERS, companyId, user.getId())) {
+                throw new BusinessException(MessageProperties.USER_ERROR_LAST_USER_MANAGER, access.getCompany().getName());
+            }
+        }
+        boolean managedProfiles = current.stream().anyMatch(access -> holds(access.getProfile(), Privileges.MANAGE_PROFILES));
+        boolean stillManagesProfiles = staysEnabled && after.values().stream().anyMatch(profile -> holds(profile, Privileges.MANAGE_PROFILES));
+        if (managedProfiles && !stillManagesProfiles && !accessService.hasOtherHolder(Privileges.MANAGE_PROFILES, null, user.getId())) {
+            throw new BusinessException(MessageProperties.USER_ERROR_LAST_PROFILE_MANAGER);
+        }
+    }
+
+    private static boolean holds(Profile profile, String privilegeCode) {
+        return profile != null && profile.getPrivileges().stream().anyMatch(p -> privilegeCode.equals(p.getCode()));
+    }
+
+    /** The privilege codes of the administrator's profile in the company (none without access). */
+    private Set<String> privilegesIn(Long userId, Long companyId) {
+        return accessService.profileIn(userId, companyId)
+            .map(profile -> profile.getPrivileges().stream().map(Privilege::getCode).collect(Collectors.toSet()))
+            .orElse(Set.of());
     }
 
     private void setPassword(User user, String newPassword) {
@@ -202,7 +259,16 @@ public class UserService {
                 || (userId != null && Objects.equals(userId, actingUserId) && Objects.equals(row.getCompanyId(), current))) {
                 continue;
             }
-            changes.put(row.getCompanyId(), row.getProfileId() == null ? null : requireProfile(row.getProfileId(), i));
+            Profile profile = row.getProfileId() == null ? null : requireProfile(row.getProfileId(), i);
+            // A new profile given in a company holds no privilege the administrator lacks there: otherwise managing
+            // users would be a way to give oneself (through another account) any right, Administrateur included
+            if (profile != null && actingUserId != null && !isCurrentProfile(userId, row.getCompanyId(), profile)) {
+                Set<String> own = privilegesIn(actingUserId, row.getCompanyId());
+                if (!profile.getPrivileges().stream().allMatch(privilege -> own.contains(privilege.getCode()))) {
+                    throw BusinessException.onField("accesses[" + i + "].profileId", MessageProperties.USER_ERROR_PROFILE_ABOVE_OWN);
+                }
+            }
+            changes.put(row.getCompanyId(), profile);
         }
         Set<Long> companies = new HashSet<>();
         if (userId != null) {
@@ -219,6 +285,12 @@ public class UserService {
             throw BusinessException.onField("accesses", MessageProperties.USER_ERROR_NO_COMPANY);
         }
         return changes;
+    }
+
+    /** The user already has this profile in the company: keeping it gives nothing new. */
+    private boolean isCurrentProfile(Long userId, Long companyId, Profile profile) {
+        return userId != null && accessService.profileIn(userId, companyId).map(Profile::getId)
+            .filter(id -> id.equals(profile.getId())).isPresent();
     }
 
     private void applyAccesses(User user, Map<Long, Profile> changes) {
@@ -253,10 +325,25 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<User> findVisibleTo(Long actingUserId) {
         Set<Long> managed = accessService.companiesManagedBy(actingUserId);
-        return userRepository.findAll().stream().filter(user -> {
-            Set<Long> companies = accessService.companyIdsOf(user.getId());
-            return companies.isEmpty() || companies.stream().anyMatch(managed::contains);
-        }).toList();
+        return userRepository.findAll().stream().filter(user -> isVisible(managed, user.getId())).toList();
+    }
+
+    /**
+     * The account, when the administrator may see it (see findVisibleTo); otherwise "not found", as for an id that
+     * does not exist: the users of the companies they do not manage are not theirs to read.
+     */
+    @Transactional(readOnly = true)
+    public User requireVisible(Long userId, Long actingUserId) {
+        User user = require(userId);
+        if (actingUserId != null && !isVisible(accessService.companiesManagedBy(actingUserId), userId)) {
+            throw new ResourceNotFoundException(MessageProperties.USER_ERROR_NOT_FOUND);
+        }
+        return user;
+    }
+
+    private boolean isVisible(Set<Long> managed, Long userId) {
+        Set<Long> companies = accessService.companyIdsOf(userId);
+        return companies.isEmpty() || companies.stream().anyMatch(managed::contains);
     }
 
     private User require(Long id) {

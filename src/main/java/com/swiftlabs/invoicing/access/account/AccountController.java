@@ -65,7 +65,8 @@ public class AccountController {
                        HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
         if (!result.hasErrors()) {
             try {
-                User user = userService.updateOwnDetails(principal.getId(), form.getFirstName(), form.getLastName(), form.getEmail());
+                User user = userService.updateOwnDetails(principal.getId(), form.getFirstName(), form.getLastName(), form.getEmail(),
+                    form.getCurrentPassword());
                 // The header shows the new name straight away
                 SignedInUser.replace(principal.withDisplayName(user.getDisplayName()), request, response);
                 redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.ACCOUNT_SAVED));

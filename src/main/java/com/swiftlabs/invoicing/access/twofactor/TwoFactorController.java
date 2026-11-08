@@ -71,7 +71,7 @@ public class TwoFactorController {
 
     @PostMapping(Endpoints.TWO_FACTOR_CONFIRM)
     public String confirm(@AuthenticationPrincipal AppUserPrincipal principal, @RequestParam String code,
-                          HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
+                          @RequestParam(required = false) String currentPassword, HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
         HttpSession session = request.getSession();
         String secret = (String) session.getAttribute(SETUP_SECRET);
         if (secret == null) {
@@ -79,7 +79,7 @@ public class TwoFactorController {
         }
         boolean change = twoFactorService.isEnabled(principal.getId());
         try {
-            List<String> codes = twoFactorService.enable(principal.getId(), secret, code);
+            List<String> codes = twoFactorService.enable(principal.getId(), secret, code, currentPassword);
             session.removeAttribute(SETUP_SECRET);
             refreshPrincipal(principal.withTwoFactorEnabled(true), request, response);
             // Sessions opened with the password alone end

@@ -27,6 +27,7 @@ public final class CommonCodes {
         public static final String BACKUP_DIRECTORY = "backupDirectory";
         public static final String BACKUP_WARNING = "backupWarning";
         public static final String BALANCES = "balances";
+        public static final String SHOW_BALANCES = "showBalances";
         public static final String AUDIT_ALL_ALLOWED = "auditAllAllowed";
         public static final String AUDIT_KEEP_DAYS = "auditKeepDays";
         public static final String AUDIT_KINDS = "auditKinds";

@@ -58,6 +58,13 @@ public class CompanyAccessService {
         return accessRepository.findByUserIdAndCompanyId(userId, companyId).map(CompanyAccess::getProfile);
     }
 
+    /** Another enabled user than this one holds the privilege in the company (null: in any company). */
+    @Transactional(readOnly = true)
+    public boolean hasOtherHolder(String privilegeCode, Long companyId, Long userId) {
+        return companyId != null ? accessRepository.existsOtherEnabledHolderIn(privilegeCode, companyId, userId)
+            : accessRepository.existsOtherEnabledHolder(privilegeCode, userId);
+    }
+
     /** The profile name of each user who may work in the company, by user id. */
     @Transactional(readOnly = true)
     public Map<Long, String> profileNamesIn(Long companyId) {

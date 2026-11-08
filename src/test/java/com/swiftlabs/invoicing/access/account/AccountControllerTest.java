@@ -76,7 +76,8 @@ class AccountControllerTest {
     @Test
     void personalInformationIsSavedAndTheHeaderShowsTheFirstName() throws Exception {
         mockMvc.perform(post("/account/save").session(session).with(csrf())
-                .param("firstName", "  Karim ").param("lastName", "Benali").param("email", "k.benali@example.test"))
+                .param("firstName", "  Karim ").param("lastName", "Benali").param("email", "k.benali@example.test")
+                .param("currentPassword", "Secret123"))
             .andExpect(redirectedUrl("/account"))
             .andExpect(flash().attribute("success", "Informations personnelles enregistrées."));
 
@@ -91,6 +92,23 @@ class AccountControllerTest {
     }
 
     @Test
+    void aNewEmailNeedsTheCurrentPassword() throws Exception {
+        // Reset links go to this address: an open session alone must not be enough to change it
+        mockMvc.perform(post("/account/save").session(session).with(csrf())
+                .param("firstName", "Karim").param("email", "attacker@example.test"))
+            .andExpect(status().isOk())
+            .andExpect(model().attributeHasFieldErrors("account", "currentPassword"));
+        mockMvc.perform(post("/account/save").session(session).with(csrf())
+                .param("firstName", "Karim").param("email", "attacker@example.test").param("currentPassword", "wrong"))
+            .andExpect(model().attributeHasFieldErrors("account", "currentPassword"));
+        assertThat(userRepository.findById(user.getId()).orElseThrow().getEmail()).isEqualTo("karim@example.test");
+        // The same email (any case) and a new name need no password
+        mockMvc.perform(post("/account/save").session(session).with(csrf())
+                .param("firstName", "Karim").param("email", "KARIM@example.test"))
+            .andExpect(redirectedUrl("/account"));
+    }
+
+    @Test
     void anEmailUsedByAnotherAccountIsRefusedOnTheForm() throws Exception {
         User other = new User();
         other.setUsername("other");
@@ -99,7 +117,7 @@ class AccountControllerTest {
         accessService.grant(userRepository.save(other), CompanySchemas.FIRST_ID, profileRepository.findByName("Administrateur"));
 
         mockMvc.perform(post("/account/save").session(session).with(csrf())
-                .param("firstName", "Karim").param("email", "taken@example.test"))
+                .param("firstName", "Karim").param("email", "taken@example.test").param("currentPassword", "Secret123"))
             .andExpect(status().isOk())
             .andExpect(model().attributeHasFieldErrors("account", "email"))
             .andExpect(content().string(containsString("Cet email est déjà utilisé.")));

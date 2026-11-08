@@ -8,6 +8,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -44,6 +46,18 @@ public class GlobalExceptionHandler {
     public ModelAndView modifiedMeanwhile(ObjectOptimisticLockingFailureException ex) {
         log.info("Concurrent change refused: {}", ex.getMessage());
         return errorPage(HttpStatus.CONFLICT, messages.get(MessageProperties.INVOICE_ERROR_MODIFIED_MEANWHILE));
+    }
+
+    /** An address with a malformed id (/users/abc/edit): a page that does not exist, not a server error. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ModelAndView badParameter(MethodArgumentTypeMismatchException ex) {
+        return errorPage(HttpStatus.NOT_FOUND, messages.get(MessageProperties.ERROR_NOT_FOUND));
+    }
+
+    /** The browser left before the answer was written (page closed, link clicked twice): nothing to show, nor to log. */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void clientGone(AsyncRequestNotUsableException ex) {
+        log.debug("Client gone: {}", ex.getMessage());
     }
 
     /** Upload above spring.servlet.multipart.max-file-size (raised before any controller runs). */

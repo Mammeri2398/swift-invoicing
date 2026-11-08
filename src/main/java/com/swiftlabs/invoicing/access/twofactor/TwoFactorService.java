@@ -9,6 +9,7 @@ import com.swiftlabs.invoicing.config.SecurityProperties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,10 +53,12 @@ public class TwoFactorService {
     private final SecurityProperties.Lockout lockout;
     private final String issuer;
     private final Clock clock;
+    private final PasswordEncoder passwordEncoder;
     private final SecureRandom random = new SecureRandom();
 
     public TwoFactorService(UserRepository userRepository, RecoveryCodeRepository recoveryCodeRepository,
-                            SecurityProperties properties, Clock clock) {
+                            SecurityProperties properties, Clock clock, PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
         this.recoveryCodeRepository = recoveryCodeRepository;
         this.lockout = properties.lockout();
@@ -83,7 +86,18 @@ public class TwoFactorService {
      * app, which proves the secret was scanned. Returns the new recovery codes, shown once.
      */
     public List<String> enable(Long userId, String secret, String code) {
+        return enable(userId, secret, code, null);
+    }
+
+    /**
+     * Moving an active setup to another phone also needs the account's password: a session left open (or taken)
+     * would otherwise be enough to put the second factor on someone else's phone.
+     */
+    public List<String> enable(Long userId, String secret, String code, String currentPassword) {
         User user = user(userId);
+        if (user.isTotpEnabled() && (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
+            throw BusinessException.onField("currentPassword", MessageProperties.USER_ERROR_WRONG_CURRENT_PASSWORD);
+        }
         OptionalLong step = Totp.verify(secret, normalize(code), clock.instant(), null);
         if (step.isEmpty()) {
             throw BusinessException.onField("code", MessageProperties.TWO_FACTOR_ERROR_WRONG_SETUP_CODE);

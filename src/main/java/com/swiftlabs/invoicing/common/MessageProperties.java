@@ -158,6 +158,7 @@ public final class MessageProperties {
     public static final String COMPANY_SWITCHED = "company.switched";
 
     // ---- error -----------------------------------------------------------------------------------------------
+    public static final String ERROR_NOT_FOUND = "error.notFound.text";
     public static final String ERROR_UNEXPECTED = "error.unexpected";
     public static final String ERROR_UPLOAD_TOO_LARGE = "error.uploadTooLarge";
 
@@ -284,6 +285,7 @@ public final class MessageProperties {
     public static final String MAIL_ERROR_NO_ADDRESS = "mail.error.noAddress";
     public static final String MAIL_ERROR_NOT_ENABLED = "mail.error.notEnabled";
     public static final String MAIL_ERROR_SEND_FAILED = "mail.error.sendFailed";
+    public static final String MAIL_ERROR_UNREACHABLE = "mail.error.unreachable";
     public static final String MAIL_SAVED_DISABLED = "mail.saved.disabled";
     public static final String MAIL_SAVED_ENABLED = "mail.saved.enabled";
     public static final String MAIL_TEST_BODY = "mail.test.body";
@@ -301,6 +303,7 @@ public final class MessageProperties {
     public static final String PRIVILEGE_ERROR_DELETE_FAILED = "privilege.error.deleteFailed";
     public static final String PRIVILEGE_ERROR_NAME_REQUIRED = "privilege.error.nameRequired";
     public static final String PRIVILEGE_ERROR_NOT_FOUND = "privilege.error.notFound";
+    public static final String PRIVILEGE_ERROR_BUILT_IN = "privilege.error.builtIn";
     public static final String PRIVILEGE_SAVED = "privilege.saved";
 
     // ---- profile ---------------------------------------------------------------------------------------------
@@ -347,6 +350,9 @@ public final class MessageProperties {
     public static final String USER_ERROR_NOT_FOUND = "user.error.notFound";
     public static final String USER_ERROR_NO_COMPANY = "user.error.noCompany";
     public static final String USER_ERROR_OTHER_COMPANIES = "user.error.otherCompanies";
+    public static final String USER_ERROR_PROFILE_ABOVE_OWN = "user.error.profileAboveOwn";
+    public static final String USER_ERROR_LAST_USER_MANAGER = "user.error.lastUserManager";
+    public static final String USER_ERROR_LAST_PROFILE_MANAGER = "user.error.lastProfileManager";
     public static final String USER_ERROR_PROFILE_NOT_FOUND = "user.error.profileNotFound";
     public static final String USER_ERROR_SAME_PASSWORD = "user.error.samePassword";
     public static final String USER_ERROR_USERNAME_USED = "user.error.usernameUsed";

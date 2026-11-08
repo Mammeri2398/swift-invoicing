@@ -71,12 +71,12 @@ class LanguageTest {
     void beforeLoginThePagesFollowTheBrowserAndFrenchByDefault() throws Exception {
         mockMvc.perform(get("/login"))
             .andExpect(content().string(containsString("lang=\"fr\" dir=\"ltr\"")))
-            .andExpect(content().string(containsString("Vérifier une facture")));
+            .andExpect(content().string(containsString("Swift Invoicing par Swift Labs")));
         mockMvc.perform(get("/login").header("Accept-Language", "en-GB,en;q=0.9"))
             .andExpect(content().string(containsString("lang=\"en\"")))
-            .andExpect(content().string(containsString("Verify an invoice")));
+            .andExpect(content().string(containsString("Swift Invoicing by Swift Labs")));
         mockMvc.perform(get("/login").header("Accept-Language", "de-DE,de;q=0.9"))
-            .andExpect(content().string(containsString("Vérifier une facture")));
+            .andExpect(content().string(containsString("Swift Invoicing par Swift Labs")));
     }
 
     @Test
@@ -84,7 +84,7 @@ class LanguageTest {
         MvcResult picked = mockMvc.perform(get("/login").param("lang", "ar"))
             .andExpect(cookie().value("lang", "ar"))
             .andExpect(content().string(containsString("lang=\"ar\" dir=\"rtl\"")))
-            .andExpect(content().string(containsString("التحقق من فاتورة")))
+            .andExpect(content().string(containsString("Swift Invoicing من Swift Labs")))
             .andReturn();
         Cookie remembered = picked.getResponse().getCookie("lang");
         mockMvc.perform(get("/login").cookie(remembered).header("Accept-Language", "fr"))

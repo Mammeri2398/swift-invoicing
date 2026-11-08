@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,6 +40,7 @@ public class InvoiceService {
     private final InvoiceAudit audit;
     private final PaymentService paymentService;
     private final InvoiceProperties properties;
+    private final Clock clock;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
                           InvoiceSequenceRepository sequenceRepository,
@@ -48,7 +50,8 @@ public class InvoiceService {
                           ClientService clientService,
                           InvoiceAudit audit,
                           PaymentService paymentService,
-                          InvoiceProperties properties) {
+                          InvoiceProperties properties,
+                          Clock clock) {
         this.invoiceRepository = invoiceRepository;
         this.sequenceRepository = sequenceRepository;
         this.creditNoteSequenceRepository = creditNoteSequenceRepository;
@@ -58,11 +61,17 @@ public class InvoiceService {
         this.audit = audit;
         this.paymentService = paymentService;
         this.properties = properties;
+        this.clock = clock;
+    }
+
+    /** Today, in the business's time zone (see ClockConfig). */
+    public LocalDate today() {
+        return LocalDate.now(clock);
     }
 
     public Invoice newDraft() {
         Invoice invoice = new Invoice();
-        invoice.setIssueDate(LocalDate.now());
+        invoice.setIssueDate(today());
         invoice.setStatus(InvoiceStatus.DRAFT);
         return invoice;
     }
@@ -70,6 +79,13 @@ public class InvoiceService {
     public Invoice findById(Long id) {
         return invoiceRepository.findById(id).orElseThrow(() ->
             new ResourceNotFoundException(MessageProperties.INVOICE_ERROR_NOT_FOUND, String.valueOf(id)));
+    }
+
+    /** The invoice, locked until the end of the transaction before a change of state (see lockForUpdate). */
+    private Invoice findForUpdate(Long id) {
+        Invoice invoice = findById(id);
+        invoiceRepository.lockForUpdate(invoice);
+        return invoice;
     }
 
     /** Invoice ready to display or print: client and lines loaded in one query. */
@@ -105,7 +121,14 @@ public class InvoiceService {
     @Transactional
     public Invoice saveDraft(InvoiceForm form) {
         // Existing invoice: check the stored status, never the submitted one
-        Invoice invoice = form.getId() != null ? findById(form.getId()) : newDraft();
+        Invoice invoice = form.getId() != null ? findForUpdate(form.getId()) : newDraft();
+        // Changed meanwhile (another tab, another user): this form was filled from an older version
+        if (form.getVersion() != null && invoice.getVersion() != null && !form.getVersion().equals(invoice.getVersion())) {
+            throw new BusinessException(MessageProperties.INVOICE_ERROR_MODIFIED_MEANWHILE);
+        }
+        if (invoice.getId() != null) {
+            invoiceRepository.markChanged(invoice);
+        }
         // What the draft held before this save, to list in its history what the edit changes
         InvoiceSnapshot before = invoice.getId() != null && invoice.isDraft() ? InvoiceSnapshot.of(invoice) : null;
         // A new document is an invoice, a quote or a pro forma; credit notes come from createCreditNote
@@ -125,7 +148,7 @@ public class InvoiceService {
         if (!invoice.isCreditNote()) {
             invoice.setClient(clientService.findById(form.getClientId()));
         }
-        invoice.setIssueDate(form.getIssueDate() != null ? form.getIssueDate() : LocalDate.now());
+        invoice.setIssueDate(form.getIssueDate() != null ? form.getIssueDate() : today());
         invoice.setDueDate(form.getDueDate());
         invoice.setPaymentMethod(form.getPaymentMethod());
         invoice.setNotes(form.getNotes());
@@ -151,7 +174,8 @@ public class InvoiceService {
 
     @Transactional
     public Invoice issue(Long id) {
-        Invoice invoice = findById(id);
+        // Locked first: the same draft issued twice at once (a double click) would take two numbers
+        Invoice invoice = findForUpdate(id);
         if (!invoice.isDraft()) {
             throw new BusinessException(MessageProperties.INVOICE_ERROR_ALREADY_ISSUED);
         }
@@ -181,6 +205,12 @@ public class InvoiceService {
         if (!issuer.isCompany() && invoice.getLines().stream().anyMatch(line -> line.getVatRate().signum() > 0)) {
             throw new BusinessException(MessageProperties.INVOICE_ERROR_VAT_FOR_AUTO_ENTREPRENEUR);
         }
+        // A date typed ahead (2062 for 2026, December in November) would take a number that every later document
+        // of the year could only follow: numbers follow the dates
+        if (invoice.getIssueDate().isAfter(today())) {
+            throw BusinessException.onField("issueDate", MessageProperties.INVOICE_ERROR_DATE_IN_FUTURE,
+                invoice.getIssueDate().format(DATE));
+        }
         int year = invoice.getIssueDate().getYear();
         lockCounter(invoice.getKind(), year);
         // Numbers follow the dates: never dated before the document issued last (checked once the counter is locked)
@@ -201,7 +231,7 @@ public class InvoiceService {
         invoice.setInvoiceYear(year);
         invoice.setSequenceNumber(number);
         invoice.setStatus(InvoiceStatus.ISSUED);
-        invoice.setIssuedAt(LocalDateTime.now());
+        invoice.setIssuedAt(LocalDateTime.now(clock));
         invoice.recalculateTotal();
         invoice.setStampDutyAmount(stampDuty(invoice));
         snapshotIssuer(invoice, issuer);
@@ -265,7 +295,7 @@ public class InvoiceService {
     public Invoice accept(Long quoteId) {
         Invoice quote = issuedQuote(quoteId);
         quote.setStatus(InvoiceStatus.ACCEPTED);
-        quote.setAcceptedAt(LocalDateTime.now());
+        quote.setAcceptedAt(LocalDateTime.now(clock));
         audit.record(quote, InvoiceEvent.Action.ACCEPTED);
         return quote;
     }
@@ -275,13 +305,13 @@ public class InvoiceService {
     public Invoice refuse(Long quoteId) {
         Invoice quote = issuedQuote(quoteId);
         quote.setStatus(InvoiceStatus.REFUSED);
-        quote.setRefusedAt(LocalDateTime.now());
+        quote.setRefusedAt(LocalDateTime.now(clock));
         audit.record(quote, InvoiceEvent.Action.REFUSED);
         return quote;
     }
 
     private Invoice issuedQuote(Long quoteId) {
-        Invoice quote = findById(quoteId);
+        Invoice quote = findForUpdate(quoteId);
         if (!quote.isQuote() || quote.getStatus() != InvoiceStatus.ISSUED) {
             throw new BusinessException(MessageProperties.INVOICE_ERROR_QUOTE_NOT_ISSUED);
         }
@@ -296,6 +326,7 @@ public class InvoiceService {
     @Transactional
     public Invoice convertToInvoice(Long documentId) {
         Invoice document = findWithLines(documentId);
+        invoiceRepository.lockForUpdate(document);
         boolean convertible = document.isOffer() && (document.getStatus() == InvoiceStatus.ISSUED
             || (document.isQuote() && document.getStatus() == InvoiceStatus.ACCEPTED));
         if (!convertible) {
@@ -384,6 +415,8 @@ public class InvoiceService {
     /** A credit note never cancels more than what remains of its invoice, nor predates it. */
     private void checkCreditNote(Invoice creditNote) {
         Invoice original = creditNote.getOriginalInvoice();
+        // Two credit notes of the same invoice issued at once could otherwise cancel more than it holds
+        invoiceRepository.lockForUpdate(original);
         if (!original.isIssuedOrPaid()) {
             throw new BusinessException(MessageProperties.INVOICE_ERROR_ORIGINAL_NOT_ISSUED, original.getInvoiceNumber());
         }
@@ -400,7 +433,7 @@ public class InvoiceService {
 
     @Transactional
     public Invoice pay(Long id) {
-        Invoice invoice = findById(id);
+        Invoice invoice = findForUpdate(id);
         if (invoice.isCreditNote()) {
             throw new BusinessException(MessageProperties.INVOICE_ERROR_CREDIT_NOTE_NOT_PAYABLE);
         }
@@ -414,13 +447,13 @@ public class InvoiceService {
             throw new BusinessException(MessageProperties.INVOICE_ERROR_NOTHING_TO_COLLECT);
         }
         // "Payer le solde": one payment of everything left, today, with the invoice's payment method
-        paymentService.record(id, new PaymentForm(paymentService.balance(invoice), LocalDate.now(), invoice.getPaymentMethod(), null));
+        paymentService.record(id, new PaymentForm(paymentService.balance(invoice), today(), invoice.getPaymentMethod(), null));
         return invoice;
     }
 
     @Transactional
     public Invoice cancel(Long id) {
-        Invoice invoice = findById(id);
+        Invoice invoice = findForUpdate(id);
         if (invoice.isCreditNote() && !invoice.isDraft()) {
             throw new BusinessException(MessageProperties.INVOICE_ERROR_CREDIT_NOTE_NOT_CANCELLABLE);
         }
@@ -432,7 +465,7 @@ public class InvoiceService {
             throw new BusinessException(MessageProperties.INVOICE_ERROR_HAS_CREDIT_NOTE);
         }
         invoice.setStatus(InvoiceStatus.CANCELLED);
-        invoice.setCancelledAt(LocalDateTime.now());
+        invoice.setCancelledAt(LocalDateTime.now(clock));
         audit.record(invoice, InvoiceEvent.Action.CANCELLED);
         return invoice;
     }
@@ -440,7 +473,7 @@ public class InvoiceService {
     /** Deletes a draft, its lines (cascade) and its history. */
     @Transactional
     public void delete(Long id) {
-        Invoice invoice = findById(id);
+        Invoice invoice = findForUpdate(id);
         if (!invoice.isDraft()) {
             throw new BusinessException(MessageProperties.INVOICE_ERROR_DELETE_DRAFT_ONLY);
         }

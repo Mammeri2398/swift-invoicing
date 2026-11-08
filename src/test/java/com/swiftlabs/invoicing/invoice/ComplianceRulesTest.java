@@ -91,6 +91,18 @@ class ComplianceRulesTest {
     }
 
     @Test
+    void aDocumentDatedInTheFutureIsNotIssued() {
+        // 2062 typed for 2026 would otherwise take a number no later document of the year could follow
+        Invoice ahead = draft(invoiceService.today().plusDays(1));
+        assertThatThrownBy(() -> invoiceService.issue(ahead.getId()))
+            .isInstanceOf(BusinessException.class)
+            .extracting(ex -> ((BusinessException) ex).getCode())
+            .isEqualTo(MessageProperties.INVOICE_ERROR_DATE_IN_FUTURE);
+        assertThat(invoiceService.findById(ahead.getId()).isDraft()).isTrue();
+        assertThat(invoiceService.issue(draft(invoiceService.today()).getId()).getInvoiceNumber()).isNotNull();
+    }
+
+    @Test
     void eachNumberingFollowsItsOwnDates() {
         Invoice invoice = invoiceService.issue(draft(LocalDate.of(2026, 9, 10)).getId());
         invoiceService.issue(draft(LocalDate.of(2026, 9, 20)).getId());
@@ -99,8 +111,8 @@ class ComplianceRulesTest {
         form.setIssueDate(LocalDate.of(2026, 9, 15));
         Invoice creditNote = invoiceService.issue(invoiceService.saveDraft(form).getId());
         assertThat(creditNote.getInvoiceNumber()).startsWith("AV-2026-");
-        // Another year starts again
-        assertThat(invoiceService.issue(draft(LocalDate.of(2027, 1, 2)).getId()).getInvoiceNumber()).startsWith("FA-2027-");
+        // Another year has its own numbering (an earlier one: documents are not issued in the future)
+        assertThat(invoiceService.issue(draft(LocalDate.of(2025, 12, 30)).getId()).getInvoiceNumber()).isEqualTo("FA-2025-0001");
     }
 
     @Test

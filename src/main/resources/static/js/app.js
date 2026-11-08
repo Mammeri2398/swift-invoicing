@@ -12,10 +12,34 @@
 
     // <form data-confirm="Supprimer ce client ?"> asks before submitting
     document.addEventListener('submit', function (event) {
-        var message = event.target.getAttribute('data-confirm');
+        var form = event.target;
+        var message = form.getAttribute('data-confirm');
         if (message && !window.confirm(message)) {
             event.preventDefault();
+            return;
         }
+        // A POST form is sent once: a double click would otherwise issue, pay or email twice
+        if (form.method.toLowerCase() !== 'post') {
+            return;
+        }
+        if (form.hasAttribute('data-submitting')) {
+            event.preventDefault();
+            return;
+        }
+        form.setAttribute('data-submitting', '');
+        if (event.submitter) {
+            event.submitter.setAttribute('aria-busy', 'true');
+        }
+    });
+
+    // Back to a page kept by the browser (back button): its forms can be sent again
+    window.addEventListener('pageshow', function () {
+        document.querySelectorAll('form[data-submitting]').forEach(function (form) {
+            form.removeAttribute('data-submitting');
+            form.querySelectorAll('[aria-busy="true"]').forEach(function (button) {
+                button.removeAttribute('aria-busy');
+            });
+        });
     });
 })();
 

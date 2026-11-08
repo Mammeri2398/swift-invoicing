@@ -3,6 +3,7 @@ package com.swiftlabs.invoicing.common;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -36,6 +37,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ModelAndView business(BusinessException ex) {
         return errorPage(HttpStatus.BAD_REQUEST, messages.of(ex));
+    }
+
+    /** A document changed by someone else between the moment it was read and this change: nothing was saved. */
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ModelAndView modifiedMeanwhile(ObjectOptimisticLockingFailureException ex) {
+        log.info("Concurrent change refused: {}", ex.getMessage());
+        return errorPage(HttpStatus.CONFLICT, messages.get(MessageProperties.INVOICE_ERROR_MODIFIED_MEANWHILE));
     }
 
     /** Upload above spring.servlet.multipart.max-file-size (raised before any controller runs). */

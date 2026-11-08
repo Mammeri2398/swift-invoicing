@@ -2,7 +2,7 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout/base :: page(#{mail.title}, ~{::main}, ~{})}">
 <body>
-<main class="page-narrow" th:with="canEdit=${currentUser != null and currentUser.can('EDIT_ISSUER')}">
+<main class="page-narrow" th:with="canEdit=${currentUser != null and currentUser.can('MANAGE_MAIL')}">
     <div class="page-header">
         <div>
             <p class="page-eyebrow" th:text="#{settings.eyebrow}">Paramètres</p>

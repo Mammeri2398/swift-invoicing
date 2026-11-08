@@ -92,6 +92,8 @@ public class PaymentService {
     public InvoicePayment record(Long invoiceId, PaymentForm form) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
             .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.INVOICE_ERROR_NOT_FOUND, String.valueOf(invoiceId)));
+        // Locked first: the same payment sent twice at once (a double click) would both see the whole balance
+        invoiceRepository.lockForUpdate(invoice);
         if (invoice.getKind() != DocumentKind.INVOICE || invoice.getStatus() != InvoiceStatus.ISSUED) {
             throw new BusinessException(MessageProperties.INVOICE_PAYMENT_ERROR_NOT_PAYABLE);
         }
@@ -126,6 +128,7 @@ public class PaymentService {
             .filter(p -> p.getInvoice().getId().equals(invoiceId))
             .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.INVOICE_PAYMENT_ERROR_NOT_FOUND));
         Invoice invoice = payment.getInvoice();
+        invoiceRepository.lockForUpdate(invoice);
         paymentRepository.delete(payment);
         paymentRepository.flush();
         if (invoice.getStatus() == InvoiceStatus.PAID && balance(invoice).signum() > 0) {

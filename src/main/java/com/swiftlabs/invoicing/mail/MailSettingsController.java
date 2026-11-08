@@ -44,7 +44,7 @@ public class MailSettingsController {
     }
 
     @PostMapping
-    @PreAuthorize(Privileges.Has.EDIT_ISSUER)
+    @PreAuthorize(Privileges.Has.MANAGE_MAIL)
     public String save(@Valid @ModelAttribute(CommonCodes.Attributes.MAIL) MailSettingsForm form, BindingResult result, Model model,
                        RedirectAttributes redirectAttributes) {
         if (!result.hasErrors()) {
@@ -62,7 +62,7 @@ public class MailSettingsController {
 
     /** Sends a test message to the logged-in user's own address. */
     @PostMapping(Endpoints.MAIL_SETTINGS_TEST)
-    @PreAuthorize(Privileges.Has.EDIT_ISSUER)
+    @PreAuthorize(Privileges.Has.MANAGE_MAIL)
     public String test(@AuthenticationPrincipal AppUserPrincipal principal, RedirectAttributes redirectAttributes) {
         String to = userService.findById(principal.getId()).map(user -> user.getEmail()).orElse(null);
         try {

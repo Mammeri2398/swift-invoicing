@@ -179,6 +179,7 @@ public final class MessageProperties {
     public static final String INVOICE_ERROR_CREDIT_NOTE_NOT_PAYABLE = "invoice.error.creditNoteNotPayable";
     public static final String INVOICE_ERROR_CREDIT_NOTE_TOO_HIGH = "invoice.error.creditNoteTooHigh";
     public static final String INVOICE_ERROR_DATE_BEFORE_LAST = "invoice.error.dateBeforeLast";
+    public static final String INVOICE_ERROR_DATE_IN_FUTURE = "invoice.error.dateInFuture";
     public static final String INVOICE_ERROR_DELETE_DRAFT_ONLY = "invoice.error.deleteDraftOnly";
     public static final String INVOICE_ERROR_FULLY_CREDITED = "invoice.error.fullyCredited";
     public static final String INVOICE_ERROR_HAS_CREDIT_NOTE = "invoice.error.hasCreditNote";
@@ -186,6 +187,7 @@ public final class MessageProperties {
     public static final String INVOICE_ERROR_NO_LINES_TO_ISSUE = "invoice.error.noLinesToIssue";
     public static final String INVOICE_ERROR_NOT_CONVERTIBLE = "invoice.error.notConvertible";
     public static final String INVOICE_ERROR_NOT_DRAFT = "invoice.error.notDraft";
+    public static final String INVOICE_ERROR_MODIFIED_MEANWHILE = "invoice.error.modifiedMeanwhile";
     public static final String INVOICE_ERROR_NOT_FOUND = "invoice.error.notFound";
     public static final String INVOICE_ERROR_NOTHING_TO_COLLECT = "invoice.error.nothingToCollect";
     public static final String INVOICE_ERROR_NUMBER_EXISTS = "invoice.error.numberExists";

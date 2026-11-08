@@ -31,6 +31,8 @@ public final class Privileges {
     // ---- Settings (company profile, email, licence) -----------------------------------------------------------
     public static final String VIEW_ISSUER = "VIEW_ISSUER";
     public static final String EDIT_ISSUER = "EDIT_ISSUER";
+    /** The company's email server: password reset links go through it, so it is not part of EDIT_ISSUER. */
+    public static final String MANAGE_MAIL = "MANAGE_MAIL";
 
     // ---- Administration ---------------------------------------------------------------------------------------
     public static final String MANAGE_USERS = "MANAGE_USERS";
@@ -60,6 +62,7 @@ public final class Privileges {
         public static final String DELETE_CLIENT = PREFIX + Privileges.DELETE_CLIENT + SUFFIX;
         public static final String VIEW_ISSUER = PREFIX + Privileges.VIEW_ISSUER + SUFFIX;
         public static final String EDIT_ISSUER = PREFIX + Privileges.EDIT_ISSUER + SUFFIX;
+        public static final String MANAGE_MAIL = PREFIX + Privileges.MANAGE_MAIL + SUFFIX;
         public static final String MANAGE_USERS = PREFIX + Privileges.MANAGE_USERS + SUFFIX;
         public static final String MANAGE_PROFILES = PREFIX + Privileges.MANAGE_PROFILES + SUFFIX;
         public static final String MANAGE_PRIVILEGES = PREFIX + Privileges.MANAGE_PRIVILEGES + SUFFIX;

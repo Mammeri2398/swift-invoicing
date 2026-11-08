@@ -16,6 +16,8 @@ import java.util.List;
 public class InvoiceForm {
 
     private Long id;
+    /** The version the form was filled from, to refuse a save over a change made meanwhile. */
+    private Long version;
 
     /** For a new document: invoice, quote or pro forma (credit notes come from an invoice). */
     private DocumentKind kind;
@@ -44,6 +46,14 @@ public class InvoiceForm {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public DocumentKind getKind() {
@@ -122,6 +132,7 @@ public class InvoiceForm {
     public static InvoiceForm from(Invoice invoice) {
         InvoiceForm form = new InvoiceForm();
         form.setId(invoice.getId());
+        form.setVersion(invoice.getVersion());
         form.setKind(invoice.getKind());
         form.setClientId(invoice.getClient() != null ? invoice.getClient().getId() : null);
         form.setIssueDate(invoice.getIssueDate());

@@ -13,6 +13,7 @@ import com.swiftlabs.invoicing.company.CompanySchemas;
 import com.swiftlabs.invoicing.company.CompanyWork;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 import com.swiftlabs.invoicing.mail.MailGateway;
+import com.swiftlabs.invoicing.setup.NetworkAddresses;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ public class PasswordResetService {
     private final CompanyWork companyWork;
     private final Messages messages;
     private final String baseUrl;
+    private final NetworkAddresses networkAddresses;
     private final Duration validity;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
@@ -65,7 +67,9 @@ public class PasswordResetService {
                                 CompanyAccessService accessService,
                                 CompanyWork companyWork,
                                 Messages messages,
+                                NetworkAddresses networkAddresses,
                                 @Value("${app.base-url:}") String baseUrl) {
+        this.networkAddresses = networkAddresses;
         this.messages = messages;
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
@@ -131,7 +135,21 @@ public class PasswordResetService {
      * address the user typed to reach it (on-premise: the PC's name on the local network).
      */
     private String baseUrl() {
-        return !baseUrl.isBlank() ? baseUrl : ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
+        if (!baseUrl.isBlank()) {
+            return baseUrl;
+        }
+        String contextPath = ServletUriComponentsBuilder.fromCurrentContextPath().build().getPath();
+        String origin = ServletUriComponentsBuilder.fromCurrentContextPath().replacePath(null).toUriString();
+        return linkOrigin(origin, networkAddresses) + (contextPath != null ? contextPath : "");
+    }
+
+    /**
+     * The address typed is taken only when it is one of this computer's own: the Host header comes from the
+     * browser, so anyone on the network could otherwise make an administrator's link point at their own machine
+     * and receive its token.
+     */
+    static String linkOrigin(String requestedOrigin, NetworkAddresses networkAddresses) {
+        return networkAddresses.isOwn(requestedOrigin) ? requestedOrigin : networkAddresses.preferredUrl();
     }
 
     static String hash(String token) {

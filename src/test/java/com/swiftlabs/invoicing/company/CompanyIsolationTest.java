@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 class CompanyIsolationTest {
 
-    private static final int YEAR = 2033;
+    private static final int YEAR = 2015;
 
     @Autowired
     private CompanyService companyService;

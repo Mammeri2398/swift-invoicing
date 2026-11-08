@@ -45,6 +45,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OnPremiseSetupTest {
 
     @Autowired
+    private NetworkAddresses networkAddresses;
+
+    @Autowired
     private MockMvc mockMvc;
 
     @Autowired
@@ -121,10 +124,13 @@ class OnPremiseSetupTest {
         mockMvc.perform(get("/settings/issuer").session(session))
             .andExpect(content().string(containsString("Accès depuis les autres postes")));
 
-        // No fixed public URL: the reset link uses the address the user typed
-        mockMvc.perform(post("/forgot-password/send").with(csrf()).param("email", "gerant@atlas.test"));
+        // No fixed public URL: the reset link uses one of this computer's own addresses, never another machine's
+        // name sent in the Host header (anyone on the network could otherwise receive the token)
+        mockMvc.perform(post("/forgot-password/send").with(csrf()).header("Host", "attacker-pc:7070")
+            .param("email", "gerant@atlas.test"));
         ArgumentCaptor<SimpleMailMessage> sent = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(sent.capture());
-        assertThat(sent.getValue().getText()).contains("http://localhost/reset-password?token=");
+        assertThat(sent.getValue().getText()).doesNotContain("attacker")
+            .contains(networkAddresses.preferredUrl() + "/reset-password?token=");
     }
 }

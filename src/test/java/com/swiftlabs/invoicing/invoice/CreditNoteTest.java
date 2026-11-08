@@ -163,6 +163,8 @@ class CreditNoteTest {
         invoiceService.saveDraft(form);
         assertThatThrownBy(() -> invoiceService.issue(draft.getId())).hasMessageContaining("avant la facture");
 
+        // The page shown again after the refusal holds the draft's current version
+        form.setVersion(invoiceService.findById(draft.getId()).getVersion());
         form.setIssueDate(LocalDate.of(2026, 3, 20));
         invoiceService.saveDraft(form);
         assertThat(invoiceService.issue(draft.getId()).getInvoiceNumber()).isEqualTo("AV-2026-0001");

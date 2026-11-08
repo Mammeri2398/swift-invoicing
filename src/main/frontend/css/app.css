@@ -154,6 +154,11 @@
       focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
 
+  /* The button of a form being sent (see app.js): a second click would send it twice */
+  .btn[aria-busy="true"] {
+    @apply pointer-events-none cursor-progress opacity-50;
+  }
+
   .btn .icon {
     font-size: 18px;
   }

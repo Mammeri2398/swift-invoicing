@@ -1,5 +1,6 @@
 package com.swiftlabs.invoicing.access.twofactor;
 
+import com.swiftlabs.invoicing.access.profile.Profile;
 import com.swiftlabs.invoicing.access.profile.ProfileRepository;
 import com.swiftlabs.invoicing.access.user.User;
 import com.swiftlabs.invoicing.access.user.UserRepository;
@@ -97,6 +98,18 @@ class TwoFactorLoginTest {
         mockMvc.perform(get("/login/verify").session(session))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("Vérification en deux étapes")));
+    }
+
+    @Test
+    void aProfileChangedDuringTheCodeStepGivesNoAccessWithoutTheCode() throws Exception {
+        MockHttpSession session = loginWithPassword();
+        // An administrator changes the user's profile while the code page is open
+        Profile reader = new Profile();
+        reader.setName("Lecteur 2FA");
+        accessService.grant(user, CompanySchemas.FIRST_ID, profileRepository.save(reader));
+        mockMvc.perform(get("/login/verify").session(session)).andExpect(status().isOk());
+        mockMvc.perform(get("/dashboard").session(session)).andExpect(redirectedUrl("/login/verify"));
+        mockMvc.perform(get("/invoices").session(session)).andExpect(redirectedUrl("/login/verify"));
     }
 
     @Test

@@ -64,6 +64,22 @@ public class NetworkAddresses {
         return urls;
     }
 
+    /**
+     * Whether an address typed in the browser (scheme://host:port) is one of this computer's own: one of
+     * {@link #urls()}, or this computer itself (localhost). Anything else is another machine's name.
+     */
+    public boolean isOwn(String origin) {
+        String normalized = origin.toLowerCase(Locale.ROOT);
+        return normalized.equals("http://localhost:" + port) || normalized.equals("http://127.0.0.1:" + port)
+            || urls().stream().anyMatch(url -> url.toLowerCase(Locale.ROOT).equals(normalized));
+    }
+
+    /** The address to give when the one typed cannot be trusted: the computer's name, else localhost. */
+    public String preferredUrl() {
+        List<String> urls = urls();
+        return urls.isEmpty() ? "http://localhost:" + port : urls.get(0);
+    }
+
     static boolean isVirtualAdapter(NetworkInterface network) {
         String name = network.getName().toLowerCase(Locale.ROOT);
         String description = network.getDisplayName() != null ? network.getDisplayName().toLowerCase(Locale.ROOT) : "";

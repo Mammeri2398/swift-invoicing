@@ -317,8 +317,28 @@ class BackupTest {
         // pg_restore --clean --if-exists --no-owner --no-privileges --schema=company_1 of a company's tables (no rows)
         try (var script = getClass().getResourceAsStream("/backup/company-schema-restore.sql")) {
             List<String> lines = new String(script.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).lines().toList();
-            assertThat(lines).hasSizeGreaterThan(100)
-                .allSatisfy(line -> assertThat(PostgresTools.isSafeStatement(CompanySchemas.FIRST, line)).as(line).isTrue());
+            assertThat(lines).hasSizeGreaterThan(100);
+            PostgresTools.RestoreScriptCheck check = new PostgresTools.RestoreScriptCheck(CompanySchemas.FIRST);
+            lines.forEach(check::accept);
+            check.finish();
+        }
+    }
+
+    @Test
+    void rowsAreOnlyAcceptedForTheCompanysOwnTables() {
+        PostgresTools.RestoreScriptCheck check = new PostgresTools.RestoreScriptCheck(CompanySchemas.FIRST);
+        for (String line : List.of("COPY company_1.client (id, name, \"position\") FROM stdin;", "1\tACME\t1",
+                "-- not a statement: rows", "\\.")) {
+            check.accept(line);
+        }
+        check.finish();
+        for (String line : List.of(
+                "COPY public.user_company (user_id, company_id, profile_id) FROM stdin;",
+                "COPY company_2.client (id) FROM stdin;",
+                "COPY company_1.client (id) FROM stdin; DELETE FROM public.app_user; COPY company_1.client (id) FROM stdin;",
+                "COPY app_user (id, password) FROM stdin;")) {
+            assertThatThrownBy(() -> new PostgresTools.RestoreScriptCheck(CompanySchemas.FIRST).accept(line))
+                .as(line).isInstanceOf(BusinessException.class);
         }
     }
 
@@ -337,7 +357,15 @@ class BackupTest {
                 "SET ROLE postgres;",
                 "COPY company_1.client TO PROGRAM 'rm -rf /';",
                 "\\! rm -rf /",
-                "\\i /etc/passwd")) {
+                "\\i /etc/passwd",
+                "SELECT pg_catalog.setval('company_1.client_id_seq', 3, true); DELETE FROM public.app_user;",
+                "INSERT INTO U&\"\\0070ublic\".app_user (id) VALUES (1);",
+                "INSERT INTO app_user (id) VALUES (1);",
+                "CREATE TABLE company_1.x (id int); DELETE FROM app_user;",
+                "ALTER TABLE company_1.x ADD COLUMN y int DEFAULT $q$a$q$;",
+                "CREATE\nFUNCTION company_1.f() RETURNS void AS $$ BEGIN END $$ LANGUAGE sql;",
+                "UPDATE public\n.app_user SET password = 'x';",
+                "UPDATE public/**/.app_user SET password = 'x';")) {
             assertThat(PostgresTools.isSafeStatement(CompanySchemas.FIRST, line)).as(line).isFalse();
         }
         for (String line : List.of(

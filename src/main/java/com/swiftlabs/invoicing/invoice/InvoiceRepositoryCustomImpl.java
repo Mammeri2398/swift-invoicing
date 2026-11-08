@@ -1,6 +1,7 @@
 package com.swiftlabs.invoicing.invoice;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
@@ -33,5 +34,18 @@ class InvoiceRepositoryCustomImpl implements InvoiceRepositoryCustom {
             query.where(predicate);
         }
         return entityManager.createQuery(query).getSingleResult();
+    }
+
+    @Override
+    public void lockForUpdate(Invoice invoice) {
+        // Changes already made in this transaction are written first: the reload must not lose them
+        entityManager.flush();
+        entityManager.refresh(invoice, LockModeType.PESSIMISTIC_WRITE);
+    }
+
+    @Override
+    public void markChanged(Invoice invoice) {
+        // Pessimistic: the row is already locked for update (lockForUpdate), a weaker lock would be ignored
+        entityManager.lock(invoice, LockModeType.PESSIMISTIC_FORCE_INCREMENT);
     }
 }

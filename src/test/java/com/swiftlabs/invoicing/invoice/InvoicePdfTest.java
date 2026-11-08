@@ -112,6 +112,21 @@ class InvoicePdfTest {
     }
 
     @Test
+    void clientCityIsPrintedAndKeptAsOfTheIssueDate() throws IOException {
+        client.setAddress("5 cité des Pins");
+        client.setCity("Tlemcen");
+        Invoice laterDraft = draft();
+        assertThat(text(laterDraft)).contains("5 cité des Pins").contains("Tlemcen");
+
+        Invoice issued = invoiceService.issue(draft().getId());
+        assertThat(issued.getClientCity()).isEqualTo("Tlemcen");
+        client.setCity("Béjaïa");
+        assertThat(text(issued)).contains("Tlemcen").doesNotContain("Béjaïa");
+        // A draft is not frozen yet: it shows the client's current city
+        assertThat(text(laterDraft)).contains("Béjaïa");
+    }
+
+    @Test
     void issuedInvoiceKeepsTheIssuerDetailsOfItsIssueDate() throws IOException {
         Invoice issued = invoiceService.issue(draft().getId());
         Invoice laterDraft = draft();

@@ -121,6 +121,9 @@
             <div class="card-body flex flex-col gap-1">
                 <p class="font-semibold" th:text="${invoice.clientName ?: invoice.client.name}">Client</p>
                 <p class="text-on-surface-variant" th:text="${invoice.clientAddress ?: invoice.client.address}">Adresse</p>
+                <th:block th:with="city=${invoice.draft ? invoice.client.city : invoice.clientCity}">
+                    <p class="text-on-surface-variant" th:if="${!#strings.isEmpty(city)}" th:text="${city}">Ville</p>
+                </th:block>
                 <p class="text-body-sm text-on-surface-variant" th:with="nif=${invoice.clientNif ?: invoice.client.nif}"
                    th:text="${nif != null and !nif.isBlank()} ? #{invoice.view.nif(${nif})} : #{invoice.view.nifMissing}">NIF</p>
                 <!--/* Draft: the client's current details; issued: the copy made at issue time */-->

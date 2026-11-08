@@ -9,6 +9,7 @@
                dateLabel=${invoice.creditNote ? 'Date de l''avoir' : (invoice.quote ? 'Date du devis' : (invoice.offer ? 'Date' : 'Date de facture'))},
                clientName=${invoice.clientName != null ? invoice.clientName : (invoice.client != null ? invoice.client.name : null)},
                clientAddress=${invoice.clientAddress != null ? invoice.clientAddress : (invoice.client != null ? invoice.client.address : null)},
+               clientCity=${invoice.draft ? invoice.client?.city : invoice.clientCity},
                clientNif=${invoice.draft ? invoice.client?.nif : invoice.clientNif},
                clientRc=${invoice.draft ? invoice.client?.rcNumber : invoice.clientRcNumber},
                clientNis=${invoice.draft ? invoice.client?.nis : invoice.clientNis},
@@ -156,6 +157,7 @@
                 <p class="label" th:text="${invoice.offer ? 'Destinataire' : 'Adresse de facturation'}">Adresse de facturation</p>
                 <p class="name" th:text="${clientName ?: '-'}">Client</p>
                 <p class="muted" th:if="${clientAddress}" th:text="${clientAddress}">Adresse</p>
+                <p class="muted" th:if="${!#strings.isEmpty(clientCity)}" th:text="${clientCity}">Ville</p>
                 <div class="ids" th:if="${!#strings.isEmpty(clientNif) or !#strings.isEmpty(clientRc) or !#strings.isEmpty(clientNis)
                                           or !#strings.isEmpty(clientAi) or invoice.client?.email != null}">
                     <p th:unless="${#strings.isEmpty(clientNif)}"><b>NIF :</b> <span th:text="${clientNif}">-</span></p>

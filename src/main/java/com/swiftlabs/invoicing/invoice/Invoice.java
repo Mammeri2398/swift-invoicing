@@ -165,6 +165,9 @@ public class Invoice {
     @Column(name = "client_address")
     private String clientAddress;
 
+    @Column(name = "client_city")
+    private String clientCity;
+
     @Column(name = "client_nif")
     private String clientNif;
 
@@ -382,6 +385,14 @@ public class Invoice {
 
     public void setClientAddress(String clientAddress) {
         this.clientAddress = clientAddress;
+    }
+
+    public String getClientCity() {
+        return clientCity;
+    }
+
+    public void setClientCity(String clientCity) {
+        this.clientCity = clientCity;
     }
 
     public String getClientNif() {

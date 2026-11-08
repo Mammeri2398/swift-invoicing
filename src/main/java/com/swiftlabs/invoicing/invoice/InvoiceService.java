@@ -325,8 +325,9 @@ public class InvoiceService {
      */
     @Transactional
     public Invoice convertToInvoice(Long documentId) {
-        Invoice document = findWithLines(documentId);
-        invoiceRepository.lockForUpdate(document);
+        // Locked before its lines are read (lazily, below): refreshing a document already loaded with its lines
+        // (findWithLines) for a pessimistic lock fails in Hibernate on PostgreSQL
+        Invoice document = findForUpdate(documentId);
         boolean convertible = document.isOffer() && (document.getStatus() == InvoiceStatus.ISSUED
             || (document.isQuote() && document.getStatus() == InvoiceStatus.ACCEPTED));
         if (!convertible) {
@@ -571,6 +572,7 @@ public class InvoiceService {
     private void snapshotClient(Invoice invoice, Client client) {
         invoice.setClientName(client.getName());
         invoice.setClientAddress(client.getAddress());
+        invoice.setClientCity(client.getCity());
         invoice.setClientNif(client.getNif());
         invoice.setClientRcNumber(client.getRcNumber());
         invoice.setClientNis(client.getNis());

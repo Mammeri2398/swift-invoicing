@@ -53,6 +53,7 @@ public class PasswordResetService {
     private final Messages messages;
     private final String baseUrl;
     private final NetworkAddresses networkAddresses;
+    private final boolean logResetLinks;
     private final Duration validity;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
@@ -68,7 +69,9 @@ public class PasswordResetService {
                                 CompanyWork companyWork,
                                 Messages messages,
                                 NetworkAddresses networkAddresses,
-                                @Value("${app.base-url:}") String baseUrl) {
+                                @Value("${app.base-url:}") String baseUrl,
+                                @Value("${app.security.log-reset-links:false}") boolean logResetLinks) {
+        this.logResetLinks = logResetLinks;
         this.networkAddresses = networkAddresses;
         this.messages = messages;
         this.tokenRepository = tokenRepository;
@@ -184,8 +187,12 @@ public class PasswordResetService {
     private void sendLink(User user, String resetUrl) {
         Transport transport = transportFor(user);
         if (!transport.configured()) {
-            // Development only: the link gives access to the account, never enable this in production
-            log.warn("Mail disabled - password reset link for '{}': {}", user.getUsername(), resetUrl);
+            // The link gives access to the account: written to the log in development only (app.security.log-reset-links)
+            if (logResetLinks) {
+                log.warn("Mail disabled - password reset link for '{}': {}", user.getUsername(), resetUrl);
+            } else {
+                log.warn("Mail disabled - no password reset link sent to '{}': set up the email server", user.getUsername());
+            }
             return;
         }
         SimpleMailMessage message = new SimpleMailMessage();

@@ -60,6 +60,14 @@ class LanguageTest {
     }
 
     @Test
+    void switchingLanguageKeepsThePagesParameters() throws Exception {
+        // A reset link's token or a looked up number must survive the change of language
+        mockMvc.perform(get("/invoices/lookup?number=FA-2026-0001&lang=fr"))
+            .andExpect(content().string(containsString("href=\"/invoices/lookup?number=FA-2026-0001&amp;lang=en\"")))
+            .andExpect(content().string(containsString("href=\"/invoices/lookup?number=FA-2026-0001&amp;lang=ar\"")));
+    }
+
+    @Test
     void beforeLoginThePagesFollowTheBrowserAndFrenchByDefault() throws Exception {
         mockMvc.perform(get("/login"))
             .andExpect(content().string(containsString("lang=\"fr\" dir=\"ltr\"")))

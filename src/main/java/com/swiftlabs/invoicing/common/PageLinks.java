@@ -1,6 +1,8 @@
 package com.swiftlabs.invoicing.common;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.LinkedHashMap;
@@ -37,5 +39,15 @@ public final class PageLinks {
             builder.queryParam(PAGE, page);
         }
         return builder.encode().build().toUriString();
+    }
+
+    /**
+     * The current page in another language: the same address and parameters, with {@code lang} replaced. A page
+     * reached with a parameter (the token of a password reset, a looked up number) keeps it.
+     */
+    public static String withLanguage(String code) {
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+        return UriComponentsBuilder.fromPath(request.getRequestURI()).query(request.getQueryString())
+            .replaceQueryParam("lang", code).build().toUriString();
     }
 }

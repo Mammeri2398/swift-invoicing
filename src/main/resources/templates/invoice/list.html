@@ -12,9 +12,9 @@
         </div>
         <div class="flex flex-wrap gap-2">
             <!-- Exports follow the filters currently applied -->
-            <a th:href="@{/invoices/export/csv(search=${filter.search},kind=${filter.kind},status=${filter.status},year=${filter.year},client=${filter.client})}"
+            <a th:href="@{/invoices/export/csv(search=${filter.search},kind=${filter.kind},status=${filter.status},year=${filter.year},client=${filter.client},overdue=${filter.overdue ? true : null})}"
                class="btn btn-secondary" th:title="#{invoiceList.exportCsv}"><span class="icon">download</span>CSV</a>
-            <a th:href="@{/invoices/export/xlsx(search=${filter.search},kind=${filter.kind},status=${filter.status},year=${filter.year},client=${filter.client})}"
+            <a th:href="@{/invoices/export/xlsx(search=${filter.search},kind=${filter.kind},status=${filter.status},year=${filter.year},client=${filter.client},overdue=${filter.overdue ? true : null})}"
                class="btn btn-secondary" th:title="#{invoiceList.exportXlsx}"><span class="icon">table_view</span>Excel</a>
             <a th:if="${u != null and u.can('CREATE_INVOICE')}" th:href="@{/recurring}" class="btn btn-secondary">
                 <span class="icon">event_repeat</span><th:block th:text="#{recurring.list.title}">Factures récurrentes</th:block></a>

@@ -100,7 +100,7 @@
         </section>
 
         <div class="form-actions">
-            <a th:href="${invoice.id == null} ? @{/invoices} : @{/invoices/{id}(id=${invoice.id})}" class="btn btn-secondary" th:text="#{action.cancel}">Annuler</a>
+            <a th:href="${invoice.id != null} ? @{/invoices/{id}(id=${invoice.id})} : (${offer} ? @{/quotes} : @{/invoices})" class="btn btn-secondary" th:text="#{action.cancel}">Annuler</a>
             <button type="submit" class="btn btn-primary"><span class="icon">save</span>
                 <th:block th:text="${creditNoteOf != null} ? #{invoice.form.saveCreditNote} : #{invoice.form.saveDraft}">Enregistrer le brouillon</th:block></button>
         </div>

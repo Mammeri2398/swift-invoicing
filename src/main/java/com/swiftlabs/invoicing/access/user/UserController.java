@@ -74,8 +74,7 @@ public class UserController {
         List<User> users = userService.findVisibleTo(me.getId());
         model.addAttribute(CommonCodes.Attributes.USERS, users);
         // Password reset, two-factor reset and delete: only for the accounts of companies all managed here
-        model.addAttribute(CommonCodes.Attributes.MANAGED_USERS, users.stream()
-            .filter(user -> userService.fullyManages(me.getId(), user.getId())).map(User::getId).collect(Collectors.toSet()));
+        model.addAttribute(CommonCodes.Attributes.MANAGED_USERS, userService.fullyManagedAmong(me.getId(), users));
         // The profile of each user in the current company (none: no access to it)
         model.addAttribute(CommonCodes.Attributes.PROFILE_NAMES, accessService.profileNamesIn(CompanyContext.currentCompanyId()));
         model.addAttribute(CommonCodes.Attributes.NOW, LocalDateTime.now(clock));
@@ -94,8 +93,8 @@ public class UserController {
 
     @GetMapping(Endpoints.USER_EDIT)
     public String editForm(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal me, Model model) {
-        User user = userService.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException(MessageProperties.USER_ERROR_NOT_FOUND));
+        // Only the users of the companies the administrator manages (and those of no company yet)
+        User user = userService.requireVisible(id, me.getId());
         UserForm form = UserForm.from(user, editableRows(user.getId(), me));
         model.addAttribute(CommonCodes.Attributes.USER, form);
         return formView(form, me, model);
@@ -166,7 +165,12 @@ public class UserController {
     public String delete(@PathVariable Long id, @AuthenticationPrincipal AppUserPrincipal me,
                          RedirectAttributes redirectAttributes) {
         try {
+            String username = userService.findById(id).map(User::getUsername).orElse(null);
             userService.delete(id, me.getId());
+            // A deleted account is signed out at once, as a disabled one
+            if (username != null) {
+                sessionService.expireSessions(username, null);
+            }
             redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.USER_DELETED));
         } catch (BusinessException ex) {
             redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));

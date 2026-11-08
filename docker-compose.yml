@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: swift-invoicing-db
+    environment:
+      POSTGRES_DB: invoicing
+      POSTGRES_USER: invoicing
+      POSTGRES_PASSWORD: invoicing
+    ports:
+      - "5432:5432"
+    volumes:
+      - swift-invoicing-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invoicing -d invoicing"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  swift-invoicing-pgdata:

@@ -18,7 +18,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 
 /**
- * Creates the "admin" account on first start, with the password from
+ * Creates the "admin" account on first start (no account at all yet), with the password from
  * {@code app.security.initial-admin-password} or a random one written once to the log.
  * Either way it must be changed at the first login. An existing account is never touched.
  * Not used on-premise (app.setup.wizard): the setup wizard creates the first account.
@@ -56,7 +56,8 @@ public class DefaultAdminInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (setupWizard || userRepository.findByUsername(ADMIN_USERNAME).isPresent()) {
+        // Only on an empty installation: an "admin" deleted on purpose must not come back at the next start
+        if (setupWizard || userRepository.count() > 0) {
             return;
         }
         Profile adminProfile = profileRepository.findByName(ADMIN_PROFILE);

@@ -32,14 +32,17 @@ import java.util.Locale;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /** Email settings saved in the application (mail.enabled is false in tests: only these settings send). */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-@WithMockUser(authorities = {"VIEW_ISSUER", "EDIT_ISSUER", "VIEW_INVOICES", "CREATE_INVOICE", "ISSUE_INVOICE"})
+@WithMockUser(authorities = {"VIEW_ISSUER", "MANAGE_MAIL", "VIEW_INVOICES", "CREATE_INVOICE", "ISSUE_INVOICE"})
 class MailSettingsTest {
 
     @RegisterExtension
@@ -170,5 +173,15 @@ class MailSettingsTest {
         mockMvc.perform(get("/settings/mail"))
             .andExpect(content().string(containsString("Envoi des emails")))
             .andExpect(content().string(containsString("Enregistré : laisser vide pour le garder")));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"VIEW_ISSUER", "EDIT_ISSUER"})
+    void editingTheCompanyProfileIsNotEnoughToChangeTheEmailServer() throws Exception {
+        // Password reset links go through this server: whoever sets it could receive an administrator's
+        mockMvc.perform(post("/settings/mail").with(csrf()).param("enabled", "true").param("host", "smtp.attacker.test"))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(post("/settings/mail/test").with(csrf()).param("to", "x@attacker.test"))
+            .andExpect(status().isForbidden());
     }
 }

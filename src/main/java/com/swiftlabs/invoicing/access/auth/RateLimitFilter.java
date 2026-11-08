@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 import java.io.IOException;
 
@@ -25,6 +26,8 @@ import java.io.IOException;
  * so a client cannot pick its own address by sending the header.
  */
 public class RateLimitFilter extends OncePerRequestFilter {
+
+    private static final UrlPathHelper PATHS = new UrlPathHelper();
 
     private static final Logger log = LoggerFactory.getLogger(RateLimitFilter.class);
 
@@ -55,7 +58,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     /** The rule protecting this request, or null when it is not limited. */
     private static String rule(HttpServletRequest request) {
-        String path = request.getRequestURI().substring(request.getContextPath().length());
+        // Decoded, as Spring Security and Spring MVC match it: /perform%2Dlogin reaches the login too
+        String path = PATHS.getPathWithinApplication(request);
         String method = request.getMethod();
         if ("POST".equals(method) && (path.equals(Endpoints.PERFORM_LOGIN) || path.equals(Endpoints.LOGIN_VERIFY))) {
             return "login";

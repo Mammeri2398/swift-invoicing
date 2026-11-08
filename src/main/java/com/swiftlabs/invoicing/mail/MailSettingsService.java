@@ -11,6 +11,11 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import javax.net.ssl.SSLException;
+
 /** Paramètres > Email: the SMTP server, and a test message to check it. */
 @Service
 @Transactional(readOnly = true)
@@ -77,10 +82,25 @@ public class MailSettingsService {
             gateway.sender().send(message);
         } catch (MailException ex) {
             log.warn("Test email to {} failed", to, ex);
+            // The server's own answer (wrong password, refused address...) helps; a network error does not, and its
+            // text would tell which hosts and ports of the network answer: it stays in the log
+            if (isNetworkFailure(ex)) {
+                throw new BusinessException(MessageProperties.MAIL_ERROR_UNREACHABLE);
+            }
             Throwable cause = ex.getMostSpecificCause();
             throw new BusinessException(MessageProperties.MAIL_ERROR_SEND_FAILED,
                 cause.getMessage() != null ? cause.getMessage().strip() : cause.getClass().getSimpleName());
         }
+    }
+
+    private static boolean isNetworkFailure(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SocketException || cause instanceof SocketTimeoutException
+                || cause instanceof UnknownHostException || cause instanceof SSLException) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String blankToNull(String value) {

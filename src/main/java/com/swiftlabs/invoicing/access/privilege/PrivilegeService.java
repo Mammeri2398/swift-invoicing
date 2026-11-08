@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.access.privilege;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.MessageProperties;
+import com.swiftlabs.invoicing.common.Privileges;
 import com.swiftlabs.invoicing.common.ResourceNotFoundException;
 
 import org.springframework.stereotype.Service;
@@ -59,6 +60,13 @@ public class PrivilegeService {
 
     @Transactional
     public void delete(Long id) {
+        // Deleting a privilege the application checks would take it from every profile at once (MANAGE_USERS,
+        // MANAGE_PROFILES...): nobody could give it back without fixing the database
+        privilegeRepository.findById(id)
+            .filter(privilege -> Privileges.builtIn().contains(privilege.getCode()))
+            .ifPresent(privilege -> {
+                throw new BusinessException(MessageProperties.PRIVILEGE_ERROR_BUILT_IN, privilege.getCode());
+            });
         privilegeRepository.deleteById(id);
     }
 }

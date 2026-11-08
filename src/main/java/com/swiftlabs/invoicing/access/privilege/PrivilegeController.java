@@ -75,6 +75,8 @@ public class PrivilegeController {
         try {
             privilegeService.delete(id);
             redirectAttributes.addFlashAttribute(CommonCodes.Attributes.SUCCESS, messages.get(MessageProperties.PRIVILEGE_DELETED));
+        } catch (BusinessException ex) {
+            redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.of(ex));
         } catch (Exception ex) {
             redirectAttributes.addFlashAttribute(CommonCodes.Attributes.ERROR, messages.get(MessageProperties.PRIVILEGE_ERROR_DELETE_FAILED));
         }

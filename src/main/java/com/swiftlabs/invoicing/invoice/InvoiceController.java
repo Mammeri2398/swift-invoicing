@@ -36,7 +36,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
 @Controller
@@ -157,9 +156,9 @@ public class InvoiceController {
                 model.addAttribute(CommonCodes.Attributes.PAYMENT, payment);
                 model.addAttribute(CommonCodes.Attributes.PAYMENTS, paymentService.paymentsOf(id));
                 model.addAttribute(CommonCodes.Attributes.OVERDUE, invoice.getStatus() == InvoiceStatus.ISSUED && invoice.getDueDate() != null
-                    && invoice.getDueDate().isBefore(LocalDate.now()) && payment.balance().signum() > 0);
+                    && invoice.getDueDate().isBefore(invoiceService.today()) && payment.balance().signum() > 0);
                 // The form proposes the whole balance, today, with the invoice's payment method
-                model.addAttribute(CommonCodes.Attributes.PAYMENT_FORM, new PaymentForm(payment.balance().max(BigDecimal.ZERO), LocalDate.now(),
+                model.addAttribute(CommonCodes.Attributes.PAYMENT_FORM, new PaymentForm(payment.balance().max(BigDecimal.ZERO), invoiceService.today(),
                     invoice.getPaymentMethod(), null));
                 model.addAttribute(CommonCodes.Attributes.PAYMENT_METHODS, PaymentMethod.values());
             }

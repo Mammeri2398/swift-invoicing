@@ -89,39 +89,130 @@ public class PostgresTools {
 
     private static final Pattern PSQL_LOCK = Pattern.compile("\\\\(un)?restrict [A-Za-z0-9]+");
     private static final Pattern COPY_FROM_STDIN = Pattern.compile("COPY .* FROM stdin;");
+    private static final String IDENTIFIER = "(?:[a-z_][a-z0-9_]*|\"[a-z_][a-z0-9_]*\")";
     private static final Pattern COMPANY_SCHEMA = Pattern.compile("\\bcompany_\\d+\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern FORBIDDEN = Pattern.compile(String.join("|",
         "\\bpublic\"?\\s*\\.", "search_path", "\\bset\\s+role\\b", "session\\s+authorization",
         "\\bcreate\\s+(or\\s+replace\\s+)?(function|procedure|trigger|rule|view|materialized|extension|event|policy|schema|role|user)\\b",
         "\\bdo\\s+\\$", "\\bcall\\b", "\\bgrant\\b", "\\brevoke\\b", "\\balter\\s+(role|user|system|schema|default|database|function)\\b",
-        "\\bcopy\\b.*\\b(program|to)\\b", "\\bdblink", "\\blo_(import|export)\\b", "\\bpg_(read|ls|stat)_", "\\bexecute\\b"),
-        Pattern.CASE_INSENSITIVE);
+        "\\bcopy\\b.*\\b(program|to)\\b", "\\bdblink", "\\blo_(import|export)\\b", "\\bpg_(read|ls|stat)_", "\\bexecute\\b",
+        // Unicode escapes and comments inside a statement could hide a name from the checks above
+        "\\bu&[\"']", "/\\*", "\\be'"),
+        Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
     /** The one search_path statement of a backup's header (an empty path: every name is written with its schema). */
     private static final String HEADER_SEARCH_PATH = "SELECT pg_catalog.set_config('search_path', '', false);";
+    /** The kinds of statement a backup of a company's tables holds; anything else is refused. */
+    private static final Pattern ALLOWED_STATEMENT = Pattern.compile(
+        "(SET [a-z_]+ = |CREATE TABLE |CREATE SEQUENCE |CREATE (UNIQUE )?INDEX |ALTER TABLE |ALTER SEQUENCE "
+            + "|DROP (TABLE|SEQUENCE|INDEX) |COMMENT ON (TABLE|COLUMN|INDEX|SEQUENCE|CONSTRAINT) ).*", Pattern.DOTALL);
+    private static final Pattern QUOTED_LITERAL = Pattern.compile("'(?:[^']|'')*'");
+    private static final Pattern DOLLAR_QUOTE = Pattern.compile("\\$[A-Za-z_0-9]*\\$");
 
     /**
      * A statement of a restore script is only what a backup of one company holds: its tables, sequences,
      * constraints and indexes, named in its own schema. Anything else (another company's or the shared schema,
-     * functions, roles, a different search path) could reach beyond the company, as the script runs with the
-     * application's own database account: the whole restore is refused.
+     * functions, roles, a different search path, several statements in one) could reach beyond the company, as the
+     * script runs with the application's own database account: the whole restore is refused.
+     * A statement may span several lines; {@link RestoreScriptCheck} puts them together before calling this.
      */
-    static boolean isSafeStatement(String schema, String line) {
-        if (line.equals(HEADER_SEARCH_PATH) || line.isBlank() || line.startsWith("--")) {
+    static boolean isSafeStatement(String schema, String statement) {
+        if (statement.equals(HEADER_SEARCH_PATH) || statement.isBlank() || statement.startsWith("--")) {
             return true;
         }
         // psql commands (\! runs a program, \i reads a file...): only those recent tools write to lock the script
-        if (line.stripLeading().startsWith("\\")) {
-            return PSQL_LOCK.matcher(line).matches();
+        if (statement.stripLeading().startsWith("\\")) {
+            return PSQL_LOCK.matcher(statement).matches();
         }
-        Matcher companies = COMPANY_SCHEMA.matcher(line);
+        Matcher companies = COMPANY_SCHEMA.matcher(statement);
         while (companies.find()) {
             if (!companies.group().equalsIgnoreCase(schema)) {
                 return false;
             }
         }
-        // pg_catalog.setval of the company's own sequences restores them
-        String withoutSetval = line.startsWith("SELECT pg_catalog.setval('" + schema + ".") ? "" : line;
-        return !FORBIDDEN.matcher(withoutSetval).find();
+        // pg_catalog.setval of the company's own sequences restores them, in exactly the form pg_dump writes it
+        if (statement.startsWith("SELECT ")) {
+            return Pattern.matches("SELECT pg_catalog\\.setval\\('" + Pattern.quote(schema) + "\\.[a-z_][a-z0-9_]*', \\d+, (true|false)\\);",
+                statement);
+        }
+        // One statement only: no other semicolon than the last one, outside the quoted values
+        String withoutLiterals = QUOTED_LITERAL.matcher(statement).replaceAll("''");
+        if (withoutLiterals.indexOf(';') != withoutLiterals.length() - 1 || DOLLAR_QUOTE.matcher(withoutLiterals).find()) {
+            return false;
+        }
+        return ALLOWED_STATEMENT.matcher(statement).matches() && !FORBIDDEN.matcher(statement).find();
+    }
+
+    /** The rows of a company table: {@code COPY company_N.table (columns) FROM stdin;}, nothing more. */
+    static boolean isSafeCopy(String schema, String line) {
+        return Pattern.matches("COPY " + Pattern.quote(schema) + "\\." + IDENTIFIER
+            + " \\(" + IDENTIFIER + "(, " + IDENTIFIER + ")*\\) FROM stdin;", line);
+    }
+
+    /**
+     * Reads a restore script line by line: the rows of a table (from COPY ... FROM stdin; up to \.) are data, every
+     * other line belongs to a statement, checked as a whole once its last line (ending with ;) is read.
+     */
+    static final class RestoreScriptCheck {
+
+        private final String schema;
+        private final StringBuilder statement = new StringBuilder();
+        private int lineNumber;
+        private int statementStart;
+        private boolean data;
+
+        RestoreScriptCheck(String schema) {
+            this.schema = schema;
+        }
+
+        /** Checks one more line; refuses the whole restore when it makes an unexpected statement. */
+        void accept(String line) {
+            lineNumber++;
+            if (data) {
+                data = !line.equals("\\.");
+                return;
+            }
+            if (statement.isEmpty() && (line.isBlank() || line.startsWith("--") || line.stripLeading().startsWith("\\"))) {
+                check(line);
+                return;
+            }
+            if (statement.isEmpty() && COPY_FROM_STDIN.matcher(line).matches()) {
+                if (!isSafeCopy(schema, line)) {
+                    refuse(line);
+                }
+                data = true;
+                return;
+            }
+            if (statement.isEmpty()) {
+                statementStart = lineNumber;
+            } else {
+                statement.append('\n');
+            }
+            statement.append(line);
+            if (line.stripTrailing().endsWith(";")) {
+                String complete = statement.toString().strip();
+                statement.setLength(0);
+                check(complete);
+            }
+        }
+
+        /** The script is over: a statement left without its end is refused too. */
+        void finish() {
+            if (!statement.isEmpty() || data) {
+                refuse(statement.toString());
+            }
+        }
+
+        private void check(String text) {
+            if (!isSafeStatement(schema, text)) {
+                refuse(text);
+            }
+        }
+
+        private void refuse(String text) {
+            log.warn("Restore refused: unexpected statement in the backup, line {}: {}", statementStart > 0 ? statementStart : lineNumber,
+                text.length() > 200 ? text.substring(0, 200) : text);
+            throw new BusinessException(MessageProperties.BACKUP_ERROR_UNSAFE);
+        }
     }
 
     private void writeRestoreScript(String schema, Path script, Path restoreScript) {
@@ -139,28 +230,23 @@ public class PostgresTools {
                   END LOOP;
                 END $$;
                 """.formatted(schema));
+            // Whatever the backup holds, a name without its schema reaches nothing (not the shared schema)
+            writer.write(HEADER_SEARCH_PATH);
+            writer.newLine();
+            RestoreScriptCheck check = new RestoreScriptCheck(schema);
             String line;
             int lineNumber = 0;
-            boolean data = false;
             while ((line = reader.readLine()) != null) {
                 lineNumber++;
                 // Written by recent tools in the header, unknown to a PostgreSQL server older than 17
                 if (lineNumber < 50 && line.equals("SET transaction_timeout = 0;")) {
                     continue;
                 }
-                // The rows of a table (COPY ... FROM stdin; up to \.) are data, not statements
-                if (data) {
-                    data = !line.equals("\\.");
-                } else if (COPY_FROM_STDIN.matcher(line).matches()) {
-                    data = true;
-                } else if (!isSafeStatement(schema, line)) {
-                    log.warn("Restore refused: unexpected statement in the backup, line {}: {}", lineNumber,
-                        line.length() > 200 ? line.substring(0, 200) : line);
-                    throw new BusinessException(MessageProperties.BACKUP_ERROR_UNSAFE);
-                }
+                check.accept(line);
                 writer.write(line);
                 writer.newLine();
             }
+            check.finish();
         } catch (IOException ex) {
             throw new BusinessException(MessageProperties.BACKUP_ERROR_BACKUP_NOT_READ, String.valueOf(ex.getMessage()));
         }

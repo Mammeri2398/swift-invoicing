@@ -87,7 +87,8 @@ class TwoFactorSetupTest {
 
     @SuppressWarnings("unchecked")
     private List<String> enable(String secret) throws Exception {
-        MvcResult result = mockMvc.perform(post("/account/two-factor/confirm").session(session).with(csrf()).param("code", code(secret)))
+        MvcResult result = mockMvc.perform(post("/account/two-factor/confirm").session(session).with(csrf()).param("code", code(secret))
+                .param("currentPassword", "Secret123"))
             .andExpect(redirectedUrl("/account/two-factor"))
             .andReturn();
         return (List<String>) result.getFlashMap().get("recoveryCodes");
@@ -123,6 +124,10 @@ class TwoFactorSetupTest {
         enable(oldSecret);
         String newSecret = secretShownOnPage("/account/two-factor?change=true");
         assertThat(newSecret).isNotEqualTo(oldSecret);
+        // An open session alone cannot move the second factor to another phone: the password is asked
+        mockMvc.perform(post("/account/two-factor/confirm").session(session).with(csrf()).param("code", code(newSecret)))
+            .andExpect(redirectedUrl("/account/two-factor?change=true"));
+        assertThat(userRepository.findById(user.getId()).orElseThrow().getTotpSecret()).isEqualTo(oldSecret);
         enable(newSecret);
         assertThat(userRepository.findById(user.getId()).orElseThrow().getTotpSecret()).isEqualTo(newSecret);
     }

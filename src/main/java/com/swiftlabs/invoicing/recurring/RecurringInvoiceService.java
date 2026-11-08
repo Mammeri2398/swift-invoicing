@@ -132,13 +132,14 @@ public class RecurringInvoiceService {
                         break;
                     }
                     created++;
-                } catch (BusinessException ex) {
-                    log.warn("Recurring invoice {}: no draft prepared: {}", id, ex.getMessage());
-                    transaction.executeWithoutResult(status -> {
-                        RecurringInvoice model = repository.findById(id).orElseThrow();
-                        model.setLastRunAt(LocalDateTime.now(clock));
-                        model.setLastError(truncate(ex.getMessage()));
-                    });
+                } catch (RuntimeException ex) {
+                    // Any failure stays with its model: the other models (and companies) are still prepared
+                    if (ex instanceof BusinessException) {
+                        log.warn("Recurring invoice {}: no draft prepared: {}", id, ex.getMessage());
+                    } else {
+                        log.error("Recurring invoice {}: no draft prepared", id, ex);
+                    }
+                    recordFailure(id, ex);
                     break;
                 }
             }
@@ -147,6 +148,17 @@ public class RecurringInvoiceService {
             log.info("Recurring invoices: {} draft(s) prepared", created);
         }
         return created;
+    }
+
+    private void recordFailure(Long id, RuntimeException failure) {
+        try {
+            transaction.executeWithoutResult(status -> repository.findById(id).ifPresent(model -> {
+                model.setLastRunAt(LocalDateTime.now(clock));
+                model.setLastError(truncate(String.valueOf(failure.getMessage())));
+            }));
+        } catch (RuntimeException ex) {
+            log.error("Recurring invoice {}: the failure could not be recorded either", id, ex);
+        }
     }
 
     /** The draft of the model's next date, if due; the model then moves to the following date. */

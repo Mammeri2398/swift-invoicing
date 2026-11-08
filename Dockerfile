@@ -38,6 +38,7 @@ COPY --from=build --chown=app:app /workspace/target/extracted/application/ ./
 USER app
 
 ENV SPRING_PROFILES_ACTIVE=prod \
+    TZ=Africa/Algiers \
     JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/urandom"
 
 EXPOSE 7070

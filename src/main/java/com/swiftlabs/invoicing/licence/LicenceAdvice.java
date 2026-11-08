@@ -18,7 +18,7 @@ public class LicenceAdvice {
     @ModelAttribute(CommonCodes.Attributes.LICENCE)
     public LicenceStatus licence() {
         try {
-            return licenceService.status();
+            return licenceService.shownStatus();
         } catch (RuntimeException ex) {
             // Never break a page (error pages included) over the banner
             return new LicenceStatus(LicenceStatus.State.NOT_REQUIRED, null, 0);

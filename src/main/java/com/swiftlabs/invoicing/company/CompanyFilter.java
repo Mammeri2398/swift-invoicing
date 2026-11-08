@@ -2,6 +2,7 @@ package com.swiftlabs.invoicing.company;
 
 import com.swiftlabs.invoicing.access.auth.AppUserPrincipal;
 import com.swiftlabs.invoicing.access.auth.SignedInUser;
+import com.swiftlabs.invoicing.access.twofactor.TwoFactorLogin;
 import com.swiftlabs.invoicing.common.Endpoints;
 
 import jakarta.servlet.FilterChain;
@@ -45,7 +46,10 @@ public class CompanyFilter extends OncePerRequestFilter {
             chain.doFilter(request, response);
             return;
         }
-        AppUserPrincipal principal = signedIn.hasCompany() && !isStatic(request) ? current(signedIn, request, response) : signedIn;
+        // Between the password and the two-factor code nothing is refreshed: replacing the session's authentication
+        // would grant the full privileges without the code
+        AppUserPrincipal principal = signedIn.hasCompany() && !isStatic(request) && !TwoFactorLogin.isPending(authentication)
+            ? current(signedIn, request, response) : signedIn;
         if (!principal.hasCompany() && !isAllowedWithoutCompany(request)) {
             response.sendRedirect(request.getContextPath() + Endpoints.COMPANIES + Endpoints.COMPANY_SELECT);
             return;

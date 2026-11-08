@@ -29,7 +29,7 @@ public class BusinessProfileAdvice {
             return CompanyType.AUTO_ENTREPRENEUR;
         }
         try {
-            return issuerService.getIssuer().getCompanyType();
+            return issuerService.profile().companyType();
         } catch (RuntimeException ex) {
             // Never break a page (error pages included) over the header subtitle
             return CompanyType.AUTO_ENTREPRENEUR;
@@ -42,7 +42,7 @@ public class BusinessProfileAdvice {
             return properties.vatMention();
         }
         try {
-            String mention = issuerService.getIssuer().getVatMention();
+            String mention = issuerService.profile().vatMention();
             return mention != null ? mention : properties.vatMention();
         } catch (RuntimeException ex) {
             // No issuer yet (first setup): the default

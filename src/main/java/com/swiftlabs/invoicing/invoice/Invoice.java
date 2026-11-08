@@ -18,6 +18,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -60,6 +61,10 @@ public class Invoice {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "original_invoice_id")
     private Invoice originalInvoice;
+
+    /** Incremented by every change: two changes made at the same time cannot overwrite each other. */
+    @Version
+    private Long version;
 
     @Column(name = "invoice_year", nullable = false)
     private Integer invoiceYear;
@@ -621,5 +626,9 @@ public class Invoice {
 
     public void setIssuerTaxArticle(String issuerTaxArticle) {
         this.issuerTaxArticle = issuerTaxArticle;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 }

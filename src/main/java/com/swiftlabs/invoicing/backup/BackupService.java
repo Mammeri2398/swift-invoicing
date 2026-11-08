@@ -2,12 +2,15 @@ package com.swiftlabs.invoicing.backup;
 
 import com.swiftlabs.invoicing.common.BusinessException;
 import com.swiftlabs.invoicing.common.MessageProperties;
+import com.swiftlabs.invoicing.common.TimedCache;
 import com.swiftlabs.invoicing.company.CompanyContext;
 import com.swiftlabs.invoicing.company.CompanyMigrations;
+import com.swiftlabs.invoicing.issuer.IssuerService;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +26,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -65,10 +69,16 @@ public class BackupService {
 
     /** The last failure of each company's backups (and of the shared data's), by owner. */
     private final Map<String, Failure> lastFailures = new ConcurrentHashMap<>();
+    /** The newest backup of each company, for the warning shown on every page of who manages backups (a folder listing). */
+    private final TimedCache<String, Optional<BackupFile>> latest;
+    private final IssuerService issuerService;
 
     public BackupService(BackupProperties properties, BackupSettingsRepository settingsRepository, PostgresTools tools,
                          BackupDatabase database, CompanyMigrations companyMigrations,
-                         DataSource dataSource, Clock clock) {
+                         DataSource dataSource, Clock clock, IssuerService issuerService,
+                         @Value("${app.page-cache.ttl:60s}") Duration cacheTtl) {
+        this.issuerService = issuerService;
+        this.latest = new TimedCache<>(cacheTtl);
         this.properties = properties;
         this.settingsRepository = settingsRepository;
         this.tools = tools;
@@ -129,6 +139,7 @@ public class BackupService {
 
     @Transactional
     public void saveSettings(String directory, int keepCount) {
+        latest.clear();
         if (keepCount < 1 || keepCount > 365) {
             throw BusinessException.onField("keepCount", MessageProperties.BACKUP_ERROR_KEEP_COUNT);
         }
@@ -184,7 +195,7 @@ public class BackupService {
 
     /** The newest backup of any kind, if any. */
     public Optional<BackupFile> latest() {
-        return list().stream().findFirst();
+        return latest.get(owner(), () -> list().stream().findFirst());
     }
 
     /** True when the current company's newest automatic backup is old enough for the next one (or there is none). */
@@ -207,6 +218,7 @@ public class BackupService {
 
     /** Makes a backup now; automatic ones then delete the oldest automatic backups beyond the number kept. */
     public BackupFile backup(BackupKind kind) {
+        latest.clear();
         if (!running.tryLock()) {
             throw new BusinessException(MessageProperties.BACKUP_ERROR_BUSY);
         }
@@ -301,6 +313,7 @@ public class BackupService {
     }
 
     public void delete(String name) {
+        latest.clear();
         Path file = file(name);
         PostgresTools.deleteQuietly(file);
         log.info("Backup deleted: {}", file);
@@ -308,6 +321,7 @@ public class BackupService {
 
     /** Adds a backup file from another PC (or an older copy) to the folder, ready to be restored. */
     public BackupFile importFile(MultipartFile upload) {
+        latest.clear();
         if (upload == null || upload.isEmpty()) {
             throw new BusinessException(MessageProperties.BACKUP_ERROR_CHOOSE_FILE);
         }
@@ -345,6 +359,9 @@ public class BackupService {
      * renewed.
      */
     public BackupFile restore(String name) {
+        latest.clear();
+        // The restored company's own details (legal status, TVA mention) are read again
+        issuerService.forgetCachedProfiles();
         String owner = owner();
         PostgresConnection target = requireAvailable().withSchema(owner);
         Path file = file(name);

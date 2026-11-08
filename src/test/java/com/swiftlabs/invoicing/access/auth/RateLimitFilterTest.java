@@ -8,6 +8,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.net.URI;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -52,6 +54,17 @@ class RateLimitFilterTest {
         // Another address is not affected
         mockMvc.perform(post("/perform-login").with(csrf()).with(from("10.0.0.2")).param("username", "nobody").param("password", "x"))
             .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    void anEncodedPathCountsLikeThePlainOne() throws Exception {
+        // /perform%2Dlogin is /perform-login once decoded: it must not escape the limit
+        for (int i = 0; i < 3; i++) {
+            mockMvc.perform(post(URI.create("/perform%2Dlogin")).with(csrf()).with(from("10.0.0.9"))
+                .param("username", "nobody").param("password", "x"));
+        }
+        mockMvc.perform(post("/perform-login").with(csrf()).with(from("10.0.0.9")).param("username", "nobody").param("password", "x"))
+            .andExpect(status().isTooManyRequests());
     }
 
     @Test

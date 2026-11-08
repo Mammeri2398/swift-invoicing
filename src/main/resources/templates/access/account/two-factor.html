@@ -62,6 +62,11 @@
                         <input class="input input-mono w-40 tracking-[0.2em]" id="setup-code" name="code" type="text" inputmode="numeric" dir="ltr"
                                autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" required placeholder="123456"/>
                     </div>
+                    <!--/* Moving to another phone: the password proves it is the account's owner, not just an open session */-->
+                    <div th:if="${enabled}" class="field">
+                        <label class="label" for="setup-password" th:text="#{account.password.current}">Mot de passe actuel</label>
+                        <input class="input" id="setup-password" name="currentPassword" type="password" autocomplete="current-password" required/>
+                    </div>
                     <button type="submit" class="btn btn-primary"><span class="icon">check</span>
                         <th:block th:text="${enabled} ? #{twoFactor.setup.replace} : #{twoFactor.setup.enable}">Activer</th:block></button>
                     <a th:if="${enabled}" th:href="@{/account/two-factor}" class="btn btn-secondary" th:text="#{action.cancel}">Annuler</a>

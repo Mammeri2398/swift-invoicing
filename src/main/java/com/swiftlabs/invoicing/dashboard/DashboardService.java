@@ -8,7 +8,6 @@ import com.swiftlabs.invoicing.issuer.IssuerService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 
 @Service
 @Transactional(readOnly = true)
@@ -27,7 +26,7 @@ public class DashboardService {
 
     /** Stats for the given year, or the current year when null. */
     public DashboardStats stats(Integer year) {
-        int y = year != null ? year : LocalDate.now().getYear();
+        int y = year != null ? year : invoiceService.today().getYear();
         Issuer issuer = issuerService.getIssuer();
         return new DashboardStats(y, invoiceService.totalBilled(y), issuer.getAnnualCeiling(), !issuer.isCompany(),
             invoiceService.findRecent(),

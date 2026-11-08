@@ -24,6 +24,10 @@ public interface CompanyAccessRepository extends JpaRepository<CompanyAccess, Co
     @Query("SELECT a.company.id FROM CompanyAccess a WHERE a.user.id = ?1")
     List<Long> findCompanyIdsByUserId(Long userId);
 
+    /** {user id, company id} for every access: the companies of all users in one query (the user list). */
+    @Query("SELECT a.user.id, a.company.id FROM CompanyAccess a")
+    List<Object[]> findAllUserCompanyIds();
+
     /** {company id, number of users} for every company with at least one user. */
     @Query("SELECT a.company.id, COUNT(a) FROM CompanyAccess a GROUP BY a.company.id")
     List<Object[]> countByCompany();
@@ -32,4 +36,14 @@ public interface CompanyAccessRepository extends JpaRepository<CompanyAccess, Co
     @Query("SELECT COUNT(a) > 0 FROM CompanyAccess a JOIN a.user u JOIN a.profile p JOIN p.privileges pr"
         + " WHERE u.enabled = true AND pr.code = ?1 AND p.id <> ?2")
     boolean existsEnabledUserWithPrivilegeOutsideProfile(String privilegeCode, Long profileId);
+
+    /** Another enabled user than this one holds the privilege in this company. */
+    @Query("SELECT COUNT(a) > 0 FROM CompanyAccess a JOIN a.user u JOIN a.profile p JOIN p.privileges pr"
+        + " WHERE u.enabled = true AND pr.code = ?1 AND a.company.id = ?2 AND u.id <> ?3")
+    boolean existsOtherEnabledHolderIn(String privilegeCode, Long companyId, Long userId);
+
+    /** Another enabled user than this one holds the privilege, in any company. */
+    @Query("SELECT COUNT(a) > 0 FROM CompanyAccess a JOIN a.user u JOIN a.profile p JOIN p.privileges pr"
+        + " WHERE u.enabled = true AND pr.code = ?1 AND u.id <> ?2")
+    boolean existsOtherEnabledHolder(String privilegeCode, Long userId);
 }

@@ -13,14 +13,19 @@ import com.swiftlabs.invoicing.company.CompanySchemas;
 import com.swiftlabs.invoicing.company.CompanyWork;
 import com.swiftlabs.invoicing.config.SecurityProperties;
 import com.swiftlabs.invoicing.mail.MailGateway;
+import com.swiftlabs.invoicing.setup.NetworkAddresses;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
@@ -34,6 +39,7 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 
 @Service
 @Transactional
@@ -51,6 +57,10 @@ public class PasswordResetService {
     private final CompanyWork companyWork;
     private final Messages messages;
     private final String baseUrl;
+    private final NetworkAddresses networkAddresses;
+    private final boolean logResetLinks;
+    private final Executor mailExecutor;
+    private final boolean sendInBackground;
     private final Duration validity;
     private final Clock clock;
     private final SecureRandom random = new SecureRandom();
@@ -65,7 +75,15 @@ public class PasswordResetService {
                                 CompanyAccessService accessService,
                                 CompanyWork companyWork,
                                 Messages messages,
-                                @Value("${app.base-url:}") String baseUrl) {
+                                NetworkAddresses networkAddresses,
+                                @Value("${app.base-url:}") String baseUrl,
+                                @Value("${app.security.log-reset-links:false}") boolean logResetLinks,
+                                @Qualifier("applicationTaskExecutor") TaskExecutor mailExecutor,
+                                @Value("${app.security.reset-mail-in-background:true}") boolean sendInBackground) {
+        this.mailExecutor = mailExecutor;
+        this.sendInBackground = sendInBackground;
+        this.logResetLinks = logResetLinks;
+        this.networkAddresses = networkAddresses;
         this.messages = messages;
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
@@ -131,7 +149,21 @@ public class PasswordResetService {
      * address the user typed to reach it (on-premise: the PC's name on the local network).
      */
     private String baseUrl() {
-        return !baseUrl.isBlank() ? baseUrl : ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
+        if (!baseUrl.isBlank()) {
+            return baseUrl;
+        }
+        String contextPath = ServletUriComponentsBuilder.fromCurrentContextPath().build().getPath();
+        String origin = ServletUriComponentsBuilder.fromCurrentContextPath().replacePath(null).toUriString();
+        return linkOrigin(origin, networkAddresses) + (contextPath != null ? contextPath : "");
+    }
+
+    /**
+     * The address typed is taken only when it is one of this computer's own: the Host header comes from the
+     * browser, so anyone on the network could otherwise make an administrator's link point at their own machine
+     * and receive its token.
+     */
+    static String linkOrigin(String requestedOrigin, NetworkAddresses networkAddresses) {
+        return networkAddresses.isOwn(requestedOrigin) ? requestedOrigin : networkAddresses.preferredUrl();
     }
 
     static String hash(String token) {
@@ -166,8 +198,12 @@ public class PasswordResetService {
     private void sendLink(User user, String resetUrl) {
         Transport transport = transportFor(user);
         if (!transport.configured()) {
-            // Development only: the link gives access to the account, never enable this in production
-            log.warn("Mail disabled - password reset link for '{}': {}", user.getUsername(), resetUrl);
+            // The link gives access to the account: written to the log in development only (app.security.log-reset-links)
+            if (logResetLinks) {
+                log.warn("Mail disabled - password reset link for '{}': {}", user.getUsername(), resetUrl);
+            } else {
+                log.warn("Mail disabled - no password reset link sent to '{}': set up the email server", user.getUsername());
+            }
             return;
         }
         SimpleMailMessage message = new SimpleMailMessage();
@@ -178,10 +214,28 @@ public class PasswordResetService {
         // In the user's own language, whatever the language of the page that asked for it
         message.setSubject(messages.get(user.getLanguage(), MessageProperties.AUTH_RESET_MAIL_SUBJECT));
         message.setText(messages.get(user.getLanguage(), MessageProperties.AUTH_RESET_MAIL_BODY, user.getUsername(), resetUrl, validity.toMinutes()));
-        try {
-            transport.sender().send(message);
-        } catch (Exception ex) {
-            log.error("Could not send the password reset email to user '{}'", user.getUsername(), ex);
+        Runnable send = () -> {
+            try {
+                transport.sender().send(message);
+            } catch (Exception ex) {
+                log.error("Could not send the password reset email to user '{}'", user.getUsername(), ex);
+            }
+        };
+        if (!sendInBackground) {
+            send.run();
+            return;
+        }
+        // In the background, once the link is saved: the answer to the request takes the same time whether the
+        // email belongs to an account or not (a slow mail server would otherwise tell which emails exist)
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    mailExecutor.execute(send);
+                }
+            });
+        } else {
+            mailExecutor.execute(send);
         }
     }
 }

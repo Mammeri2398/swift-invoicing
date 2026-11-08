@@ -223,12 +223,15 @@
         </a>
         </span>
     </div>
+    <!--/* On every page, login and errors included; the version is app.version */-->
+    <p class="border-t border-surface-variant px-4 py-2 text-center text-label-sm text-on-surface-variant"
+       th:text="#{app.footer.signature(${@environment.getProperty('app.version')})}">Swift Invoicing par Swift Labs · v2.0</p>
 </footer>
 
 <!--/* Language choice of the pages before login (?lang= is kept in a cookie, see UserLocaleResolver) */-->
 <nav th:fragment="languageSwitch" class="mt-6 flex items-center justify-center gap-1 text-body-sm" th:aria-label="#{language.label}">
     <th:block th:each="lang : ${T(com.swiftlabs.invoicing.common.Language).values()}">
-        <a th:href="@{''(lang=${lang.code})}" th:lang="${lang.code}" th:text="${lang.nativeName}"
+        <a th:with="link=${T(com.swiftlabs.invoicing.common.PageLinks).withLanguage(lang.code)}" th:href="${link}" th:lang="${lang.code}" th:text="${lang.nativeName}"
            class="rounded-lg px-2 py-1 hover:bg-surface-container"
            th:classappend="${#locale.language == lang.code} ? 'font-semibold text-primary' : 'text-on-surface-variant'">Français</a>
     </th:block>

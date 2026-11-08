@@ -39,8 +39,8 @@ class InvoiceNumberingConcurrencyTest {
     /** Raw SQL runs outside the application's sessions: the company's tables are named with their schema. */
     private static final String COMPANY = CompanySchemas.FIRST + ".";
 
-    /** A year no other test uses: its numbering row does not exist yet. */
-    private static final int YEAR = 2031;
+    /** A past year no other test uses (documents are not issued in the future): its numbering row does not exist yet. */
+    private static final int YEAR = 2013;
     private static final int THREADS = 8;
 
     @Autowired

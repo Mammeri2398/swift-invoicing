@@ -58,6 +58,13 @@ public class CompanyAccessService {
         return accessRepository.findByUserIdAndCompanyId(userId, companyId).map(CompanyAccess::getProfile);
     }
 
+    /** Another enabled user than this one holds the privilege in the company (null: in any company). */
+    @Transactional(readOnly = true)
+    public boolean hasOtherHolder(String privilegeCode, Long companyId, Long userId) {
+        return companyId != null ? accessRepository.existsOtherEnabledHolderIn(privilegeCode, companyId, userId)
+            : accessRepository.existsOtherEnabledHolder(privilegeCode, userId);
+    }
+
     /** The profile name of each user who may work in the company, by user id. */
     @Transactional(readOnly = true)
     public Map<Long, String> profileNamesIn(Long companyId) {
@@ -80,6 +87,16 @@ public class CompanyAccessService {
             if (access.getProfile().getPrivileges().stream().anyMatch(p -> Privileges.MANAGE_USERS.equals(p.getCode()))) {
                 companies.add(access.getCompany().getId());
             }
+        }
+        return companies;
+    }
+
+    /** The companies of every user (user id to company ids), in one query. */
+    @Transactional(readOnly = true)
+    public Map<Long, Set<Long>> companyIdsByUser() {
+        Map<Long, Set<Long>> companies = new HashMap<>();
+        for (Object[] row : accessRepository.findAllUserCompanyIds()) {
+            companies.computeIfAbsent((Long) row[0], id -> new HashSet<>()).add((Long) row[1]);
         }
         return companies;
     }

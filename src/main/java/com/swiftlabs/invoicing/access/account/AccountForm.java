@@ -20,6 +20,9 @@ public class AccountForm {
     @Size(max = 255)
     private String email;
 
+    /** Asked only when the email changes: it is where password reset links go. */
+    private String currentPassword;
+
     public static AccountForm from(User user) {
         AccountForm form = new AccountForm();
         form.setFirstName(user.getFirstName());
@@ -34,4 +37,6 @@ public class AccountForm {
     public void setLastName(String lastName) { this.lastName = lastName; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email != null ? email.trim() : null; }
+    public String getCurrentPassword() { return currentPassword; }
+    public void setCurrentPassword(String currentPassword) { this.currentPassword = currentPassword; }
 }

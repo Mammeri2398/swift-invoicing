@@ -31,6 +31,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 PrivilegesRequired=admin
 WizardStyle=modern
+SetupIconFile=swift-invoicing.ico
 UninstallDisplayName=Swift Invoicing
 UninstallDisplayIcon={app}\app\SwiftInvoicing.exe
 SetupLogging=yes

@@ -7,6 +7,9 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title th:text="#{app.title(${title})}">Swift Invoicing</title>
+    <link rel="icon" th:href="@{/favicon.ico}" sizes="48x48"/>
+    <link rel="icon" type="image/png" th:href="@{/images/favicon-32.png}" sizes="32x32"/>
+    <link rel="apple-touch-icon" th:href="@{/images/apple-touch-icon.png}"/>
     <link rel="stylesheet" th:href="@{/css/app.css}"/>
     <link rel="preload" th:href="@{/fonts/material-symbols-outlined.woff2}" as="font" type="font/woff2" crossorigin/>
 </head>
@@ -17,9 +20,7 @@
     <div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-12">
         <div class="flex min-w-0 items-center gap-6">
             <a th:href="@{/}" class="flex shrink-0 items-center gap-2 whitespace-nowrap">
-                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-on-primary shadow-sm">
-                    <span class="icon">receipt_long</span>
-                </span>
+                <img th:src="@{/images/logo-mark.png}" alt="Swift Invoicing" class="h-9 w-auto"/>
                 <!--/* The name beside the logo: not with the full navigation (xl and up), which needs the room: the bar
                        never grows beyond max-w-7xl, however wide the screen */-->
                 <span class="hidden flex-col leading-tight sm:flex xl:hidden">
@@ -213,8 +214,10 @@
 
 <!--/* On every page, login and errors included; the version is app.version */-->
 <footer th:fragment="footer" class="mt-10 bg-surface-container-low print:hidden">
-    <p class="px-4 py-3 text-center text-label-sm text-on-surface-variant"
-       th:text="#{app.footer.signature(${@environment.getProperty('app.version')})}">Swift Invoicing par Swift Labs · v2.0</p>
+    <p class="flex items-center justify-center gap-1.5 px-4 py-3 text-label-sm text-on-surface-variant">
+        <img th:src="@{/images/logo-mark.png}" alt="" class="h-4 w-auto"/>
+        <span th:text="#{app.footer.signature(${@environment.getProperty('app.version')})}">Swift Invoicing par Swift Labs · v2.0</span>
+    </p>
 </footer>
 
 <!--/* Language choice of the pages before login (?lang= is kept in a cookie, see UserLocaleResolver) */-->

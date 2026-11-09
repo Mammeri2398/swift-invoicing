@@ -103,6 +103,7 @@ $jpackage = if ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME 'bin\jpackage.exe' } 
     --name SwiftInvoicing `
     --app-version $Version `
     --vendor 'Swift Labs' `
+    --icon (Join-Path $PSScriptRoot 'swift-invoicing.ico') `
     --input $jpackageInput `
     --main-jar swift-invoicing.jar `
     --dest (Join-Path $Out 'jpackage') `
